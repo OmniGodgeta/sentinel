@@ -54,7 +54,7 @@ public sealed partial class MenuScreen : CanvasLayer
         var play = new Button { Text = "▶   PLAY", CustomMinimumSize = new Vector2(420, 68) };
         play.AddThemeFontSizeOverride("font_size", 26);
         play.AddThemeColorOverride("font_color", new Color(0.6f, 1f, 0.75f));
-        play.Pressed += PlayPressed;
+        play.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Confirm(); PlayPressed(); };
         stack.AddChild(play);
 
         var row1 = Row();
@@ -65,8 +65,12 @@ public sealed partial class MenuScreen : CanvasLayer
         var row2 = Row();
         row2.AddChild(Nav("Research", App.ShowResearch));
         row2.AddChild(Nav("Protocols", App.ShowAbilities));
-        row2.AddChild(Nav("Codex", App.ShowCodex));
         stack.AddChild(row2);
+
+        var row3 = Row();
+        row3.AddChild(Nav("Codex", App.ShowCodex));
+        row3.AddChild(Nav("Settings", App.ShowSettings));
+        stack.AddChild(row3);
 
         if (s.EndlessBest > 0)
         {
@@ -87,7 +91,7 @@ public sealed partial class MenuScreen : CanvasLayer
     {
         var b = new Button { Text = text, CustomMinimumSize = new Vector2(0, 44), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         b.AddThemeFontSizeOverride("font_size", 14);
-        b.Pressed += () => onPress();
+        b.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); onPress(); };
         return b;
     }
 

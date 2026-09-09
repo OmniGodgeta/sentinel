@@ -28,6 +28,7 @@ public sealed partial class AppRoot : Node
         Research = ResearchDb.Load();
         Save = SaveGame.Load();
         Prog = new Progression(Save, Research, Cfg);
+        Sentinel.Audio.AudioManager.Instance?.SetVolume(Save.Options.SfxVolume, Save.Options.Muted);
         ShowMenu();
     }
 
@@ -51,10 +52,11 @@ public sealed partial class AppRoot : Node
         }
         SwapTo(new MenuScreen { App = this });
     }
-    public void ShowLevels() => SwapTo(new LevelSelectScreen { App = this });
+    public void ShowLevels() => SwapTo(new StarMapScreen { App = this });
     public void ShowResearch() => SwapTo(new ResearchScreen { App = this });
     public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });
     public void ShowCodex() => SwapTo(new CodexScreen { App = this });
+    public void ShowSettings() => SwapTo(new SettingsScreen { App = this });
 
     public void StartMission(string missionFile, string missionId)
     {

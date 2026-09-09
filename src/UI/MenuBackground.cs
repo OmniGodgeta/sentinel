@@ -11,6 +11,7 @@ public sealed partial class MenuBackground : Node2D
     private Vector2[] _dustF = System.Array.Empty<Vector2>();
     private float _t;
     public float PlanetY = 0.30f;
+    public float NebulaAlpha = 1f;
     private PlanetView _planet = null!;
 
     public override void _Ready()
@@ -27,7 +28,7 @@ public sealed partial class MenuBackground : Node2D
         for (int i = 0; i < _dustF.Length; i++)
             _dustF[i] = new Vector2(rng.Randf(), rng.Randf());
 
-        _planet = new PlanetView();
+        _planet = new PlanetView { Skin = Game.AppRoot.Instance?.Save.Options.PlanetSkin ?? "earth" };
         AddChild(_planet);
         SetProcess(true);
         Layout();
@@ -50,8 +51,8 @@ public sealed partial class MenuBackground : Node2D
 
         for (int i = 0; i < _dustF.Length; i++)
         {
-            float pulse = 0.018f + 0.012f * Mathf.Sin(_t * 0.3f + i);
-            DrawCircle(_dustF[i] * vp, vp.X * 0.22f, new Color(0.28f, 0.32f, 0.55f, pulse));
+            float pulse = (0.012f + 0.008f * Mathf.Sin(_t * 0.3f + i)) * NebulaAlpha;
+            DrawCircle(_dustF[i] * vp, vp.X * 0.20f, new Color(0.26f, 0.30f, 0.52f, pulse));
         }
         for (int i = 0; i < _starF.Length; i++)
         {

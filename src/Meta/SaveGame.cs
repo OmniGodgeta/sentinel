@@ -60,6 +60,9 @@ public sealed class SaveGame
         public bool Haptics { get; set; } = true;
         public bool ReduceFlash { get; set; }
         public bool AutoSlowOnBoss { get; set; } = true;
+        public float SfxVolume { get; set; } = 0.85f;
+        public bool Muted { get; set; }
+        public string PlanetSkin { get; set; } = "earth";
     }
 
     // ---- commander level curve (slow, steady; XP is easy to earn, levels are not) ----

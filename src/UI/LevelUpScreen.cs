@@ -76,7 +76,7 @@ public sealed partial class LevelUpScreen : CanvasLayer
             col.AddChild(tx);
             var btn = new Button { Text = "Take", CustomMinimumSize = new Vector2(0, 34) };
             string id = card.Id;
-            btn.Pressed += () => { App.Prog.PickLevelCard(id); Rebuild(); };
+            btn.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Play("card_pick", -2f); App.Prog.PickLevelCard(id); Rebuild(); };
             col.AddChild(btn);
 
             _cards.AddChild(panel);

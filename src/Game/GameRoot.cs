@@ -65,7 +65,11 @@ public sealed partial class GameRoot : Node2D
 
         _starfield = new Render.Starfield { Radius = _world.B.DespawnRadius };
         AddChild(_starfield);
-        _planet = new Render.PlanetView { Diameter = _world.B.PlanetRadius * 2f };
+        _planet = new Render.PlanetView
+        {
+            Diameter = _world.B.PlanetRadius * 2f,
+            Skin = AppRoot.Instance?.Save.Options.PlanetSkin ?? "earth",
+        };
         AddChild(_planet);
 
         _renderer = new SimRenderer { Root = this, World = _world };
@@ -149,22 +153,61 @@ public sealed partial class GameRoot : Node2D
 
     private void ConsumeSimEvents()
     {
+        var sfx = Sentinel.Audio.AudioManager.Instance;
         foreach (var ev in _world.Events.Events)
         {
             _renderer.OnSimEvent(ev);
             switch (ev.Kind)
             {
+                case SimEventKind.TurretFired:
+                    if (ev.I == -5) sfx?.Play("sentinel_shot", -14f, 0.12f, 0.05);
+                    else sfx?.Play(GD.Randf() < 0.5f ? "turret_shot" : "turret_shot_b", -13f, 0.14f, 0.04);
+                    break;
+                case SimEventKind.BeamTick:
+                    if ((_world.Tick % 12) == 0) sfx?.Play("shield", -18f, 0.1f, 0.1);
+                    break;
+                case SimEventKind.ChainArc:
+                    sfx?.Play("sentinel_shot", -12f, 0.2f, 0.06);
+                    break;
+                case SimEventKind.EnemyKilled:
+                    sfx?.Play(GD.Randf() < 0.5f ? "explosion" : "explosion_b", -11f, 0.16f, 0.03);
+                    break;
+                case SimEventKind.MissileImpact:
+                    sfx?.Play("explosion_big", -8f, 0.1f);
+                    break;
+                case SimEventKind.EnemyHit:
+                    if (ev.A > 4f) sfx?.Play("hit_light", -20f, 0.2f, 0.05);
+                    break;
                 case SimEventKind.VolleyLaunched:
+                    sfx?.Play(ev.Pos == Vector2.Zero ? "battery_launch" : "missile_launch", -7f, 0.08f);
                     Input.VibrateHandheld(25);
+                    break;
+                case SimEventKind.AbilityCast:
+                    if (ev.I >= 0) sfx?.Play("ability_cast", -4f, 0.05f);
+                    else if (ev.I == -3) sfx?.Play("card_pick", -3f);
+                    break;
+                case SimEventKind.PlanetHit:
+                    if (ev.A > 8f) sfx?.Play("planet_hit", -9f, 0.1f, 0.08);
+                    break;
+                case SimEventKind.NovaPulse:
+                    sfx?.Play("explosion_big", -3f, 0.05f);
+                    break;
+                case SimEventKind.EnemySpawned:
+                    sfx?.Play("shield", -26f, 0.2f, 0.15);
                     break;
                 case SimEventKind.MissionLost:
                     Input.VibrateHandheld(120);
                     _fx.Flash(new Color(1f, 0.3f, 0.25f), 0.5f);
-                    goto case SimEventKind.WaveCleared;
+                    sfx?.Play("mission_lost", 0f, 0f);
+                    _hud.FlashBanner(ev.Kind);
+                    break;
                 case SimEventKind.MissionWon:
                     _fx.Flash(new Color(0.5f, 1f, 0.7f), 0.4f);
-                    goto case SimEventKind.WaveCleared;
+                    sfx?.Play("mission_won", -2f, 0f);
+                    _hud.FlashBanner(ev.Kind);
+                    break;
                 case SimEventKind.WaveCleared:
+                    sfx?.Play("wave_clear", -8f, 0f);
                     _hud.FlashBanner(ev.Kind);
                     break;
             }
@@ -255,7 +298,11 @@ public sealed partial class GameRoot : Node2D
     public void RequestFork(int slot, int fork) => _world.Enqueue(SimCommand.Fork(slot, fork));
     public void RequestPickCard(int cardIndex) => _world.Enqueue(SimCommand.Card(cardIndex));
 
-    public void RequestLaunchWave() => _world.Enqueue(SimCommand.Wave());
+    public void RequestLaunchWave()
+    {
+        _world.Enqueue(SimCommand.Wave());
+        Sentinel.Audio.AudioManager.Instance?.Play("wave_start", -4f, 0f);
+    }
 
     public int PendingReticleSlot => _pendingReticleSlot;
 

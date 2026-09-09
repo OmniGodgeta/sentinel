@@ -16,6 +16,10 @@ boot_splash/show_image=false
 
 project/assembly_name="Sentinel"
 
+[autoload]
+
+AudioManager="*res://src/Audio/AudioManager.cs"
+
 [display]
 
 window/size/viewport_width=1080
