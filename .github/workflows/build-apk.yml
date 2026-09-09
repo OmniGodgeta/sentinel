@@ -1,0 +1,113 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.7.2-stable
+  # Godot dir name inside the templates tpz / editor settings
+  GODOT_TEMPLATE_DIR: 4.7.2.stable.mono
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build-tools + platform
+        run: |
+          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+
+      - name: Cache Godot editor + export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-mono
+
+      - name: Download Godot (mono) + export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          mkdir -p ~/godot ~/.local/share/godot/export_templates
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}"
+          curl -sL -o godot.zip "$BASE/Godot_v${GODOT_VERSION}_mono_linux_x86_64.zip"
+          curl -sL -o templates.tpz "$BASE/Godot_v${GODOT_VERSION}_mono_export_templates.tpz"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_mono_linux_x86_64/Godot_v${GODOT_VERSION}_mono_linux.x86_64 ~/godot/godot
+          chmod +x ~/godot/godot
+          # GodotSharp glue lives next to the binary
+          mv Godot_v${GODOT_VERSION}_mono_linux_x86_64/GodotSharp ~/godot/GodotSharp
+          unzip -q templates.tpz
+          mv templates ~/.local/share/godot/export_templates/${GODOT_TEMPLATE_DIR}
+
+      - name: Configure Godot editor settings (Android export)
+        run: |
+          set -e
+          mkdir -p ~/.config/godot ~/.android
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android \
+            -keystore ~/.android/debug.keystore -storepass android \
+            -dname "CN=Android Debug,O=Android,C=US" -validity 10000 -deststoretype pkcs12
+          JAVA_DIR="$(dirname "$(dirname "$(readlink -f "$(which java)")")")"
+          cat > ~/.config/godot/editor_settings-4.7.tres <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "${ANDROID_SDK_ROOT}"
+          export/android/java_sdk_path = "${JAVA_DIR}"
+          export/android/debug_keystore = "${HOME}/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+      - name: Import project
+        run: |
+          ~/godot/godot --headless --path . --import || true
+
+      - name: Determinism / sim check
+        run: ~/godot/godot --headless --path . scenes/SimTest.tscn --quit
+
+      - name: Build C# + export APK
+        run: |
+          set -e
+          mkdir -p build
+          dotnet build Sentinel.csproj -v q
+          ~/godot/godot --headless --path . --export-debug "Android" build/sentinel-debug.apk
+          test -f build/sentinel-debug.apk
+          ls -la build/
+
+      - name: Version stamp
+        id: ver
+        run: echo "name=sentinel-$(date +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.ver.outputs.name }}
+          path: build/sentinel-debug.apk
+          if-no-files-found: error
+
+      - name: Attach APK to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/sentinel-debug.apk
+          fail_on_unmatched_files: true
