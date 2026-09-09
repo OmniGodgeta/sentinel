@@ -20,6 +20,8 @@ public sealed partial class Hud : CanvasLayer
     private ProgressBar _integrity = null!;
     private Button[] _speed = new Button[4];
     private Button _pause = null!;
+    private Button _menuOpen = null!;
+    private PanelContainer _pauseMenu = null!;
     private readonly System.Collections.Generic.List<PanelContainer> _panels = new();
 
     private PanelContainer _buildPanel = null!;
@@ -52,30 +54,36 @@ public sealed partial class Hud : CanvasLayer
     {
         Layer = 10;
 
-        var top = new VBoxContainer { AnchorRight = 1f, OffsetLeft = 10, OffsetTop = 6, OffsetRight = -10 };
+        var top = new VBoxContainer { AnchorRight = 1f, OffsetLeft = 10, OffsetTop = 8, OffsetRight = -10 };
         _topBox = top;
         AddChild(top);
         _status = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _status.AddThemeFontSizeOverride("font_size", 13);
+        _status.AddThemeFontSizeOverride("font_size", 18);
         top.AddChild(_status);
-        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 8) };
+        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 14) };
         top.AddChild(_integrity);
 
-        // speed + pause row
+        // speed + pause + leave row
         var ctl = new HBoxContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -140, OffsetTop = 56, OffsetRight = 140,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -210, OffsetTop = 82, OffsetRight = 210,
             Alignment = BoxContainer.AlignmentMode.Center,
         };
+        ctl.AddThemeConstantOverride("separation", 6);
         AddChild(ctl);
-        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(42, 30) };
+        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(58, 48) };
+        _menuOpen.AddThemeFontSizeOverride("font_size", 20);
+        _menuOpen.Pressed += () => { if (!Root.IsPaused) { Root.TogglePause(); _pause.Text = "▶"; } };
+        ctl.AddChild(_menuOpen);
+        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(58, 48) };
+        _pause.AddThemeFontSizeOverride("font_size", 18);
         _pause.Pressed += () => { Root.TogglePause(); _pause.Text = Root.IsPaused ? "▶" : "❚❚"; };
         ctl.AddChild(_pause);
         for (int i = 0; i < 4; i++)
         {
             int mult = i + 1;
-            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(48, 30), ToggleMode = true };
-            btn.AddThemeFontSizeOverride("font_size", 13);
+            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(64, 48), ToggleMode = true };
+            btn.AddThemeFontSizeOverride("font_size", 17);
             btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); };
             ctl.AddChild(btn);
             _speed[i] = btn;
@@ -85,7 +93,7 @@ public sealed partial class Hud : CanvasLayer
         // boss bar
         _bossBar = new ProgressBar
         {
-            AnchorLeft = 0.1f, AnchorRight = 0.9f, OffsetTop = 92, CustomMinimumSize = new Vector2(0, 12),
+            AnchorLeft = 0.1f, AnchorRight = 0.9f, OffsetTop = 138, CustomMinimumSize = new Vector2(0, 16),
             MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, Visible = false,
         };
         _bossBar.AddThemeColorOverride("font_color", new Color(1, 0.4f, 0.4f));
@@ -97,15 +105,16 @@ public sealed partial class Hud : CanvasLayer
         var bv = new VBoxContainer();
         _buildPanel.AddChild(bv);
         _wavePreview = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.85f, 0.5f) };
-        _wavePreview.AddThemeFontSizeOverride("font_size", 12);
+        _wavePreview.AddThemeFontSizeOverride("font_size", 15);
         bv.AddChild(_wavePreview);
         _slotLabel = new Label { Text = "① tap an empty slot around the planet", HorizontalAlignment = HorizontalAlignment.Center };
-        _slotLabel.AddThemeFontSizeOverride("font_size", 12);
+        _slotLabel.AddThemeFontSizeOverride("font_size", 15);
         bv.AddChild(_slotLabel);
         _turretRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        _turretRow.AddThemeConstantOverride("separation", 6);
+        _turretRow.AddThemeConstantOverride("separation", 8);
         bv.AddChild(_turretRow);
         _upgradeRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        _upgradeRow.AddThemeConstantOverride("separation", 8);
         bv.AddChild(_upgradeRow);
         _launch = new Button { Text = "▶   LAUNCH WAVE", CustomMinimumSize = new Vector2(0, 56) };
         _launch.AddThemeFontSizeOverride("font_size", 20);
@@ -115,12 +124,12 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
-        _wavePanel.OffsetTop = -136;   // just the ability bar + hint
+        _wavePanel.OffsetTop = -176;   // just the ability bar + hint
         AddChild(_wavePanel);
         var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         _wavePanel.AddChild(wv);
         var abRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        abRow.AddThemeConstantOverride("separation", 8);
+        abRow.AddThemeConstantOverride("separation", 10);
         wv.AddChild(abRow);
         for (int i = 0; i < _abilityBtns.Length; i++)
         {
@@ -131,7 +140,7 @@ public sealed partial class Hud : CanvasLayer
             _abilityBtns[i] = btn;
         }
         var hint = new Label { Text = "drag: move ship    ·    tap play area: missile volley", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
-        hint.AddThemeFontSizeOverride("font_size", 11);
+        hint.AddThemeFontSizeOverride("font_size", 13);
         wv.AddChild(hint);
 
         // big centred targeting prompt (over the play area)
@@ -141,7 +150,7 @@ public sealed partial class Hud : CanvasLayer
             HorizontalAlignment = HorizontalAlignment.Center,
             Modulate = new Color(1f, 0.92f, 0.4f), Text = "",
         };
-        _reticlePrompt.AddThemeFontSizeOverride("font_size", 22);
+        _reticlePrompt.AddThemeFontSizeOverride("font_size", 26);
         AddChild(_reticlePrompt);
 
         // ---- card draft ----
@@ -151,10 +160,10 @@ public sealed partial class Hud : CanvasLayer
         var dv = new VBoxContainer();
         _draftPanel.AddChild(dv);
         var dh = new Label { Text = "CHOOSE A CARD", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.9f, 0.5f) };
-        dh.AddThemeFontSizeOverride("font_size", 14);
+        dh.AddThemeFontSizeOverride("font_size", 17);
         dv.AddChild(dh);
         _draftCards = new VBoxContainer();
-        _draftCards.AddThemeConstantOverride("separation", 5);
+        _draftCards.AddThemeConstantOverride("separation", 8);
         dv.AddChild(_draftCards);
 
         // ---- end card ----
@@ -164,23 +173,52 @@ public sealed partial class Hud : CanvasLayer
         var ev = new VBoxContainer();
         _endCard.AddChild(ev);
         _endText = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _endText.AddThemeFontSizeOverride("font_size", 13);
+        _endText.AddThemeFontSizeOverride("font_size", 16);
         ev.AddChild(_endText);
         var endBtns = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        endBtns.AddThemeConstantOverride("separation", 12);
         ev.AddChild(endBtns);
-        _retryBtn = new Button { Text = "Retry", CustomMinimumSize = new Vector2(130, 42) };
+        _retryBtn = new Button { Text = "Retry", CustomMinimumSize = new Vector2(160, 58) };
+        _retryBtn.AddThemeFontSizeOverride("font_size", 18);
         _retryBtn.Pressed += () => Root.RestartMission();
         endBtns.AddChild(_retryBtn);
-        _menuBtn = new Button { Text = "Menu", CustomMinimumSize = new Vector2(130, 42) };
+        _menuBtn = new Button { Text = "Menu", CustomMinimumSize = new Vector2(160, 58) };
+        _menuBtn.AddThemeFontSizeOverride("font_size", 18);
         _menuBtn.Pressed += () => Root.GoToMenu();
         endBtns.AddChild(_menuBtn);
 
         // ---- banner ----
-        _banner = new Label { AnchorRight = 1f, OffsetTop = 112, HorizontalAlignment = HorizontalAlignment.Center };
-        _banner.AddThemeFontSizeOverride("font_size", 28);
+        _banner = new Label { AnchorRight = 1f, OffsetTop = 156, HorizontalAlignment = HorizontalAlignment.Center };
+        _banner.AddThemeFontSizeOverride("font_size", 32);
         AddChild(_banner);
 
-        foreach (var n in new Control[] { _topBox, _buildPanel, _wavePanel, _draftPanel, _endCard })
+        // ---- pause / leave menu ----
+        _pauseMenu = new PanelContainer
+        {
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetLeft = -200, OffsetRight = 200, OffsetTop = -150, OffsetBottom = 150, Visible = false,
+        };
+        AddChild(_pauseMenu);
+        var pm = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        pm.AddThemeConstantOverride("separation", 16);
+        _pauseMenu.AddChild(pm);
+        var pmTitle = new Label { Text = "PAUSED", HorizontalAlignment = HorizontalAlignment.Center };
+        pmTitle.AddThemeFontSizeOverride("font_size", 26);
+        pm.AddChild(pmTitle);
+        var pmResume = new Button { Text = "▶   Resume", CustomMinimumSize = new Vector2(320, 64), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        pmResume.AddThemeFontSizeOverride("font_size", 21);
+        pmResume.Pressed += () => { if (Root.IsPaused) { Root.TogglePause(); _pause.Text = "❚❚"; } };
+        pm.AddChild(pmResume);
+        var pmLeave = new Button { Text = "◄   Leave to Main Menu", CustomMinimumSize = new Vector2(320, 64), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        pmLeave.AddThemeFontSizeOverride("font_size", 19);
+        pmLeave.AddThemeColorOverride("font_color", new Color(1f, 0.6f, 0.55f));
+        pmLeave.Pressed += () => Root.GoToMenu();
+        pm.AddChild(pmLeave);
+        var pmHint = new Label { Text = "leaving forfeits this run's rewards", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
+        pmHint.AddThemeFontSizeOverride("font_size", 12);
+        pm.AddChild(pmHint);
+
+        foreach (var n in new Control[] { _topBox, _buildPanel, _wavePanel, _draftPanel, _endCard, _pauseMenu })
             n.Theme = UiTheme.Instance;
 
         RebuildTurretButtons();
@@ -191,7 +229,7 @@ public sealed partial class Hud : CanvasLayer
         var p = new PanelContainer
         {
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
-            OffsetLeft = 8, OffsetRight = -8, OffsetTop = -244, OffsetBottom = -8,
+            OffsetLeft = 8, OffsetRight = -8, OffsetTop = -298, OffsetBottom = -8,
         };
         _panels.Add(p);
         return p;
@@ -218,8 +256,8 @@ public sealed partial class Hud : CanvasLayer
         {
             if (unlocked.Count > 0 && !unlocked.Contains(id)) continue;
             var def = Root.World.Cfg.Turret(id);
-            var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(88, 50) };
-            btn.AddThemeFontSizeOverride("font_size", 10);
+            var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(112, 66) };
+            btn.AddThemeFontSizeOverride("font_size", 13);
             btn.Pressed += () => { if (_selectedSlot >= 0) Root.RequestBuild(_selectedSlot, id); };
             _turretRow.AddChild(btn);
         }
@@ -254,6 +292,8 @@ public sealed partial class Hud : CanvasLayer
 
     public override void _Process(double delta)
     {
+        _pauseMenu.Visible = Root.IsPaused;
+
         if (_bannerTime > 0f)
         {
             _bannerTime -= (float)delta;
@@ -341,11 +381,11 @@ public sealed partial class Hud : CanvasLayer
             var btn = new Button
             {
                 Text = $"{card.Name}\n{card.Text}",
-                CustomMinimumSize = new Vector2(0, 56),
+                CustomMinimumSize = new Vector2(0, 70),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 Modulate = col,
             };
-            btn.AddThemeFontSizeOverride("font_size", 11);
+            btn.AddThemeFontSizeOverride("font_size", 13);
             btn.Pressed += () => { Root.RequestPickCard(idx); _draftShownHash = -1; };
             _draftCards.AddChild(btn);
         }
@@ -366,8 +406,8 @@ public sealed partial class Hud : CanvasLayer
         if (t.Level < 3)
         {
             int cost = w.TurretUpgradeCost(s);
-            var up = new Button { Text = $"Upgrade → L{t.Level + 1}\n${cost}", CustomMinimumSize = new Vector2(120, 46) };
-            up.AddThemeFontSizeOverride("font_size", 11);
+            var up = new Button { Text = $"Upgrade → L{t.Level + 1}\n${cost}", CustomMinimumSize = new Vector2(152, 60) };
+            up.AddThemeFontSizeOverride("font_size", 14);
             up.Disabled = cost < 0 || w.Credits < cost;
             up.Pressed += () => Root.RequestUpgrade(s);
             _upgradeRow.AddChild(up);
@@ -377,13 +417,13 @@ public sealed partial class Hud : CanvasLayer
             for (int f = 0; f < def.Forks.Count; f++)
             {
                 int fi = f;
-                var fb = new Button { Text = def.Forks[f].Name, CustomMinimumSize = new Vector2(120, 46) };
-                fb.AddThemeFontSizeOverride("font_size", 11);
+                var fb = new Button { Text = def.Forks[f].Name, CustomMinimumSize = new Vector2(152, 60) };
+                fb.AddThemeFontSizeOverride("font_size", 14);
                 fb.Pressed += () => Root.RequestFork(s, fi);
                 _upgradeRow.AddChild(fb);
             }
         }
-        var sell = new Button { Text = "Sell", CustomMinimumSize = new Vector2(64, 46) };
+        var sell = new Button { Text = "Sell", CustomMinimumSize = new Vector2(92, 60) };
         sell.Pressed += () => Root.RequestSell(s);
         _upgradeRow.AddChild(sell);
     }

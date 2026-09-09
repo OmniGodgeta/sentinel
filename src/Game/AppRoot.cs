@@ -55,9 +55,12 @@ public sealed partial class AppRoot : Node
     /// <summary>Reveal codex entries for every enemy that can appear in a mission (incl. carrier broods).</summary>
     private void DiscoverMissionCodex(string missionFile)
     {
-        MissionDef m;
-        try { m = Cfg.LoadMission(missionFile); }
-        catch { return; }
+        try { DiscoverMissionCodex(Cfg.LoadMission(missionFile)); }
+        catch { }
+    }
+
+    private void DiscoverMissionCodex(MissionDef m)
+    {
 
         var ids = new HashSet<string>(m.EndlessRoster);
         foreach (var w in m.Waves)
@@ -98,12 +101,10 @@ public sealed partial class AppRoot : Node
     public void ShowCodex() => SwapTo(new CodexScreen { App = this });
     public void ShowSettings() => SwapTo(new SettingsScreen { App = this });
 
-    public void StartMission(string missionFile, string missionId)
+    /// <summary>Resolve the equipped ability loadout to unlocked ids + their per-ability effect/cd multipliers.</summary>
+    private (string[] loadout, float[] eff, float[] cd) ResolveLoadout()
     {
-        RefreshProgression();
-        DiscoverMissionCodex(missionFile);
         int slots = Prog.AbilitySlots;
-        // keep only unlocked abilities, top up from the base kit, then clamp to slots
         Save.Loadout.RemoveAll(a => !Prog.IsAbilityUnlocked(a));
         foreach (var a in Progression.BaseAbilities)
             if (Save.Loadout.Count < slots && !Save.Loadout.Contains(a)) Save.Loadout.Add(a);
@@ -116,6 +117,49 @@ public sealed partial class AppRoot : Node
             eff[i] = Prog.AbilityEffectMult(loadout[i]);
             cd[i] = Prog.AbilityCdMult(loadout[i]);
         }
+        return (loadout, eff, cd);
+    }
+
+    /// <summary>This week's shared endless run with its rotating twist.</summary>
+    public void StartWeekly()
+    {
+        RefreshProgression();
+        var wk = Sentinel.Meta.WeeklyChallenge.Current();
+        if (Save.WeeklyId != wk.Id) { Save.WeeklyId = wk.Id; Save.WeeklyBest = 0; Save.Save(); }
+
+        var m = Cfg.LoadMission("res://data/missions/endless.json") with
+        {
+            Id = "weekly", Name = wk.Title, Intro = wk.MutatorBlurb, Seed = wk.Seed,
+        };
+        DiscoverMissionCodex(m);
+
+        var (loadout, eff, cd) = ResolveLoadout();
+        var mods = Prog.BuildModifiers();
+        foreach (var kv in wk.Twist.PlayerEffects) mods.ApplyEffect(kv.Key, kv.Value);
+
+        var g = new GameRoot
+        {
+            MissionOverride = m,
+            MissionPath = "res://data/missions/endless.json",
+            EquippedAbilities = loadout,
+            AbilityEffect = eff,
+            AbilityCd = cd,
+            Mods = mods,
+            Ascension = wk.Twist,
+            StartSpeed = Save.Options.Speed,
+        };
+        g.MissionEnded += o => OnMissionEnded(o, 0);
+        g.ExitToMenu += ShowMenu;
+        Save.Record("weekly").Attempts++;
+        Sentinel.Audio.MusicPlayer.Instance?.PlayGame();
+        SwapTo(g);
+    }
+
+    public void StartMission(string missionFile, string missionId)
+    {
+        RefreshProgression();
+        DiscoverMissionCodex(missionFile);
+        var (loadout, eff, cd) = ResolveLoadout();
 
         // ascension only applies to arc missions, and only up to what's unlocked
         int tier = 0;
@@ -158,6 +202,15 @@ public sealed partial class AppRoot : Node
         if (o.MissionId == "endless")
         {
             if (o.WavesCleared > Save.EndlessBest) Save.EndlessBest = o.WavesCleared;
+            Save.Save();
+            return;
+        }
+
+        if (o.MissionId == "weekly")
+        {
+            var wk = Sentinel.Meta.WeeklyChallenge.Current();
+            if (Save.WeeklyId != wk.Id) { Save.WeeklyId = wk.Id; Save.WeeklyBest = 0; }
+            if (o.WavesCleared > Save.WeeklyBest) Save.WeeklyBest = o.WavesCleared;
             Save.Save();
             return;
         }

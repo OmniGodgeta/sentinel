@@ -52,6 +52,15 @@ public sealed partial class MenuScreen : CanvasLayer
         play.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Confirm(); PlayPressed(); };
         stack.AddChild(play);
 
+        var wk = Sentinel.Meta.WeeklyChallenge.Current();
+        string wkText = $"★   WEEKLY   ·   {wk.Title}";
+        if (s.WeeklyId == wk.Id && s.WeeklyBest > 0) wkText += $"      best · wave {s.WeeklyBest}";
+        var weekly = new Button { Text = wkText, CustomMinimumSize = new Vector2(0, 84), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        weekly.AddThemeFontSizeOverride("font_size", 20);
+        weekly.AddThemeColorOverride("font_color", UiTheme.Accent2);
+        weekly.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); App.StartWeekly(); };
+        stack.AddChild(weekly);
+
         var grid = new GridContainer { Columns = 2 };
         grid.AddThemeConstantOverride("h_separation", 16);
         grid.AddThemeConstantOverride("v_separation", 16);

@@ -60,6 +60,19 @@ public sealed partial class SimTest : Node
                  $"deterministic={(eDet ? "ok" : "FAIL")}");
         allOk &= eDet && e1.waves > 3;   // must get past the 3 scripted intro waves
 
+        // weekly challenge: the endless mission under this week's seed + twist, run twice
+        var wk = Sentinel.Meta.WeeklyChallenge.Current();
+        var wkMission = cfg.LoadMission("res://data/missions/endless.json") with
+            { Id = "weekly", Seed = wk.Seed };
+        var wkMods = new Sentinel.Meta.ModifierSet();
+        foreach (var (k, v) in wk.Twist.PlayerEffects) wkMods.ApplyEffect(k, v);
+        var w1 = RunOnce(cfg, wkMission, wkMods, wk.Twist);
+        var w2 = RunOnce(cfg, wkMission, wkMods, wk.Twist);
+        bool wkDet = w1.ticks == w2.ticks && w1.waves == w2.waves && Mathf.IsEqualApprox(w1.integ, w2.integ);
+        GD.Print($"weekly: {wk.Id} \"{wk.MutatorName}\"  reached wave {w1.waves + 1}  kills {w1.kills}  " +
+                 $"deterministic={(wkDet ? "ok" : "FAIL")}");
+        allOk &= wkDet && w1.waves > 3;
+
         GD.Print(allOk ? "ALL CHECKS OK" : "SOME CHECKS FAILED");
         GetTree().Quit(allOk ? 0 : 1);
     }
@@ -68,9 +81,13 @@ public sealed partial class SimTest : Node
         long ticks, float rd, float dTur, float dHero, float dAbil, long ms);
 
     private static R RunOnce(ConfigDb cfg, string file, Sentinel.Meta.ModifierSet? mods = null)
+        => RunOnce(cfg, cfg.LoadMission(file), mods, null);
+
+    private static R RunOnce(ConfigDb cfg, Config.MissionDef mission,
+                             Sentinel.Meta.ModifierSet? mods, Config.AscensionTierDef? asc)
     {
         var w = new SimWorld(cfg);
-        w.Load(cfg.LoadMission(file), Loadout, mods);
+        w.Load(mission, Loadout, mods, null, null, asc);
         var sw = System.Diagnostics.Stopwatch.StartNew();
         long wt = 0;
         int guard = 0;

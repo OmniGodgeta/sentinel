@@ -25,6 +25,8 @@ public sealed partial class GameRoot : Node2D
     public Config.AscensionTierDef? Ascension;
 
     public int StartSpeed = 1;
+    /// <summary>When set, the sim loads this instead of reading <see cref="MissionPath"/> (weekly challenge).</summary>
+    public Config.MissionDef? MissionOverride;
     public event System.Action<MissionOutcome>? MissionEnded;
     public event System.Action? ExitToMenu;
     private bool _outcomeReported;
@@ -34,8 +36,8 @@ public sealed partial class GameRoot : Node2D
     public Vector2 WorldOrigin { get; private set; } = new(270, 360);
 
     // screen-space reserved strips (top status, bottom control panel)
-    public const float TopReserve = 96f;
-    public const float BottomReserve = 250f;
+    public const float TopReserve = 138f;
+    public const float BottomReserve = 306f;
 
     private ConfigDb _cfg = null!;
     private SimWorld _world = null!;
@@ -61,7 +63,7 @@ public sealed partial class GameRoot : Node2D
     {
         _cfg = AppRoot.Instance?.Cfg ?? ConfigDb.Load();
         _world = new SimWorld(_cfg);
-        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd, Ascension);
+        _world.Load(MissionOverride ?? _cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd, Ascension);
 
         _starfield = new Render.Starfield { Radius = _world.B.DespawnRadius };
         AddChild(_starfield);

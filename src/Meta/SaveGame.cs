@@ -52,6 +52,8 @@ public sealed class SaveGame
     public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
 
     public int EndlessBest { get; set; }
+    public string WeeklyId { get; set; } = "";                     // ISO week the WeeklyBest belongs to ("2026-W37")
+    public int WeeklyBest { get; set; }                            // deepest wave this week
     public int AscensionTier { get; set; }                         // currently selected (0 = off)
     public Dictionary<string, int> MissionBestTier { get; set; } = new();   // mission id -> highest ascension tier cleared
     public Settings Options { get; set; } = new();

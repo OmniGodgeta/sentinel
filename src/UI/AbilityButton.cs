@@ -17,7 +17,7 @@ public sealed partial class AbilityButton : Control
     public void Configure(AbilityDef def)
     {
         _def = def;
-        CustomMinimumSize = new Vector2(78, 78);
+        CustomMinimumSize = new Vector2(104, 104);
         TooltipText = def.Name;
     }
 
@@ -70,8 +70,8 @@ public sealed partial class AbilityButton : Control
             for (int i = 0; i <= steps; i++)
                 pts.Add(c + Vector2.FromAngle(start + Mathf.Tau * frac * i / steps) * r);
             DrawColoredPolygon(pts.ToArray(), new Color(0, 0, 0, 0.66f));
-            DrawString(ThemeDB.FallbackFont, c - new Vector2(10, -5), Mathf.CeilToInt(_cd).ToString(),
-                       HorizontalAlignment.Center, 20, 15, Colors.White);
+            DrawString(ThemeDB.FallbackFont, c - new Vector2(13, -6), Mathf.CeilToInt(_cd).ToString(),
+                       HorizontalAlignment.Center, 26, 20, Colors.White);
         }
         else if (_active > 0.01f)
         {
@@ -85,8 +85,8 @@ public sealed partial class AbilityButton : Control
         }
 
         // name
-        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 2), _def.Name,
-                   HorizontalAlignment.Center, sz.X, 9, new Color(1, 1, 1, 0.7f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 3), _def.Name,
+                   HorizontalAlignment.Center, sz.X, 12, new Color(1, 1, 1, 0.75f));
     }
 
     private void DrawIcon(Vector2 c, float s, Color col)
