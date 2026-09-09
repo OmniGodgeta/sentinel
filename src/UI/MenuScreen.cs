@@ -18,7 +18,7 @@ public sealed partial class MenuScreen : CanvasLayer
         var p = App.Prog;
 
         // one centred column holding wordmark + controls, in the lower ~58% of the screen
-        var wrap = new CenterContainer { AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.40f, AnchorBottom = 1f, OffsetBottom = -28 };
+        var wrap = new CenterContainer { AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.30f, AnchorBottom = 1f, OffsetBottom = -28 };
         wrap.Theme = UiTheme.Instance;
         AddChild(wrap);
 

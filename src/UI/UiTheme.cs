@@ -31,8 +31,8 @@ public static class UiTheme
         t.SetStylebox("panel", "PanelContainer", panel);
         t.SetStylebox("panel", "Panel", panel);
 
-        var normal = Flat(new Color(0.10f, 0.14f, 0.22f), new Color(Accent, 0.34f), 10, 1);
-        var hover = Flat(new Color(0.13f, 0.23f, 0.31f), new Color(Accent, 0.75f), 10, 2);
+        var normal = Flat(new Color(0.14f, 0.18f, 0.27f), new Color(Accent, 0.55f), 10, 2);
+        var hover = Flat(new Color(0.16f, 0.27f, 0.35f), new Color(Accent, 0.9f), 10, 2);
         var pressed = Flat(new Color(0.30f, 0.12f, 0.26f), new Color(Accent2, 0.85f), 10, 2);
         var disabled = Flat(new Color(0.09f, 0.10f, 0.13f), new Color(1, 1, 1, 0.05f), 10, 1);
         foreach (var (n, sb) in new[] { ("normal", normal), ("hover", hover), ("pressed", pressed), ("disabled", disabled), ("focus", hover) })
