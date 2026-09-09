@@ -31,12 +31,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android build-tools + platform
-        run: |
-          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+      # ubuntu-24.04 ships the Android SDK preinstalled at $ANDROID_SDK_ROOT with
+      # build-tools and platforms 34/35 already present — just accept licenses.
+      - name: Android SDK licenses
+        run: yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
 
       - name: Cache Godot editor + export templates
         id: cache-godot
