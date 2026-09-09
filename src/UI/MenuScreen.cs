@@ -118,7 +118,13 @@ public sealed partial class MenuScreen : CanvasLayer
 
         foreach (Node c in _loadoutRow.GetChildren()) c.QueueFree();
         int slots = p.AbilitySlots;
-        while (s.Loadout.Count < slots) s.Loadout.Add(App.Cfg.AbilityOrder[0]);
+        while (s.Loadout.Count < slots)
+        {
+            string add = App.Cfg.AbilityOrder[0];
+            foreach (var cand in App.Cfg.AbilityOrder)
+                if (!s.Loadout.Contains(cand)) { add = cand; break; }
+            s.Loadout.Add(add);
+        }
         for (int i = 0; i < slots; i++)
         {
             int slot = i;
