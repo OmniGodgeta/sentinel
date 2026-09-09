@@ -1,0 +1,12 @@
+{
+  "max_hull": 400,
+  "move_speed": 300,
+  "point_defense_dps": 16,
+  "point_defense_range": 170,
+  "volley_cooldown": 15,
+  "volley_missiles": 4,
+  "missile_damage": 55,
+  "missile_speed": 340,
+  "missile_splash_radius": 46,
+  "ability_slots": 3
+}

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "skiff",
+    "name": "Skiff",
+    "max_hp": 26,
+    "speed": 62,
+    "armor": 0,
+    "contact_damage": 18,
+    "radius": 9,
+    "bounty": 5,
+    "color": 0.02
+  },
+  {
+    "id": "hauler",
+    "name": "Hauler",
+    "max_hp": 260,
+    "speed": 26,
+    "armor": 4,
+    "contact_damage": 70,
+    "radius": 20,
+    "bounty": 22,
+    "color": 0.62
+  }
+]

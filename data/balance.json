@@ -1,0 +1,17 @@
+{
+  "planet_radius": 120,
+  "planet_integrity": 1000,
+  "turret_ring_radius": 150,
+  "hero_orbit_min": 200,
+  "hero_orbit_max": 340,
+  "spawn_radius": 760,
+  "despawn_radius": 900,
+  "turret_slots": 12,
+  "build_phase_seconds": 20,
+  "starting_credits": 320,
+  "credits_per_wave": 130,
+  "research_data_per_wave": 8,
+  "research_data_mission_clear": 60,
+  "xp_per_wave": 12,
+  "xp_mission_clear": 100
+}

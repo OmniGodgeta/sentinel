@@ -1,0 +1,38 @@
+[
+  {
+    "id": "kinetic_barrage",
+    "name": "Kinetic Barrage",
+    "kind": "barrage",
+    "cooldown": 25,
+    "duration": 3.5,
+    "damage": 10,
+    "radius": 0,
+    "arc_degrees": 70,
+    "value": 0,
+    "cast": "arc"
+  },
+  {
+    "id": "aegis_barrier",
+    "name": "Aegis Barrier",
+    "kind": "barrier",
+    "cooldown": 45,
+    "duration": 8,
+    "damage": 0,
+    "radius": 0,
+    "arc_degrees": 0,
+    "value": 450,
+    "cast": "instant"
+  },
+  {
+    "id": "overdrive",
+    "name": "Overdrive Protocol",
+    "kind": "overdrive",
+    "cooldown": 45,
+    "duration": 6,
+    "damage": 0,
+    "radius": 0,
+    "arc_degrees": 0,
+    "value": 0.4,
+    "cast": "instant"
+  }
+]

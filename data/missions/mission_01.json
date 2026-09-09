@@ -1,0 +1,61 @@
+{
+  "id": "m01",
+  "name": "Seed Vault — First Contact",
+  "seed": 20260908,
+  "waves": [
+    { "groups": [ { "enemy": "skiff", "count": 6, "interval": 0.7, "arc_center_deg": -1 } ] },
+    { "groups": [ { "enemy": "skiff", "count": 9, "interval": 0.6, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 8, "interval": 0.5, "arc_center_deg": 90, "arc_spread_deg": 120 },
+      { "enemy": "skiff", "count": 5, "interval": 0.7, "start_delay": 3, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "hauler", "count": 1, "interval": 1, "arc_center_deg": -1 },
+      { "enemy": "skiff", "count": 8, "interval": 0.6, "start_delay": 1, "arc_center_deg": -1 } ] },
+    { "groups": [ { "enemy": "skiff", "count": 14, "interval": 0.45, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "hauler", "count": 2, "interval": 2.5, "arc_center_deg": 0, "arc_spread_deg": 40 },
+      { "enemy": "skiff", "count": 10, "interval": 0.5, "start_delay": 2, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 18, "interval": 0.4, "arc_center_deg": 200, "arc_spread_deg": 90 } ] },
+    { "groups": [
+      { "enemy": "hauler", "count": 3, "interval": 2, "arc_center_deg": -1 },
+      { "enemy": "skiff", "count": 12, "interval": 0.5, "start_delay": 1, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 22, "interval": 0.35, "arc_center_deg": -1 },
+      { "enemy": "hauler", "count": 2, "interval": 3, "start_delay": 4, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 16, "interval": 0.4, "arc_center_deg": 90, "arc_spread_deg": 60 },
+      { "enemy": "skiff", "count": 16, "interval": 0.4, "start_delay": 0.2, "arc_center_deg": 270, "arc_spread_deg": 60 } ] },
+    { "groups": [
+      { "enemy": "hauler", "count": 4, "interval": 1.8, "arc_center_deg": -1 },
+      { "enemy": "skiff", "count": 14, "interval": 0.5, "start_delay": 2, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 30, "interval": 0.28, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "hauler", "count": 3, "interval": 2, "arc_center_deg": 45, "arc_spread_deg": 30 },
+      { "enemy": "hauler", "count": 3, "interval": 2, "start_delay": 1, "arc_center_deg": 225, "arc_spread_deg": 30 },
+      { "enemy": "skiff", "count": 16, "interval": 0.5, "start_delay": 3, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 26, "interval": 0.3, "arc_center_deg": 160, "arc_spread_deg": 80 },
+      { "enemy": "hauler", "count": 4, "interval": 2, "start_delay": 2, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 20, "interval": 0.3, "arc_center_deg": -1 },
+      { "enemy": "hauler", "count": 5, "interval": 1.6, "start_delay": 1, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "hauler", "count": 6, "interval": 1.5, "arc_center_deg": 0, "arc_spread_deg": 60 },
+      { "enemy": "skiff", "count": 24, "interval": 0.35, "start_delay": 2, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 40, "interval": 0.22, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 22, "interval": 0.3, "arc_center_deg": 90, "arc_spread_deg": 50 },
+      { "enemy": "hauler", "count": 6, "interval": 1.6, "start_delay": 1, "arc_center_deg": -1 },
+      { "enemy": "skiff", "count": 22, "interval": 0.3, "start_delay": 3, "arc_center_deg": 270, "arc_spread_deg": 50 } ] },
+    { "groups": [
+      { "enemy": "hauler", "count": 8, "interval": 1.3, "arc_center_deg": -1 },
+      { "enemy": "skiff", "count": 30, "interval": 0.3, "start_delay": 2, "arc_center_deg": -1 } ] },
+    { "groups": [
+      { "enemy": "skiff", "count": 36, "interval": 0.22, "arc_center_deg": -1 },
+      { "enemy": "hauler", "count": 10, "interval": 1.2, "start_delay": 3, "arc_center_deg": -1 },
+      { "enemy": "skiff", "count": 24, "interval": 0.3, "start_delay": 8, "arc_center_deg": -1 } ] }
+  ]
+}

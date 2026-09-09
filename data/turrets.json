@@ -1,0 +1,28 @@
+[
+  {
+    "id": "autocannon",
+    "name": "Autocannon",
+    "cost": 100,
+    "damage": 9,
+    "fire_interval": 0.28,
+    "range": 300,
+    "arc_degrees": 90,
+    "projectile_speed": 620,
+    "splash_radius": 0,
+    "target_mode": "first",
+    "color": 0.55
+  },
+  {
+    "id": "flak",
+    "name": "Flak Battery",
+    "cost": 140,
+    "damage": 7,
+    "fire_interval": 0.6,
+    "range": 210,
+    "arc_degrees": 70,
+    "projectile_speed": 480,
+    "splash_radius": 52,
+    "target_mode": "first",
+    "color": 0.09
+  }
+]

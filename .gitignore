@@ -1,0 +1,24 @@
+# Godot 4+
+.godot/
+/android/
+export_presets.cfg.local
+
+# .NET
+.mono/
+bin/
+obj/
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+/build/
+/dist/
+*.apk
+*.aab
+
+# Scratch
+/scratch/
+telemetry/*.jsonl

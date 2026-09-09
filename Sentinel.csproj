@@ -1,0 +1,14 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <!-- Godot 4.7.2 mono export templates bundle the .NET 9 runtime; the TFM must match. -->
+    <TargetFramework>net9.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <RootNamespace>Sentinel</RootNamespace>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Godot/game code uses public fields on nodes idiomatically; silence the
+         style analyzers that fight that, keep the correctness ones. -->
+    <NoWarn>CA1051;CA1805;CA1822;CA1725;CA1305;CA1002;CA2227;CA1819</NoWarn>
+  </PropertyGroup>
+</Project>
