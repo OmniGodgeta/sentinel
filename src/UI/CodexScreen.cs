@@ -46,16 +46,33 @@ public sealed partial class CodexScreen : CanvasLayer
         list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(list);
 
+        var seen = new HashSet<string>(App.Save.CodexSeen);
+        var all = Sorted(App.Cfg.AllCodex);
+
         string cat = "";
-        foreach (var e in Sorted(App.Cfg.AllCodex))
+        int hiddenInCat = 0;
+        void FlushHidden()
+        {
+            if (hiddenInCat == 0) return;
+            var s = new Label { Text = $"   {hiddenInCat} more — undiscovered", Modulate = new Color(1, 1, 1, 0.35f) };
+            s.AddThemeFontSizeOverride("font_size", 12);
+            list.AddChild(s);
+            hiddenInCat = 0;
+        }
+
+        foreach (var e in all)
         {
             if (e.Category != cat)
             {
+                FlushHidden();
                 cat = e.Category;
                 var h = new Label { Text = "— " + cat.ToUpperInvariant() + " —", Modulate = new Color(1, 1, 1, 0.6f) };
                 h.AddThemeFontSizeOverride("font_size", 13);
                 list.AddChild(h);
             }
+
+            if (!seen.Contains(e.Id)) { hiddenInCat++; continue; }
+
             var panel = new PanelContainer();
             var col = new VBoxContainer();
             col.AddThemeConstantOverride("separation", 2);
@@ -68,6 +85,11 @@ public sealed partial class CodexScreen : CanvasLayer
             col.AddChild(tx);
             list.AddChild(panel);
         }
+        FlushHidden();
+
+        int total = all.Count, found = 0;
+        foreach (var e in all) if (seen.Contains(e.Id)) found++;
+        title.Text = $"  CODEX   ·   {found}/{total}";
     }
 
     private static List<Config.CodexEntry> Sorted(IReadOnlyList<Config.CodexEntry> src)

@@ -37,6 +37,17 @@ public sealed class SaveGame
     // level-up upgrade cards picked (Planet-Defense-TD style meta progression)
     public List<string> LevelCards { get; set; } = new();
 
+    // codex entries revealed by first-hand encounter (enemies seen, kit unlocked, lore earned)
+    public List<string> CodexSeen { get; set; } = new();
+
+    /// <summary>Reveal a codex entry. Returns true if it was newly revealed.</summary>
+    public bool Discover(string codexId)
+    {
+        if (string.IsNullOrEmpty(codexId) || CodexSeen.Contains(codexId)) return false;
+        CodexSeen.Add(codexId);
+        return true;
+    }
+
     // equipped ability loadout (ids). Length tracks hero-level slot count.
     public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
 

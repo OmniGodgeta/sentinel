@@ -668,7 +668,8 @@ public sealed partial class SimWorld
 
     internal int SpawnProjectile(byte kind, Vector2 pos, Vector2 vel, float dmg, float splash,
                                  EnemyHandle target, byte src, float life = 4f,
-                                 float armorPen = 0f, float shieldMult = 1f, int pierce = 0, float slow = 0f)
+                                 float armorPen = 0f, float shieldMult = 1f, int pierce = 0, float slow = 0f,
+                                 float speedMax = 0f, float accel = 0f, float agility = 0f)
     {
         int idx;
         if (_freeProjectiles.Count > 0) idx = _freeProjectiles.Pop();
@@ -689,6 +690,10 @@ public sealed partial class SimWorld
         p.Target = target;
         p.SourceTurret = src;
         p.Life = life;
+        p.Age = 0f;
+        p.SpeedMax = speedMax;
+        p.Accel = accel;
+        p.Agility = agility;
         return idx;
     }
 

@@ -18,25 +18,44 @@ public sealed partial class SimWorld
             if (!p.Alive) continue;
 
             p.Life -= dt;
+            p.Age += dt;
             if (p.Life <= 0f) { DespawnProjectile(i); continue; }
 
-            // homing (hero missiles + homing turrets)
+            // homing (hero missiles + planet battery + homing turrets)
             if (p.Target.Index >= 0)
             {
                 if (Resolve(in p.Target, out int ti))
                 {
-                    Vector2 desired = (Enemies[ti].Pos - p.Pos).Normalized();
+                    // motor: ramp toward cruise speed (guided missiles only)
                     float speed = p.Vel.Length();
+                    if (p.SpeedMax > 0f)
+                        speed = Mathf.MoveToward(speed, p.SpeedMax, p.Accel * dt);
+                    speed = Mathf.Max(speed, 1f);
+
+                    // proportional lead: steer at where the target will be, not where it is
+                    Vector2 desired = InterceptDir(Enemies[ti].Pos - p.Pos, Enemies[ti].Vel, speed);
+
+                    float agility = p.Agility > 0f ? p.Agility : MissileTurnRate;
+                    // ease the turn rate in over the first third of a second so a
+                    // salvo arcs out and reads as a salvo instead of snapping to target
+                    agility *= Mathf.Clamp(p.Age / 0.35f, 0.2f, 1f);
+
                     float cur = p.Vel.Angle();
                     float turn = Mathf.Clamp(Mathf.AngleDifference(cur, desired.Angle()),
-                                             -MissileTurnRate * dt, MissileTurnRate * dt);
+                                             -agility * dt, agility * dt);
                     p.Vel = Vector2.FromAngle(cur + turn) * speed;
                 }
                 else if (!p.Target.IsNone)
                 {
-                    int nn = ClosestEnemyTo(p.Pos, 400f);
+                    int nn = ClosestEnemyTo(p.Pos, 460f);
                     p.Target = nn >= 0 ? HandleOf(nn) : EnemyHandle.None;
                 }
+            }
+            else if (p.SpeedMax > 0f && p.Vel.LengthSquared() > 1e-4f)
+            {
+                // guided round with no lock (volley overflow) — still light the motor, hold heading
+                float speed = Mathf.MoveToward(p.Vel.Length(), p.SpeedMax, p.Accel * dt);
+                p.Vel = p.Vel.Normalized() * speed;
             }
 
             Vector2 prev = p.Pos;
@@ -60,6 +79,42 @@ public sealed partial class SimWorld
             int hit = SweepEnemy(prev, p.Pos, p.Kind);
             if (hit >= 0) ImpactProjectile(i, hit);
         }
+    }
+
+    /// <summary>
+    /// Unit direction toward the intercept point, assuming both the missile (at
+    /// <paramref name="missileSpeed"/>) and the target (moving at <paramref name="targetVel"/>)
+    /// hold course. Falls back to pure pursuit when there is no real solution.
+    /// Pure float math — deterministic, no RNG.
+    /// </summary>
+    private static Vector2 InterceptDir(Vector2 relPos, Vector2 targetVel, float missileSpeed)
+    {
+        // solve |relPos + targetVel * t| = missileSpeed * t  for the smallest t > 0
+        float a = targetVel.LengthSquared() - missileSpeed * missileSpeed;
+        float b = 2f * relPos.Dot(targetVel);
+        float c = relPos.LengthSquared();
+        float t;
+
+        if (Mathf.Abs(a) < 1e-3f)
+        {
+            t = Mathf.Abs(b) > 1e-3f ? -c / b : 0f;
+        }
+        else
+        {
+            float disc = b * b - 4f * a * c;
+            if (disc < 0f) return Safe(relPos);
+            float sq = Mathf.Sqrt(disc);
+            float t1 = (-b + sq) / (2f * a);
+            float t2 = (-b - sq) / (2f * a);
+            t = float.MaxValue;
+            if (t1 > 0f && t1 < t) t = t1;
+            if (t2 > 0f && t2 < t) t = t2;
+            if (t == float.MaxValue) return Safe(relPos);
+        }
+
+        return Safe(relPos + targetVel * t);
+
+        static Vector2 Safe(Vector2 v) => v.LengthSquared() > 1e-6f ? v.Normalized() : Vector2.Up;
     }
 
     private int SweepEnemy(Vector2 a, Vector2 b, byte kind)

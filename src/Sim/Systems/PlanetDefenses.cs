@@ -39,10 +39,12 @@ public sealed partial class SimWorld
             if (!Enemies[ti].Alive) continue;
             Vector2 dir = (Enemies[ti].Pos).Normalized();
             if (dir == Vector2.Zero) dir = Vector2.Up;
-            dir = dir.Rotated(_defRng.NextFloat(-0.25f, 0.25f));
+            dir = dir.Rotated(_defRng.NextFloat(-0.4f, 0.4f));
             Vector2 launch = dir * (B.PlanetRadius + 6f);
-            SpawnProjectile(3, launch, dir * B.BatteryMissileSpeed, dmg, splash,
-                            HandleOf(ti), src: 255, life: 6f);
+            float ms = B.BatteryMissileSpeed;
+            SpawnProjectile(3, launch, dir * (ms * 0.45f), dmg, splash,
+                            HandleOf(ti), src: 255, life: 6f,
+                            speedMax: ms * 1.25f, accel: ms * 1.9f, agility: 6.5f);
         }
         Events.Push(SimEventKind.VolleyLaunched, Vector2.Zero, salvo);
         _batteryCd = B.BatteryInterval / Mathf.Max(0.2f, Mods.BatteryRateMult);

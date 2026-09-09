@@ -33,7 +33,45 @@ public sealed partial class AppRoot : Node
         ShowMenu();
     }
 
-    public void RefreshProgression() => Prog = new Progression(Save, Research, Cfg);
+    public void RefreshProgression()
+    {
+        Prog = new Progression(Save, Research, Cfg);
+        SyncCodex();
+    }
+
+    /// <summary>Reveal codex entries for the premise, and for whatever kit is now unlocked.</summary>
+    private void SyncCodex()
+    {
+        bool any = false;
+        foreach (var e in Cfg.AllCodex)
+            if (e.Category == "world") any |= Save.Discover(e.Id);
+        foreach (var id in Cfg.TurretOrder)
+            if (Prog.IsTurretUnlocked(id)) any |= Save.Discover(Cfg.Turret(id).CodexId);
+        foreach (var id in Cfg.AbilityOrder)
+            if (Prog.IsAbilityUnlocked(id)) any |= Save.Discover(Cfg.Ability(id).CodexId);
+        if (any) Save.Save();
+    }
+
+    /// <summary>Reveal codex entries for every enemy that can appear in a mission (incl. carrier broods).</summary>
+    private void DiscoverMissionCodex(string missionFile)
+    {
+        MissionDef m;
+        try { m = Cfg.LoadMission(missionFile); }
+        catch { return; }
+
+        var ids = new HashSet<string>(m.EndlessRoster);
+        foreach (var w in m.Waves)
+            foreach (var g in w.Groups)
+                ids.Add(g.Enemy);
+        foreach (var id in new List<string>(ids))
+            if (Cfg.HasEnemy(id) && Cfg.Enemy(id).SpawnEnemy is { Length: > 0 } brood)
+                ids.Add(brood);
+
+        bool any = false;
+        foreach (var id in ids)
+            if (Cfg.HasEnemy(id)) any |= Save.Discover(Cfg.Enemy(id).CodexId);
+        if (any) Save.Save();
+    }
 
     public override void _Notification(int what)
     {
@@ -63,6 +101,7 @@ public sealed partial class AppRoot : Node
     public void StartMission(string missionFile, string missionId)
     {
         RefreshProgression();
+        DiscoverMissionCodex(missionFile);
         int slots = Prog.AbilitySlots;
         // keep only unlocked abilities, top up from the base kit, then clamp to slots
         Save.Loadout.RemoveAll(a => !Prog.IsAbilityUnlocked(a));

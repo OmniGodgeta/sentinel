@@ -139,9 +139,14 @@ public sealed partial class SimWorld
         if (dir == Vector2.Zero) dir = Vector2.FromAngle(Turrets[slot].Angle);
 
         EnemyHandle homing = def.Homing ? HandleOf(enemyIdx) : EnemyHandle.None;
-        SpawnProjectile(0, turretPos, dir * def.ProjectileSpeed, dmg, st.Splash, homing, (byte)slot,
-                        life: 3f, armorPen: st.ArmorPen, shieldMult: st.ShieldMult, pierce: st.Pierce,
-                        slow: def.SlowOnHit);
+        float ps = def.ProjectileSpeed;
+        // homing turret rounds (missile silo) get the guided flight model; dumb rounds keep their flat trajectory
+        SpawnProjectile(0, turretPos, dir * (def.Homing ? ps * 0.6f : ps), dmg, st.Splash, homing, (byte)slot,
+                        life: def.Homing ? 3.6f : 3f, armorPen: st.ArmorPen, shieldMult: st.ShieldMult, pierce: st.Pierce,
+                        slow: def.SlowOnHit,
+                        speedMax: def.Homing ? ps * 1.15f : 0f,
+                        accel: def.Homing ? ps * 2.2f : 0f,
+                        agility: def.Homing ? 5.5f : 0f);
         Events.PushLine(SimEventKind.TurretFired, turretPos, aimPos, def.SplashRadius > 0f ? 1f : 0f, slot);
     }
 

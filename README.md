@@ -58,7 +58,7 @@ tools/          gen_missions.py, gen_research.py
 godot --path . scenes/Main.tscn                        # run
 godot --headless scenes/SimTest.tscn --quit            # determinism + balance table
 dotnet build Sentinel.csproj
-godot --headless --export-debug "Android" build/sentinel-debug.apk
+godot --headless --export-debug "Android" build/beyond-debug.apk
 ```
 
 Requires Godot 4.7.2 **mono**, .NET 9 SDK, Android SDK + JDK (paths in Godot

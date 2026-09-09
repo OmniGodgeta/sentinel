@@ -64,9 +64,14 @@ public struct Projectile
     public float ShieldMult;
     public int PierceLeft;
     public float Life;
+    public float Age;           // seconds since launch — drives the guidance ramp and the render trail
     public EnemyHandle Target;
     public byte SourceTurret;   // 255 = hero, 254 = enemy
     public float Slow;          // graviton projector: applies slow on hit (0 = none)
+    // guided-missile flight model (0 = legacy constant-speed dumb projectile)
+    public float SpeedMax;      // cruise speed the motor accelerates toward
+    public float Accel;         // units/s^2 while below SpeedMax
+    public float Agility;       // turn rate, rad/s (0 = use the default)
 }
 
 public struct Turret

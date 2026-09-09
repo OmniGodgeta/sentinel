@@ -87,9 +87,11 @@ public sealed partial class SimWorld
                 dir = (aim - h.Pos).Normalized();
                 if (dir == Vector2.Zero) dir = Vector2.Down;
             }
-            // small fan so a volley reads as a salvo, not one dot
-            dir = dir.Rotated(Rng.NextFloat(-0.12f, 0.12f));
-            SpawnProjectile(kind: 1, h.Pos, dir * speed, dmg, splash, tgt, src: 255, life: 5f);
+            // wider fan + slow launch so the volley blooms outward before the
+            // motors light and the missiles curve back onto their marks
+            dir = dir.Rotated(Rng.NextFloat(-0.35f, 0.35f));
+            SpawnProjectile(kind: 1, h.Pos, dir * (speed * 0.5f), dmg, splash, tgt, src: 255, life: 5f,
+                            speedMax: speed * 1.35f, accel: speed * 2.4f, agility: 8f);
         }
 
         float cd = Mathf.Max(11f, Cfg.Hero.VolleyCooldown + Mods.HeroMissileCdAdd);

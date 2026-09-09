@@ -16,7 +16,7 @@ public sealed partial class SimRenderer : Node2D
     public SimWorld World = null!;
     public int SelectedSlot = -1;
 
-    private enum FxKind : byte { Muzzle, Tracer, Spark, Boom, Shock, Lightning, Text, CastRing, Warp }
+    private enum FxKind : byte { Muzzle, Tracer, Spark, Boom, Shock, Lightning, Text, CastRing, Warp, Smoke }
     private struct Fx
     {
         public FxKind Kind;
@@ -31,6 +31,7 @@ public sealed partial class SimRenderer : Node2D
     private Vector2 _shakeOffset;
     private float _shake;
     private Vector2 _lastHeroPos;
+    private float _puffTimer;
 
     private static readonly Dictionary<string, Color> EnemyTint = new()
     {
@@ -139,6 +140,25 @@ public sealed partial class SimRenderer : Node2D
             if (f.Age >= f.Life) _fx.RemoveAt(i); else _fx[i] = f;
         }
         _beams.Clear();
+
+        // exhaust trails for guided missiles — render-only, sampled off the sim state
+        _puffTimer += dt;
+        if (_puffTimer >= 0.03f && !Root.IsPaused && _fx.Count < 900)
+        {
+            _puffTimer = 0f;
+            var pv = World.ProjectileView;
+            for (int i = 0; i < pv.Length; i++)
+            {
+                ref readonly var p = ref pv[i];
+                if (!p.Alive || p.Age < 0.04f) continue;
+                bool guided = p.Kind == 1 || p.Kind == 3 || (p.Kind == 0 && p.Target.Index >= 0);
+                if (!guided) continue;
+                Vector2 back = p.Vel.LengthSquared() > 1f ? p.Vel.Normalized() : Vector2.Right;
+                Color c = p.Kind == 1 ? new Color(1f, 0.72f, 0.42f) : new Color(0.72f, 0.9f, 1f);
+                Push(FxKind.Smoke, p.Pos - back * 5f, Vector2.Zero,
+                     2.4f + GD.Randf() * 2.2f, 0.45f + GD.Randf() * 0.4f, c);
+            }
+        }
 
         if (_shake > 0.05f)
         {
@@ -321,7 +341,9 @@ public sealed partial class SimRenderer : Node2D
 
             if (p.Kind == 1) // hero missile
             {
-                DrawLine(p.Pos, p.Pos - back * 24f, new Color(1f, 0.55f, 0.25f, 0.5f), 4f);
+                float fl = 16f + Mathf.Min(p.Vel.Length() * 0.05f, 26f);
+                DrawLine(p.Pos, p.Pos - back * fl, new Color(1f, 0.55f, 0.25f, 0.5f), 5f);
+                DrawLine(p.Pos, p.Pos - back * (fl * 0.5f), new Color(1f, 0.9f, 0.6f, 0.85f), 2.5f);
                 Blit(missile, p.Pos, rot, 20f, new Color(1f, 0.95f, 0.8f));
             }
             else if (p.Kind == 2) // enemy shell
@@ -331,7 +353,9 @@ public sealed partial class SimRenderer : Node2D
             }
             else if (p.Kind == 3 || p.Target.Index >= 0) // planet-battery missile (homing turret shot)
             {
-                DrawLine(p.Pos, p.Pos - back * 20f, new Color(0.7f, 0.9f, 1f, 0.5f), 3f);
+                float fl = 14f + Mathf.Min(p.Vel.Length() * 0.045f, 22f);
+                DrawLine(p.Pos, p.Pos - back * fl, new Color(0.7f, 0.9f, 1f, 0.5f), 3.5f);
+                DrawLine(p.Pos, p.Pos - back * (fl * 0.5f), new Color(0.95f, 0.99f, 1f, 0.8f), 2f);
                 Blit(missile, p.Pos, rot, 16f, new Color(0.85f, 0.95f, 1f));
             }
             else // turret bolt
@@ -442,6 +466,12 @@ public sealed partial class SimRenderer : Node2D
     {
         if (back)
         {
+            foreach (var f in _fx)
+            {
+                if (f.Kind != FxKind.Smoke) continue;
+                float sk = Mathf.Clamp(f.Age / f.Life, 0f, 1f);
+                DrawCircle(f.A, f.R * (0.6f + sk * 1.9f), new Color(f.Col, (1f - sk) * 0.28f));
+            }
             foreach (var (a, b, w, c) in _beams)
             {
                 DrawLine(a, b, new Color(c, 0.25f), w * 2.5f);
