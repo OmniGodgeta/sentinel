@@ -47,12 +47,16 @@ public sealed partial class MenuBackground : Node2D
     public override void _Draw()
     {
         var vp = GetViewportRect().Size;
-        DrawRect(new Rect2(Vector2.Zero, vp), new Color(0.015f, 0.02f, 0.04f));
+        DrawRect(new Rect2(Vector2.Zero, vp), new Color(0.015f, 0.022f, 0.045f));
 
+        // two nebula fields echoing the app icon: teal to the left, magenta to the right
+        var teal = new Color(0.16f, 0.55f, 0.60f);
+        var magenta = new Color(0.55f, 0.16f, 0.42f);
         for (int i = 0; i < _dustF.Length; i++)
         {
             float pulse = (0.012f + 0.008f * Mathf.Sin(_t * 0.3f + i)) * NebulaAlpha;
-            DrawCircle(_dustF[i] * vp, vp.X * 0.20f, new Color(0.26f, 0.30f, 0.52f, pulse));
+            var tint = _dustF[i].X < 0.5f ? teal : magenta;
+            DrawCircle(_dustF[i] * vp, vp.X * 0.22f, new Color(tint, pulse));
         }
         for (int i = 0; i < _starF.Length; i++)
         {

@@ -26,17 +26,17 @@ public sealed partial class LevelUpScreen : CanvasLayer
         wrap.Theme = UiTheme.Instance;
         AddChild(wrap);
 
-        var root = new VBoxContainer { CustomMinimumSize = new Vector2(440, 0) };
-        root.AddThemeConstantOverride("separation", 14);
+        var root = new VBoxContainer { CustomMinimumSize = new Vector2(560, 0) };
+        root.AddThemeConstantOverride("separation", 16);
         wrap.AddChild(root);
 
         var title = new Label { Text = "COMMANDER PROMOTION", HorizontalAlignment = HorizontalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 26);
-        title.AddThemeColorOverride("font_color", new Color(0.6f, 1f, 0.75f));
+        title.AddThemeFontSizeOverride("font_size", 30);
+        title.AddThemeColorOverride("font_color", UiTheme.Accent);
         root.AddChild(title);
 
         _header = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.7f) };
-        _header.AddThemeFontSizeOverride("font_size", 13);
+        _header.AddThemeFontSizeOverride("font_size", 15);
         root.AddChild(_header);
 
         _cards = new VBoxContainer();
@@ -66,15 +66,16 @@ public sealed partial class LevelUpScreen : CanvasLayer
             panel.AddChild(col);
 
             var cat = new Label { Text = card.Cat.ToUpperInvariant(), Modulate = CatColor(card.Cat) };
-            cat.AddThemeFontSizeOverride("font_size", 10);
+            cat.AddThemeFontSizeOverride("font_size", 12);
             col.AddChild(cat);
             var nm = new Label { Text = card.Name };
-            nm.AddThemeFontSizeOverride("font_size", 15);
+            nm.AddThemeFontSizeOverride("font_size", 18);
             col.AddChild(nm);
             var tx = new Label { Text = card.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.72f) };
-            tx.AddThemeFontSizeOverride("font_size", 11);
+            tx.AddThemeFontSizeOverride("font_size", 13);
             col.AddChild(tx);
-            var btn = new Button { Text = "Take", CustomMinimumSize = new Vector2(0, 34) };
+            var btn = new Button { Text = "Take", CustomMinimumSize = new Vector2(0, 58) };
+            btn.AddThemeFontSizeOverride("font_size", 20);
             string id = card.Id;
             btn.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Play("card_pick", -2f); App.Prog.PickLevelCard(id); Rebuild(); };
             col.AddChild(btn);

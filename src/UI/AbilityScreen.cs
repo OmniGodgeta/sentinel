@@ -25,30 +25,31 @@ public sealed partial class AbilityScreen : CanvasLayer
         var root = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetLeft = -235, OffsetRight = 235, OffsetTop = 14, OffsetBottom = -12,
+            OffsetLeft = -270, OffsetRight = 270, OffsetTop = 16, OffsetBottom = -12,
         };
-        root.AddThemeConstantOverride("separation", 8);
+        root.AddThemeConstantOverride("separation", 10);
         root.Theme = UiTheme.Instance;
         AddChild(root);
 
         var head = new HBoxContainer();
+        head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(90, 34) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
-        var title = new Label { Text = "  SENTINEL PROTOCOLS" };
-        title.AddThemeFontSizeOverride("font_size", 20);
+        var title = new Label { Text = "  PROTOCOLS", VerticalAlignment = VerticalAlignment.Center };
+        title.AddThemeFontSizeOverride("font_size", 24);
         head.AddChild(title);
 
         _wallet = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _wallet.AddThemeFontSizeOverride("font_size", 13);
+        _wallet.AddThemeFontSizeOverride("font_size", 15);
         root.AddChild(_wallet);
 
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        _list = new VBoxContainer { CustomMinimumSize = new Vector2(465, 0) };
-        _list.AddThemeConstantOverride("separation", 5);
+        _list = new VBoxContainer { CustomMinimumSize = new Vector2(530, 0) };
+        _list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(_list);
 
         Rebuild();
@@ -79,18 +80,18 @@ public sealed partial class AbilityScreen : CanvasLayer
 
             var top = new HBoxContainer();
             col.AddChild(top);
-            var nm = new Label { Text = $"{def.Name}   ·  L{lvl}/20   ({def.Role})", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-            nm.AddThemeFontSizeOverride("font_size", 13);
+            var nm = new Label { Text = $"{def.Name}   ·  L{lvl}/20   ({def.Role})", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center };
+            nm.AddThemeFontSizeOverride("font_size", 16);
             top.AddChild(nm);
 
             var eq = new Button
             {
                 Text = isEquipped ? "equipped" : "equip",
                 ToggleMode = true, ButtonPressed = isEquipped,
-                CustomMinimumSize = new Vector2(88, 30),
+                CustomMinimumSize = new Vector2(128, 52),
                 Disabled = !isEquipped && s.Loadout.Count >= slots,
             };
-            eq.AddThemeFontSizeOverride("font_size", 11);
+            eq.AddThemeFontSizeOverride("font_size", 14);
             eq.Pressed += () => ToggleEquip(id, slots);
             top.AddChild(eq);
 
@@ -99,10 +100,10 @@ public sealed partial class AbilityScreen : CanvasLayer
             {
                 Text = cost < 0 ? "max level" : $"level up → L{lvl + 1}   ({cost} Cores)",
                 Disabled = cost < 0 || s.SentinelCores < cost,
-                CustomMinimumSize = new Vector2(0, 30),
+                CustomMinimumSize = new Vector2(0, 52),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
-            lvlBtn.AddThemeFontSizeOverride("font_size", 11);
+            lvlBtn.AddThemeFontSizeOverride("font_size", 14);
             lvlBtn.Pressed += () => { if (p.LevelAbility(id)) Rebuild(); };
             col.AddChild(lvlBtn);
 
@@ -114,7 +115,7 @@ public sealed partial class AbilityScreen : CanvasLayer
                 var br = new HBoxContainer();
                 col.AddChild(br);
                 var lbl = new Label { Text = $"  L{ms}:", VerticalAlignment = VerticalAlignment.Center };
-                lbl.AddThemeFontSizeOverride("font_size", 10);
+                lbl.AddThemeFontSizeOverride("font_size", 13);
                 br.AddChild(lbl);
                 foreach (var opt in new[] { "Potency", "Tempo" })
                 {
@@ -123,9 +124,10 @@ public sealed partial class AbilityScreen : CanvasLayer
                     {
                         Text = opt + (opt == "Potency" ? " +effect" : " −cooldown"),
                         ToggleMode = true, ButtonPressed = choice == o,
-                        CustomMinimumSize = new Vector2(150, 26),
+                        CustomMinimumSize = new Vector2(230, 48),
+                        SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                     };
-                    ob.AddThemeFontSizeOverride("font_size", 10);
+                    ob.AddThemeFontSizeOverride("font_size", 13);
                     ob.Pressed += () => { p.SetAbilityBranch(id, ms, o); Rebuild(); };
                     br.AddChild(ob);
                 }

@@ -93,24 +93,24 @@ jobs:
         run: |
           set -e
           mkdir -p build
-          ~/godot/godot --headless --path . --export-debug "Android" build/sentinel-debug.apk
-          test -f build/sentinel-debug.apk
+          ~/godot/godot --headless --path . --export-debug "Android" build/beyond-debug.apk
+          test -f build/beyond-debug.apk
           ls -la build/
 
       - name: Version stamp
         id: ver
-        run: echo "name=sentinel-$(date +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        run: echo "name=beyond-$(date +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.ver.outputs.name }}
-          path: build/sentinel-debug.apk
+          path: build/beyond-debug.apk
           if-no-files-found: error
 
       - name: Attach APK to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/sentinel-debug.apk
+          files: build/beyond-debug.apk
           fail_on_unmatched_files: true

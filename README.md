@@ -1,6 +1,7 @@
-# Sentinel
+# Beyond
 
-Radial tower defense for Android. **Zero ads, zero microtransactions, 100% free** —
+Radial tower defense for Android — hold the line over Earth. **Zero ads, zero
+microtransactions, 100% free** —
 a hard architectural rule, not a launch decision (`docs/design-spec.md` §9,
 `docs/deviations.md`).
 

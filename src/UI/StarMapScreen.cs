@@ -39,23 +39,24 @@ public sealed partial class StarMapScreen : CanvasLayer
         }
         _nodes.Add(("endless", "res://data/missions/endless.json", "◈ ENDLESS", new Vector2(0.85f, 0.08f)));
 
-        var top = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 12, OffsetBottom = 52 };
+        var top = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 14, OffsetBottom = 78 };
         top.Theme = UiTheme.Instance;
         AddChild(top);
-        var back = new Button { Text = "‹ Back", Position = new Vector2(14, 0), CustomMinimumSize = new Vector2(90, 34) };
+        var back = new Button { Text = "‹ Back", Position = new Vector2(16, 0), CustomMinimumSize = new Vector2(150, 60) };
         back.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Back(); App.ShowMenu(); };
         top.AddChild(back);
-        var hdr = new Label { Text = App.Cfg.Arc.Name, Position = new Vector2(116, 6) };
-        hdr.AddThemeFontSizeOverride("font_size", 18);
+        var hdr = new Label { Text = App.Cfg.Arc.Name, Position = new Vector2(186, 16) };
+        hdr.AddThemeFontSizeOverride("font_size", 20);
         top.AddChild(hdr);
 
-        _ascRow = new HBoxContainer { AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetTop = 56, OffsetLeft = -160, OffsetRight = 160, Alignment = BoxContainer.AlignmentMode.Center };
+        _ascRow = new HBoxContainer { AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetTop = 90, OffsetLeft = -220, OffsetRight = 220, Alignment = BoxContainer.AlignmentMode.Center };
         _ascRow.Theme = UiTheme.Instance;
+        _ascRow.AddThemeConstantOverride("separation", 10);
         AddChild(_ascRow);
 
         _canvas = new MapCanvas { Screen = this };
         _canvas.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        _canvas.OffsetTop = 96;
+        _canvas.OffsetTop = 150;
         AddChild(_canvas);
 
         RebuildAsc();
@@ -69,14 +70,16 @@ public sealed partial class StarMapScreen : CanvasLayer
         int max = p.AscensionMax;
         if (max <= 0) return;
         if (s.AscensionTier > max) s.AscensionTier = max;
-        var minus = new Button { Text = "−", CustomMinimumSize = new Vector2(34, 28) };
+        var minus = new Button { Text = "−", CustomMinimumSize = new Vector2(64, 56) };
+        minus.AddThemeFontSizeOverride("font_size", 24);
         minus.Pressed += () => { s.AscensionTier = Mathf.Max(0, s.AscensionTier - 1); s.Save(); RebuildAsc(); };
         _ascRow.AddChild(minus);
         string nm = s.AscensionTier == 0 ? "off" : App.Cfg.Ascension.Find(a => a.Tier == s.AscensionTier)?.Name ?? "";
         var lbl = new Label { Text = $"  Ascension {s.AscensionTier}/{max} · {nm}  " };
-        lbl.AddThemeFontSizeOverride("font_size", 11);
+        lbl.AddThemeFontSizeOverride("font_size", 14);
         _ascRow.AddChild(lbl);
-        var plus = new Button { Text = "+", CustomMinimumSize = new Vector2(34, 28) };
+        var plus = new Button { Text = "+", CustomMinimumSize = new Vector2(64, 56) };
+        plus.AddThemeFontSizeOverride("font_size", 24);
         plus.Pressed += () => { s.AscensionTier = Mathf.Min(max, s.AscensionTier + 1); s.Save(); RebuildAsc(); };
         _ascRow.AddChild(plus);
     }
@@ -106,7 +109,7 @@ public sealed partial class StarMapScreen : CanvasLayer
             var ids = s.ArcIds();
             foreach (var (id, file, _, f) in s._nodes)
             {
-                if (NodePos(f).DistanceTo(p) > 34f) continue;
+                if (NodePos(f).DistanceTo(p) > 58f) continue;
                 bool open = id == "endless" || save.IsUnlocked(id, ids);
                 if (!open) { Sentinel.Audio.AudioManager.Instance?.Play("ui_error", -6f); return; }
                 Sentinel.Audio.AudioManager.Instance?.Confirm();
@@ -162,36 +165,36 @@ public sealed partial class StarMapScreen : CanvasLayer
                 bool cleared = rec?.Cleared ?? (save.EndlessBest > 0);
                 bool isNext = idx == nextIdx;
 
-                float baseR = endless ? 16f : idx == s._nodes.Count - 2 ? 15f : 11f; // boss node bigger
+                float baseR = endless ? 24f : idx == s._nodes.Count - 2 ? 23f : 18f; // boss node bigger
                 var col = !open ? new Color(0.4f, 0.45f, 0.55f)
-                        : cleared ? new Color(0.55f, 0.9f, 1f)
-                        : new Color(1f, 0.92f, 0.6f);
+                        : cleared ? new Color(0.4f, 0.86f, 0.92f)      // icon teal
+                        : new Color(0.95f, 0.55f, 0.78f);             // icon magenta = "next / unplayed"
 
                 if (open)
                 {
-                    DrawCircle(pos, baseR * 2.6f, new Color(col, 0.10f));
-                    DrawCircle(pos, baseR * 1.6f, new Color(col, 0.16f));
+                    DrawCircle(pos, baseR * 2.8f, new Color(col, 0.10f));
+                    DrawCircle(pos, baseR * 1.7f, new Color(col, 0.16f));
                 }
                 // 4-point star
                 DrawStar(pos, baseR, col, open ? 1f : 0.5f);
 
                 if (isNext && open)
                 {
-                    float pr = baseR + 8f + 3f * Mathf.Sin(_t * 4f);
-                    DrawArc(pos, pr, 0, Mathf.Tau, 28, new Color(1f, 0.95f, 0.5f), 2f);
+                    float pr = baseR + 12f + 4f * Mathf.Sin(_t * 4f);
+                    DrawArc(pos, pr, 0, Mathf.Tau, 32, new Color(0.95f, 0.35f, 0.62f), 3f);
                 }
                 if (!open)
-                    DrawString(ThemeDB.FallbackFont, pos + new Vector2(-6, 5), "🔒", HorizontalAlignment.Center, 12, 12);
+                    DrawString(ThemeDB.FallbackFont, pos + new Vector2(-8, 7), "🔒", HorizontalAlignment.Center, 18, 18);
 
                 // label
                 string lbl = open ? name.ToUpperInvariant() : $"LEVEL {idx + 1}";
-                DrawString(ThemeDB.FallbackFont, pos + new Vector2(-90, baseR + 18f), lbl,
-                           HorizontalAlignment.Center, 200, 12, new Color(1, 1, 1, open ? 0.85f : 0.4f));
+                DrawString(ThemeDB.FallbackFont, pos + new Vector2(-120, baseR + 24f), lbl,
+                           HorizontalAlignment.Center, 240, 16, new Color(1, 1, 1, open ? 0.9f : 0.4f));
                 if (cleared && rec != null && rec.Stars > 0)
                 {
                     string st = new string('★', rec.Stars) + new string('☆', 3 - rec.Stars);
-                    DrawString(ThemeDB.FallbackFont, pos + new Vector2(-40, baseR + 32f), st,
-                               HorizontalAlignment.Center, 80, 12, new Color(1f, 0.85f, 0.4f));
+                    DrawString(ThemeDB.FallbackFont, pos + new Vector2(-50, baseR + 44f), st,
+                               HorizontalAlignment.Center, 100, 16, new Color(1f, 0.85f, 0.4f));
                 }
                 idx++;
             }

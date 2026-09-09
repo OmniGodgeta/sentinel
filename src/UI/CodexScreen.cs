@@ -23,26 +23,27 @@ public sealed partial class CodexScreen : CanvasLayer
         var root = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetLeft = -240, OffsetRight = 240, OffsetTop = 14, OffsetBottom = -12,
+            OffsetLeft = -270, OffsetRight = 270, OffsetTop = 16, OffsetBottom = -12,
         };
-        root.AddThemeConstantOverride("separation", 8);
+        root.AddThemeConstantOverride("separation", 10);
         root.Theme = UiTheme.Instance;
         AddChild(root);
 
         var head = new HBoxContainer();
+        head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(90, 34) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
-        var title = new Label { Text = "  CODEX" };
-        title.AddThemeFontSizeOverride("font_size", 20);
+        var title = new Label { Text = "  CODEX", VerticalAlignment = VerticalAlignment.Center };
+        title.AddThemeFontSizeOverride("font_size", 24);
         head.AddChild(title);
 
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        var list = new VBoxContainer { CustomMinimumSize = new Vector2(470, 0) };
-        list.AddThemeConstantOverride("separation", 6);
+        var list = new VBoxContainer { CustomMinimumSize = new Vector2(530, 0) };
+        list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(list);
 
         string cat = "";
@@ -52,7 +53,7 @@ public sealed partial class CodexScreen : CanvasLayer
             {
                 cat = e.Category;
                 var h = new Label { Text = "— " + cat.ToUpperInvariant() + " —", Modulate = new Color(1, 1, 1, 0.6f) };
-                h.AddThemeFontSizeOverride("font_size", 11);
+                h.AddThemeFontSizeOverride("font_size", 13);
                 list.AddChild(h);
             }
             var panel = new PanelContainer();
@@ -60,10 +61,10 @@ public sealed partial class CodexScreen : CanvasLayer
             col.AddThemeConstantOverride("separation", 2);
             panel.AddChild(col);
             var nm = new Label { Text = e.Title };
-            nm.AddThemeFontSizeOverride("font_size", 13);
+            nm.AddThemeFontSizeOverride("font_size", 16);
             col.AddChild(nm);
             var tx = new Label { Text = e.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.75f) };
-            tx.AddThemeFontSizeOverride("font_size", 11);
+            tx.AddThemeFontSizeOverride("font_size", 13);
             col.AddChild(tx);
             list.AddChild(panel);
         }

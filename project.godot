@@ -1,15 +1,15 @@
-; Sentinel — radial tower defense
+; Beyond — radial tower defense
 ; Engine configuration file.
 
 config_version=5
 
 [application]
 
-config/name="Sentinel"
-config/description="Radial tower defense. Zero ads, zero microtransactions."
+config/name="Beyond"
+config/description="Radial tower defense over Earth. Zero ads, zero microtransactions."
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
-config/icon="res://assets/icon.svg"
+config/icon="res://assets/icon.png"
 boot_splash/show_image=false
 
 [dotnet]

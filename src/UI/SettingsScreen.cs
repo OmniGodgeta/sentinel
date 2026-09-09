@@ -24,24 +24,25 @@ public sealed partial class SettingsScreen : CanvasLayer
         wrap.Theme = UiTheme.Instance;
         AddChild(wrap);
 
-        var root = new VBoxContainer { CustomMinimumSize = new Vector2(440, 0) };
-        root.AddThemeConstantOverride("separation", 14);
+        var root = new VBoxContainer { CustomMinimumSize = new Vector2(560, 0) };
+        root.AddThemeConstantOverride("separation", 18);
         wrap.AddChild(root);
 
         var head = new HBoxContainer();
+        head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(90, 34) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
         back.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Back(); App.ShowMenu(); };
         head.AddChild(back);
-        var title = new Label { Text = "  SETTINGS" };
-        title.AddThemeFontSizeOverride("font_size", 20);
+        var title = new Label { Text = "  SETTINGS", VerticalAlignment = VerticalAlignment.Center };
+        title.AddThemeFontSizeOverride("font_size", 24);
         head.AddChild(title);
 
         var o = App.Save.Options;
 
         // sfx volume
         root.AddChild(Lbl("Sound effects"));
-        var vol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.SfxVolume, CustomMinimumSize = new Vector2(0, 30) };
+        var vol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.SfxVolume, CustomMinimumSize = new Vector2(0, 48) };
         vol.ValueChanged += v =>
         {
             o.SfxVolume = (float)v; App.Save.Save();
@@ -51,7 +52,7 @@ public sealed partial class SettingsScreen : CanvasLayer
         root.AddChild(vol);
 
         root.AddChild(Lbl("Music"));
-        var mvol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.MusicVolume, CustomMinimumSize = new Vector2(0, 30) };
+        var mvol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.MusicVolume, CustomMinimumSize = new Vector2(0, 48) };
         mvol.ValueChanged += v =>
         {
             o.MusicVolume = (float)v; App.Save.Save();
@@ -74,13 +75,18 @@ public sealed partial class SettingsScreen : CanvasLayer
 
         root.AddChild(new HSeparator());
         root.AddChild(Lbl("Home planet"));
-        var grid = new GridContainer { Columns = 3 };
-        grid.AddThemeConstantOverride("h_separation", 8);
-        grid.AddThemeConstantOverride("v_separation", 8);
+        var grid = new GridContainer { Columns = 2 };
+        grid.AddThemeConstantOverride("h_separation", 14);
+        grid.AddThemeConstantOverride("v_separation", 14);
         root.AddChild(grid);
         foreach (var (id, name) in Skins)
         {
-            var b = new Button { Text = name, ToggleMode = true, ButtonPressed = o.PlanetSkin == id, CustomMinimumSize = new Vector2(138, 40) };
+            var b = new Button
+            {
+                Text = name, ToggleMode = true, ButtonPressed = o.PlanetSkin == id,
+                CustomMinimumSize = new Vector2(0, 68), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            };
+            b.AddThemeFontSizeOverride("font_size", 20);
             b.Pressed += () =>
             {
                 o.PlanetSkin = id; App.Save.Save();
@@ -94,7 +100,7 @@ public sealed partial class SettingsScreen : CanvasLayer
     private static Label Lbl(string t)
     {
         var l = new Label { Text = t.ToUpperInvariant(), Modulate = new Color(1, 1, 1, 0.6f) };
-        l.AddThemeFontSizeOverride("font_size", 11);
+        l.AddThemeFontSizeOverride("font_size", 13);
         return l;
     }
 }
