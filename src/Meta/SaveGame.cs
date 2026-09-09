@@ -34,6 +34,9 @@ public sealed class SaveGame
     public Dictionary<string, int> AbilityLevels { get; set; } = new();
     public Dictionary<string, string> AbilityBranches { get; set; } = new();
 
+    // level-up upgrade cards picked (Planet-Defense-TD style meta progression)
+    public List<string> LevelCards { get; set; } = new();
+
     // equipped ability loadout (ids). Length tracks hero-level slot count.
     public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
 

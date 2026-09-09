@@ -39,7 +39,18 @@ public sealed partial class AppRoot : Node
             Save.Save();
     }
 
-    public void ShowMenu() => SwapTo(new MenuScreen { App = this });
+    public void ShowMenu()
+    {
+        RefreshProgression();
+        if (Prog.PendingLevelUps > 0)
+        {
+            var lv = new LevelUpScreen { App = this };
+            lv.Done += ShowMenu;
+            SwapTo(lv);
+            return;
+        }
+        SwapTo(new MenuScreen { App = this });
+    }
     public void ShowLevels() => SwapTo(new LevelSelectScreen { App = this });
     public void ShowResearch() => SwapTo(new ResearchScreen { App = this });
     public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });
@@ -49,6 +60,11 @@ public sealed partial class AppRoot : Node
     {
         RefreshProgression();
         int slots = Prog.AbilitySlots;
+        // keep only unlocked abilities, top up from the base kit, then clamp to slots
+        Save.Loadout.RemoveAll(a => !Prog.IsAbilityUnlocked(a));
+        foreach (var a in Progression.BaseAbilities)
+            if (Save.Loadout.Count < slots && !Save.Loadout.Contains(a)) Save.Loadout.Add(a);
+        if (Save.Loadout.Count == 0) Save.Loadout.Add(Progression.BaseAbilities[0]);
         var loadout = Save.Loadout.GetRange(0, System.Math.Min(slots, Save.Loadout.Count)).ToArray();
         var eff = new float[loadout.Length];
         var cd = new float[loadout.Length];

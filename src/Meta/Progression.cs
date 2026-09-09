@@ -43,14 +43,88 @@ public sealed class Progression
     public int Commander => CommanderLevel(_save.Xp);
     public int Hero => HeroLevel(_save.Xp);
 
-    /// <summary>Equipped ability slots: 3 base, +1 at hero 8, +1 at hero 20 (spec §4).</summary>
+    public static readonly string[] BaseTurrets = { "autocannon", "flak" };
+    public static readonly string[] BaseAbilities = { "kinetic_barrage", "aegis_barrier", "overdrive" };
+
+    /// <summary>Equipped ability slots: 3 base, +1 at hero 8, +1 at hero 20, + level-card bonuses.</summary>
     public int AbilitySlots
     {
         get
         {
             int h = Hero;
-            return h >= 20 ? 5 : h >= 8 ? 4 : 3;
+            int fromHero = h >= 20 ? 5 : h >= 8 ? 4 : 3;
+            int fromCards = 0;
+            foreach (var id in _save.LevelCards)
+                if (_cfg.LevelCard(id) is { } c && c.Effects.TryGetValue("ability_slot", out float v))
+                    fromCards += (int)v;
+            return System.Math.Min(6, fromHero + fromCards);
         }
+    }
+
+    // ---- level-up cards ----
+    /// <summary>Card picks owed: one per Commander level past 1, minus what's been picked.</summary>
+    public int PendingLevelUps => System.Math.Max(0, Commander - 1 - _save.LevelCards.Count);
+
+    private int Picks(string id)
+    {
+        int n = 0;
+        foreach (var x in _save.LevelCards) if (x == id) n++;
+        return n;
+    }
+
+    public bool CardAvailable(LevelCardDef c)
+    {
+        int max = c.Repeatable ? System.Math.Max(1, c.MaxPicks) : 1;
+        if (Picks(c.Id) >= max) return false;
+        if (c.UnlockTurret != "" && (Picks(c.Id) > 0)) return false;
+        if (c.UnlockAbility != "" && (Picks(c.Id) > 0)) return false;
+        return true;
+    }
+
+    /// <summary>Deterministic 3-card offer for the current pick, from the mission-agnostic
+    /// pool, seeded by how many cards have been picked so it's stable while shown.</summary>
+    public System.Collections.Generic.List<LevelCardDef> LevelCardOffer(int count = 3)
+    {
+        var pool = new System.Collections.Generic.List<LevelCardDef>();
+        foreach (var c in _cfg.LevelCards) if (CardAvailable(c)) pool.Add(c);
+        var rng = new Sim.DetRandom((ulong)(0xC0FFEE + _save.LevelCards.Count * 2654435761u));
+        var pick = new System.Collections.Generic.List<LevelCardDef>();
+        while (pick.Count < count && pool.Count > 0)
+        {
+            int i = rng.NextInt(pool.Count);
+            pick.Add(pool[i]);
+            pool.RemoveAt(i);
+        }
+        return pick;
+    }
+
+    public void PickLevelCard(string id)
+    {
+        _save.LevelCards.Add(id);
+        _save.Save();
+    }
+
+    public bool IsTurretUnlocked(string id)
+    {
+        foreach (var t in BaseTurrets) if (t == id) return true;
+        foreach (var cardId in _save.LevelCards)
+            if (_cfg.LevelCard(cardId)?.UnlockTurret == id) return true;
+        return false;
+    }
+
+    public bool IsAbilityUnlocked(string id)
+    {
+        foreach (var a in BaseAbilities) if (a == id) return true;
+        foreach (var cardId in _save.LevelCards)
+            if (_cfg.LevelCard(cardId)?.UnlockAbility == id) return true;
+        return false;
+    }
+
+    public System.Collections.Generic.List<string> UnlockedTurrets()
+    {
+        var l = new System.Collections.Generic.List<string>();
+        foreach (var id in _cfg.TurretOrder) if (IsTurretUnlocked(id)) l.Add(id);
+        return l;
     }
 
     // ---- research gating ----
@@ -194,6 +268,20 @@ public sealed class Progression
     public ModifierSet BuildModifiers()
     {
         var m = new ModifierSet { HeroLevel = Hero, AbilitySlots = AbilitySlots };
+
+        // base kit
+        foreach (var t in BaseTurrets) m.UnlockedTurrets.Add(t);
+        foreach (var a in BaseAbilities) m.UnlockedAbilities.Add(a);
+
+        // level-up cards
+        foreach (var id in _save.LevelCards)
+        {
+            var c = _cfg.LevelCard(id);
+            if (c == null) continue;
+            if (c.UnlockTurret != "") m.UnlockedTurrets.Add(c.UnlockTurret);
+            if (c.UnlockAbility != "") m.UnlockedAbilities.Add(c.UnlockAbility);
+            foreach (var (key, v) in c.Effects) m.ApplyEffect(key, v);
+        }
 
         foreach (var node in _research.AllNodes)
         {

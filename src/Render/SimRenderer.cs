@@ -6,9 +6,9 @@ using Sentinel.Game;
 namespace Sentinel.Render;
 
 /// <summary>
-/// Play-field renderer. Still shapes-only (no sprite art yet) but with real
-/// weapon and ability VFX, high-contrast enemies, muzzle flashes, tracers,
-/// lightning, shock rings, screen flashes and floating text so the game reads.
+/// Play-field renderer. Kenney CC0 sprites for ships / missiles / meteors, a
+/// shader Earth (drawn by PlanetView behind this), plus procedural weapon and
+/// ability VFX — beams, tracers, lightning, shock rings, screen flashes.
 /// </summary>
 public sealed partial class SimRenderer : Node2D
 {
@@ -16,13 +16,12 @@ public sealed partial class SimRenderer : Node2D
     public SimWorld World = null!;
     public int SelectedSlot = -1;
 
-    // ---------------- fx ----------------
     private enum FxKind : byte { Muzzle, Tracer, Spark, Boom, Shock, Lightning, Text, CastRing, Warp }
     private struct Fx
     {
         public FxKind Kind;
         public Vector2 A, B;
-        public float R, Age, Life, P;
+        public float R, Age, Life;
         public Color Col;
         public string Text;
     }
@@ -31,83 +30,64 @@ public sealed partial class SimRenderer : Node2D
 
     private Vector2 _shakeOffset;
     private float _shake;
+    private Vector2 _lastHeroPos;
 
-    // static starfield (world space)
-    private Vector2[] _stars = System.Array.Empty<Vector2>();
-    private float[] _starMag = System.Array.Empty<float>();
-
-    private static readonly System.Collections.Generic.Dictionary<string, Color> EnemyColor = new()
+    private static readonly Dictionary<string, Color> EnemyTint = new()
     {
-        ["skiff"] = new(1.00f, 0.40f, 0.38f),
-        ["hauler"] = new(0.60f, 0.68f, 1.00f),
-        ["interceptor"] = new(1.00f, 0.78f, 0.28f),
-        ["aegis_cruiser"] = new(0.45f, 0.95f, 1.00f),
-        ["bombard"] = new(1.00f, 0.45f, 0.30f),
-        ["carrier"] = new(0.70f, 0.55f, 1.00f),
-        ["phase_runner"] = new(0.85f, 0.45f, 1.00f),
-        ["leech"] = new(0.70f, 1.00f, 0.55f),
-        ["warden"] = new(0.55f, 1.00f, 0.70f),
-        ["siege_crawler"] = new(1.00f, 0.60f, 0.45f),
+        ["skiff"] = new(1.00f, 0.55f, 0.52f),
+        ["hauler"] = new(0.75f, 0.80f, 1.00f),
+        ["interceptor"] = new(1.00f, 0.82f, 0.45f),
+        ["aegis_cruiser"] = new(0.60f, 0.95f, 1.00f),
+        ["bombard"] = new(1.00f, 0.60f, 0.45f),
+        ["carrier"] = new(0.80f, 0.70f, 1.00f),
+        ["phase_runner"] = new(0.90f, 0.60f, 1.00f),
+        ["leech"] = new(0.80f, 1.00f, 0.65f),
+        ["warden"] = new(0.65f, 1.00f, 0.78f),
+        ["siege_crawler"] = new(1.00f, 0.72f, 0.55f),
     };
-    private static Color ColorFor(string id) => EnemyColor.TryGetValue(id, out var c) ? c : new Color(1f, 0.5f, 0.5f);
+    private static Color Tint(string id) => EnemyTint.TryGetValue(id, out var c) ? c : new Color(1f, 0.6f, 0.6f);
 
     public void AddShake(float a) => _shake = Mathf.Min(16f, _shake + a);
-
-    public override void _Ready()
-    {
-        var rng = new RandomNumberGenerator { Seed = 0xBADCAB };
-        int n = 130;
-        _stars = new Vector2[n];
-        _starMag = new float[n];
-        float r = World.B.DespawnRadius * 1.1f;
-        for (int i = 0; i < n; i++)
-        {
-            float a = rng.Randf() * Mathf.Tau;
-            float d = Mathf.Sqrt(rng.Randf()) * r;
-            _stars[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
-            _starMag[i] = 0.15f + rng.Randf() * 0.5f;
-        }
-    }
 
     public void OnSimEvent(in SimEvent e)
     {
         switch (e.Kind)
         {
             case SimEventKind.TurretFired:
-                Push(FxKind.Muzzle, e.Pos, e.Pos, 7f, 0.09f, new Color(1f, 0.95f, 0.7f));
-                Push(FxKind.Tracer, e.Pos, e.PosB, 2f, 0.10f, new Color(1f, 0.9f, 0.6f, 0.9f));
+                Push(FxKind.Muzzle, e.Pos, e.Pos, 8f, 0.09f, new Color(1f, 0.95f, 0.7f));
+                Push(FxKind.Tracer, e.Pos, e.PosB, 2f, 0.09f, new Color(1f, 0.9f, 0.6f, 0.9f));
                 break;
             case SimEventKind.BeamTick:
                 _beams.Add((e.Pos, e.PosB, 3f + e.A * 1.5f, new Color(1f, 0.25f, 0.35f)));
-                if (GD.Randf() < 0.25f) Push(FxKind.Spark, e.PosB, e.PosB, 6f, 0.15f, new Color(1f, 0.4f, 0.4f));
+                if (GD.Randf() < 0.2f) Push(FxKind.Spark, e.PosB, e.PosB, 7f, 0.15f, new Color(1f, 0.4f, 0.4f));
                 break;
             case SimEventKind.ChainArc:
                 Push(FxKind.Lightning, e.Pos, e.PosB, 0f, 0.16f, new Color(0.6f, 0.85f, 1f));
                 break;
             case SimEventKind.BarrageTick:
-                Push(FxKind.Spark, e.Pos, e.Pos, 6f, 0.18f, new Color(1f, 0.85f, 0.4f));
+                Push(FxKind.Spark, e.Pos, e.Pos, 7f, 0.18f, new Color(1f, 0.85f, 0.4f));
                 break;
             case SimEventKind.EnemyHit:
-                if (e.A > 0f) Push(FxKind.Spark, e.Pos, e.Pos, 5f + Mathf.Min(e.A * 0.15f, 8f), 0.16f, new Color(1f, 0.85f, 0.5f));
+                if (e.A > 0f) Push(FxKind.Spark, e.Pos, e.Pos, 5f + Mathf.Min(e.A * 0.12f, 8f), 0.15f, new Color(1f, 0.85f, 0.5f));
                 break;
             case SimEventKind.EnemyKilled:
-                Push(FxKind.Boom, e.Pos, e.Pos, Mathf.Max(10f, e.A * 2.2f), 0.38f, new Color(1f, 0.7f, 0.35f));
+                Push(FxKind.Boom, e.Pos, e.Pos, Mathf.Max(14f, e.A * 3f), 0.4f, new Color(1f, 0.7f, 0.35f));
                 for (int s = 0; s < 5; s++)
                 {
-                    var d = Vector2.FromAngle(GD.Randf() * Mathf.Tau) * (e.A + 6f);
+                    var d = Vector2.FromAngle(GD.Randf() * Mathf.Tau) * (e.A + 8f);
                     Push(FxKind.Tracer, e.Pos, e.Pos + d, 2f, 0.25f, new Color(1f, 0.6f, 0.3f, 0.8f));
                 }
                 break;
             case SimEventKind.MissileImpact:
-                Push(FxKind.Boom, e.Pos, e.Pos, Mathf.Max(16f, e.A * 1.4f), 0.45f, new Color(1f, 0.6f, 0.25f));
+                Push(FxKind.Boom, e.Pos, e.Pos, Mathf.Max(20f, e.A * 1.6f), 0.5f, new Color(1f, 0.6f, 0.25f));
                 AddShake(2.5f);
                 break;
             case SimEventKind.VolleyLaunched:
                 Push(FxKind.Muzzle, e.Pos, e.Pos, 14f, 0.14f, new Color(1f, 0.8f, 0.5f));
-                Root.Fx?.Flash(new Color(1f, 0.8f, 0.5f), 0.06f);
+                Root.Fx?.Flash(new Color(1f, 0.8f, 0.5f), 0.05f);
                 break;
             case SimEventKind.EnemySpawned:
-                Push(FxKind.Warp, e.Pos, e.Pos, e.A + 8f, 0.35f, new Color(0.7f, 0.5f, 1f));
+                Push(FxKind.Warp, e.Pos, e.Pos, e.A + 10f, 0.35f, new Color(0.7f, 0.5f, 1f));
                 break;
             case SimEventKind.PlanetHit:
                 AddShake(Mathf.Min(9f, e.A * 0.08f));
@@ -115,12 +95,12 @@ public sealed partial class SimRenderer : Node2D
                 break;
             case SimEventKind.NovaPulse:
                 Push(FxKind.Shock, Vector2.Zero, Vector2.Zero, e.A, 0.6f, new Color(0.7f, 0.9f, 1f));
-                Push(FxKind.Shock, Vector2.Zero, Vector2.Zero, e.A * 0.7f, 0.5f, new Color(1f, 1f, 1f));
+                Push(FxKind.Shock, Vector2.Zero, Vector2.Zero, e.A * 0.7f, 0.5f, Colors.White);
                 AddShake(10f);
                 Root.Fx?.Flash(Colors.White, 0.35f);
                 break;
             case SimEventKind.HeroDown:
-                Push(FxKind.Boom, e.Pos, e.Pos, 30f, 0.6f, new Color(0.6f, 0.8f, 1f));
+                Push(FxKind.Boom, e.Pos, e.Pos, 34f, 0.6f, new Color(0.6f, 0.8f, 1f));
                 AddShake(8f);
                 break;
             case SimEventKind.AbilityCast:
@@ -135,16 +115,13 @@ public sealed partial class SimRenderer : Node2D
                         nm = d.Name.ToUpperInvariant();
                         col = RoleColor(d.Role);
                     }
-                    Vector2 at = e.Pos == Vector2.Zero ? new Vector2(0, -World.B.PlanetRadius - 30f) : e.Pos;
-                    Push(FxKind.CastRing, at, at, 40f, 0.5f, col);
+                    Vector2 at = e.Pos == Vector2.Zero ? new Vector2(0, -World.B.PlanetRadius - 34f) : e.Pos;
+                    Push(FxKind.CastRing, at, at, 42f, 0.5f, col);
                     Push(FxKind.Text, at, at, 0f, 1.1f, col, nm);
-                    Root.Fx?.Flash(col, 0.12f);
+                    Root.Fx?.Flash(col, 0.10f);
                     AddShake(3f);
                 }
-                else if (e.I == -3)
-                {
-                    Root.Fx?.Flash(new Color(1f, 0.85f, 0.4f), 0.15f);
-                }
+                else if (e.I == -3) Root.Fx?.Flash(new Color(1f, 0.85f, 0.4f), 0.15f);
                 break;
         }
     }
@@ -177,60 +154,50 @@ public sealed partial class SimRenderer : Node2D
 
     public override void _Draw()
     {
-        DrawStars();
         DrawGuides();
-        DrawPlanet();
+        DrawPlanetRings();
         DrawAbilityZones();
         DrawTurrets();
-        DrawBeamsAndFx(back: true);
+        DrawSentinels();
+        DrawFxLayer(back: true);
         DrawEnemies();
         DrawProjectiles();
         DrawHero();
-        DrawBeamsAndFx(back: false);
+        DrawFxLayer(back: false);
     }
 
-    // ---------------- background ----------------
-    private void DrawStars()
+    // ---- sprite helper: draw a texture centred at pos, rotated, sized to `size` px wide ----
+    private void Blit(Texture2D tex, Vector2 pos, float rot, float sizePx, Color mod)
     {
-        for (int i = 0; i < _stars.Length; i++)
-            DrawCircle(_stars[i], _starMag[i] * 1.6f, new Color(1, 1, 1, _starMag[i] * 0.35f));
+        var ts = tex.GetSize();
+        float sc = sizePx / Mathf.Max(ts.X, ts.Y);
+        DrawSetTransform(pos, rot, new Vector2(sc, sc));
+        DrawTexture(tex, -ts * 0.5f, mod);
+        DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
     }
 
     private void DrawGuides()
     {
         var b = World.B;
-        DrawArc(Vector2.Zero, b.HeroOrbitMin, 0, Mathf.Tau, 48, new Color(0.4f, 0.7f, 1f, 0.04f), 1.5f);
-        DrawArc(Vector2.Zero, b.HeroOrbitMax, 0, Mathf.Tau, 48, new Color(0.4f, 0.7f, 1f, 0.04f), 1.5f);
+        DrawArc(Vector2.Zero, b.HeroOrbitMin, 0, Mathf.Tau, 48, new Color(0.4f, 0.7f, 1f, 0.035f), 1.5f);
+        DrawArc(Vector2.Zero, b.HeroOrbitMax, 0, Mathf.Tau, 48, new Color(0.4f, 0.7f, 1f, 0.035f), 1.5f);
     }
 
-    private void DrawPlanet()
+    private void DrawPlanetRings()
     {
         var b = World.B;
         float pr = b.PlanetRadius;
         float integ = World.PlanetIntegrityMax > 0 ? World.PlanetIntegrity / World.PlanetIntegrityMax : 0f;
 
-        // atmosphere glow
-        for (int g = 4; g >= 1; g--)
-            DrawCircle(Vector2.Zero, pr + g * 10f, new Color(0.35f, 0.55f, 0.9f, 0.04f));
-
-        DrawCircle(Vector2.Zero, pr, new Color(0.10f, 0.14f, 0.22f));
-        DrawCircle(Vector2.Zero, pr, new Color(0.16f, 0.22f, 0.34f)); // flat; keep simple
-        // surface bands
-        DrawArc(Vector2.Zero, pr * 0.7f, 0.4f, 2.6f, 20, new Color(1, 1, 1, 0.05f), 3f);
-        DrawArc(Vector2.Zero, pr * 0.45f, 3.2f, 5.2f, 20, new Color(1, 1, 1, 0.04f), 4f);
-
-        // planet shield
         if (World.PlanetShield > 0.5f)
-            DrawArc(Vector2.Zero, pr + 8f, 0, Mathf.Tau, 64, new Color(0.4f, 0.85f, 1f, 0.55f), 3f);
+            DrawArc(Vector2.Zero, pr + 9f, 0, Mathf.Tau, 64, new Color(0.4f, 0.85f, 1f, 0.5f + 0.2f * Mathf.Sin(World.GameTime * 6f)), 3f);
 
-        // integrity ring
         var ic = integ > 0.5f ? new Color(0.4f, 0.95f, 0.55f)
                : integ > 0.25f ? new Color(1f, 0.8f, 0.3f) : new Color(1f, 0.35f, 0.3f);
-        DrawArc(Vector2.Zero, pr + 3f, 0, Mathf.Tau, 64, new Color(1, 1, 1, 0.08f), 5f);
-        DrawArc(Vector2.Zero, pr + 3f, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * Mathf.Clamp(integ, 0, 1), 72, ic, 5f);
+        DrawArc(Vector2.Zero, pr + 5f, 0, Mathf.Tau, 72, new Color(1, 1, 1, 0.08f), 5f);
+        DrawArc(Vector2.Zero, pr + 5f, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * Mathf.Clamp(integ, 0, 1), 80, ic, 5f);
     }
 
-    // ---------------- turrets ----------------
     private void DrawTurrets()
     {
         var turrets = World.TurretView;
@@ -238,63 +205,68 @@ public sealed partial class SimRenderer : Node2D
         {
             ref readonly var t = ref turrets[i];
             bool sel = i == SelectedSlot;
-
             if (!t.Built)
             {
-                float rr = sel ? 13f : 9f;
+                float rr = sel ? 14f : 10f;
                 DrawArc(t.Pos, rr, 0, Mathf.Tau, 18, sel ? new Color(1f, 0.9f, 0.4f) : new Color(1, 1, 1, 0.18f), sel ? 2.5f : 1.5f);
                 if (sel) DrawCircle(t.Pos, 3f, new Color(1f, 0.9f, 0.4f));
                 continue;
             }
 
             var def = World.TurretDefs[t.DefIndex];
-            var col = Color.FromHsv(def.Color, 0.45f, 1f);
+            var col = Color.FromHsv(def.Color, 0.35f, 1f);
             bool disabled = t.DisabledLeft > 0f;
             bool firing = !t.Target.IsNone && t.CooldownLeft > 0.02f;
 
-            // range arc (brighter when firing)
             if (def.Fire != "support")
             {
                 float half = Mathf.DegToRad(def.ArcDegrees) * 0.5f;
                 DrawArc(t.Pos, def.Range, t.Angle - half, t.Angle + half, 24,
-                        new Color(col, disabled ? 0.02f : firing ? 0.12f : 0.05f), 1.5f);
+                        new Color(col, disabled ? 0.02f : firing ? 0.11f : 0.045f), 1.5f);
             }
             else
-            {
                 DrawArc(t.Pos, def.SupportRange, 0, Mathf.Tau, 26, new Color(col, 0.10f), 1.5f);
-            }
 
-            // body
-            var bodyCol = disabled ? new Color(0.4f, 0.24f, 0.24f) : col;
-            DrawCircle(t.Pos, 20f, new Color(bodyCol, firing ? 0.32f : 0.18f));   // glow
-            DrawCircle(t.Pos, 13f, bodyCol);
-            DrawCircle(t.Pos, 13f, new Color(bodyCol.Lightened(0.2f), 1f));
-            DrawArc(t.Pos, 13f, 0, Mathf.Tau, 16, new Color(0, 0, 0, 0.55f), 2.5f);
-            DrawArc(t.Pos, 13f, 0, Mathf.Tau, 16, Colors.White, 1.5f);
+            // chunky turret: glow, hull disc, barrel
+            var body = disabled ? new Color(0.45f, 0.28f, 0.28f) : col;
+            DrawCircle(t.Pos, 20f, new Color(body, firing ? 0.30f : 0.16f));
+            DrawCircle(t.Pos, 13f, body.Darkened(0.15f));
+            DrawCircle(t.Pos, 10f, body.Lightened(0.2f));
+            DrawArc(t.Pos, 13f, 0, Mathf.Tau, 16, new Color(0, 0, 0, 0.5f), 2f);
+            DrawArc(t.Pos, 13f, 0, Mathf.Tau, 16, new Color(1, 1, 1, 0.6f), 1.4f);
             if (!disabled && def.Fire != "support")
             {
-                Vector2 tip = t.Pos + Vector2.FromAngle(t.Angle) * 22f;
-                DrawLine(t.Pos, tip, new Color(0, 0, 0, 0.6f), 6f);
+                var tip = t.Pos + Vector2.FromAngle(t.Angle) * 22f;
+                DrawLine(t.Pos, tip, new Color(0, 0, 0, 0.55f), 7f);
                 DrawLine(t.Pos, tip, Colors.White, 3.5f);
-                DrawCircle(tip, 3f, Colors.White);
+                DrawCircle(tip, 3f, firing ? new Color(1f, 0.9f, 0.6f) : Colors.White);
             }
 
-            // level pips
             for (int l = 0; l < t.Level; l++)
-                DrawCircle(t.Pos + new Vector2(-5f + l * 5f, -19f), 2.2f, Colors.White);
+                DrawCircle(t.Pos + new Vector2(-5f + l * 5f, -22f), 2.2f, Colors.White);
             if (t.Fork >= 0)
-                DrawRect(new Rect2(t.Pos + new Vector2(-5, 15), new Vector2(10, 3)), new Color(1f, 0.85f, 0.3f));
-
+                DrawRect(new Rect2(t.Pos + new Vector2(-5, 18), new Vector2(10, 3)), new Color(1f, 0.85f, 0.3f));
             if (disabled)
             {
-                DrawLine(t.Pos + new Vector2(-6, -6), t.Pos + new Vector2(6, 6), new Color(1f, 0.35f, 0.35f), 2.5f);
-                DrawLine(t.Pos + new Vector2(6, -6), t.Pos + new Vector2(-6, 6), new Color(1f, 0.35f, 0.35f), 2.5f);
+                DrawLine(t.Pos + new Vector2(-7, -7), t.Pos + new Vector2(7, 7), new Color(1f, 0.35f, 0.35f), 3f);
+                DrawLine(t.Pos + new Vector2(7, -7), t.Pos + new Vector2(-7, 7), new Color(1f, 0.35f, 0.35f), 3f);
             }
-            if (sel) DrawArc(t.Pos, 17f, 0, Mathf.Tau, 22, new Color(1f, 0.9f, 0.4f), 2.5f);
+            if (sel) DrawArc(t.Pos, 22f, 0, Mathf.Tau, 24, new Color(1f, 0.9f, 0.4f), 2.5f);
         }
     }
 
-    // ---------------- enemies ----------------
+    private void DrawSentinels()
+    {
+        var ss = World.SentinelView;
+        for (int i = 0; i < ss.Length; i++)
+        {
+            var s = ss[i];
+            float rot = s.Angle + Mathf.Pi;   // face along orbit
+            DrawCircle(s.Pos, 14f, new Color(0.6f, 1f, 0.85f, 0.14f));
+            Blit(Art.Ship, s.Pos, rot, 24f, new Color(0.7f, 1f, 0.9f));
+        }
+    }
+
     private void DrawEnemies()
     {
         var enemies = World.EnemyView;
@@ -303,195 +275,120 @@ public sealed partial class SimRenderer : Node2D
             ref readonly var e = ref enemies[i];
             if (!e.Alive) continue;
             var def = World.EnemyDefAt(e.DefIndex);
-            var col = def.Class == "boss" ? new Color(1f, 0.5f, 0.85f) : ColorFor(def.Id);
-            float vr = e.Radius * 2.0f + 5f;
             bool boss = def.Class == "boss";
-            if (boss) vr = e.Radius + 10f;
+            var tint = boss ? new Color(1f, 0.55f, 0.85f) : Tint(def.Id);
+            var tex = Art.Enemy(boss ? "boss_threshing_gate" : def.Id);
 
-            // glow
-            DrawCircle(e.Pos, vr * 2.3f, new Color(col, 0.14f));
-            DrawCircle(e.Pos, vr * 1.5f, new Color(col, 0.20f));
+            float sizePx = (boss ? e.Radius * 2.8f : e.Radius * 3.3f) + 10f;
+            float rot = e.Vel.LengthSquared() > 1f ? e.Vel.Angle() + Mathf.Pi / 2f : e.Pos.Angle() + Mathf.Pi / 2f;
 
-            if (boss)
+            DrawCircle(e.Pos, sizePx * 0.75f, new Color(tint, 0.16f));
+            Blit(tex, e.Pos, boss && e.MechanicActive ? 0f : rot, sizePx,
+                 boss && e.MechanicActive ? new Color(0.7f, 0.7f, 0.8f) : tint);
+
+            if (boss && e.MechanicActive)
             {
-                DrawCircle(e.Pos, vr, e.MechanicActive ? new Color(0.55f, 0.55f, 0.62f) : col);
-                DrawArc(e.Pos, vr + 5f, 0, Mathf.Tau, 40, e.MechanicActive ? new Color(0.8f, 0.8f, 0.9f) : new Color(1f, 0.35f, 0.4f), 4f);
-                if (e.MechanicActive)
-                {
-                    float seam = World.GameTime * 1.5f;
-                    DrawLine(e.Pos, e.Pos + Vector2.FromAngle(seam) * (vr + 14f), new Color(1f, 0.9f, 0.4f), 4f);
-                    DrawArc(e.Pos, vr + 5f, seam - 0.25f, seam + 0.25f, 8, new Color(1f, 0.9f, 0.4f), 5f);
-                }
+                DrawArc(e.Pos, sizePx * 0.55f, 0, Mathf.Tau, 40, new Color(0.85f, 0.85f, 0.95f), 4f);
+                float seam = World.GameTime * 1.5f;
+                DrawLine(e.Pos, e.Pos + Vector2.FromAngle(seam) * (sizePx * 0.6f), new Color(1f, 0.9f, 0.4f), 4f);
             }
-            else
-            {
-                DrawEnemyShape(e.Pos, vr, def.Id, col);
-                DrawArc(e.Pos, vr, 0, Mathf.Tau, 16, new Color(0, 0, 0, 0.55f), 2f);
-            }
-
-            // shield
             if (e.Shield > 0.5f)
-                DrawArc(e.Pos, vr + 4f, 0, Mathf.Tau, 20, new Color(0.4f, 0.9f, 1f, 0.85f), 2.5f);
-            // warden aura
+                DrawArc(e.Pos, sizePx * 0.6f, 0, Mathf.Tau, 22, new Color(0.4f, 0.9f, 1f, 0.85f), 2.5f);
             if (def.AuraRadius > 0f)
                 DrawArc(e.Pos, def.AuraRadius, 0, Mathf.Tau, 40, new Color(0.5f, 1f, 0.6f, 0.08f), 2f);
 
-            // health ring
             float hpf = e.MaxHp > 0 ? e.Hp / e.MaxHp : 1f;
-            if (hpf < 0.999f)
+            if (hpf < 0.999f && !boss)
             {
-                DrawArc(e.Pos, vr + 7f, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau, 20, new Color(0, 0, 0, 0.4f), 2.5f);
-                DrawArc(e.Pos, vr + 7f, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * hpf, 20, new Color(0.5f, 1f, 0.5f), 2.5f);
+                float br = sizePx * 0.62f;
+                DrawArc(e.Pos, br, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau, 20, new Color(0, 0, 0, 0.4f), 2.5f);
+                DrawArc(e.Pos, br, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * hpf, 20, new Color(0.5f, 1f, 0.5f), 2.5f);
             }
         }
     }
 
-    private void DrawEnemyShape(Vector2 p, float r, string id, Color col)
-    {
-        switch (id)
-        {
-            case "skiff":
-            case "interceptor":
-            {
-                var v = new[] { p + new Vector2(0, -r * 1.2f), p + new Vector2(r, r * 0.9f), p + new Vector2(-r, r * 0.9f) };
-                DrawColoredPolygon(v, col);
-                break;
-            }
-            case "hauler":
-            case "carrier":
-                DrawColoredPolygon(Ngon(p, r, 6, 0f), col);
-                break;
-            case "phase_runner":
-            {
-                var pts = new Vector2[8];
-                for (int k = 0; k < 8; k++)
-                    pts[k] = p + Vector2.FromAngle(k * Mathf.Pi / 4f) * (k % 2 == 0 ? r * 1.2f : r * 0.5f);
-                DrawColoredPolygon(pts, col);
-                break;
-            }
-            case "siege_crawler":
-                DrawColoredPolygon(Ngon(p, r, 8, Mathf.Pi / 8f), col);
-                break;
-            case "bombard":
-                DrawRect(new Rect2(p - new Vector2(r, r), new Vector2(r * 2, r * 2)), col);
-                break;
-            case "warden":
-                DrawCircle(p, r, col);
-                DrawLine(p + new Vector2(-r, 0), p + new Vector2(r, 0), Colors.White, 2f);
-                DrawLine(p + new Vector2(0, -r), p + new Vector2(0, r), Colors.White, 2f);
-                break;
-            default:
-                DrawCircle(p, r, col);
-                break;
-        }
-    }
-
-    private static Vector2[] Ngon(Vector2 c, float r, int n, float rot)
-    {
-        var v = new Vector2[n];
-        for (int i = 0; i < n; i++) v[i] = c + Vector2.FromAngle(rot + i * Mathf.Tau / n) * r;
-        return v;
-    }
-
-    // ---------------- projectiles ----------------
     private void DrawProjectiles()
     {
         var projs = World.ProjectileView;
+        var missile = Art.Missile;
+        var bullet = Art.Bullet;
         for (int i = 0; i < projs.Length; i++)
         {
             ref readonly var p = ref projs[i];
             if (!p.Alive) continue;
+            float rot = p.Vel.Angle() + Mathf.Pi / 2f;
             Vector2 back = p.Vel.LengthSquared() > 1f ? p.Vel.Normalized() : Vector2.Right;
 
             if (p.Kind == 1) // hero missile
             {
-                DrawLine(p.Pos, p.Pos - back * 22f, new Color(1f, 0.55f, 0.25f, 0.5f), 4f);
-                DrawCircle(p.Pos, 5.5f, new Color(1f, 0.9f, 0.6f));
-                DrawCircle(p.Pos, 9f, new Color(1f, 0.6f, 0.3f, 0.35f));
+                DrawLine(p.Pos, p.Pos - back * 24f, new Color(1f, 0.55f, 0.25f, 0.5f), 4f);
+                Blit(missile, p.Pos, rot, 20f, new Color(1f, 0.95f, 0.8f));
             }
             else if (p.Kind == 2) // enemy shell
             {
                 DrawLine(p.Pos, p.Pos - back * 14f, new Color(1f, 0.4f, 0.35f, 0.5f), 3f);
                 DrawCircle(p.Pos, 4.5f, new Color(1f, 0.45f, 0.4f));
             }
-            else // turret shot
+            else if (p.Kind == 3 || p.Target.Index >= 0) // planet-battery missile (homing turret shot)
+            {
+                DrawLine(p.Pos, p.Pos - back * 20f, new Color(0.7f, 0.9f, 1f, 0.5f), 3f);
+                Blit(missile, p.Pos, rot, 16f, new Color(0.85f, 0.95f, 1f));
+            }
+            else // turret bolt
             {
                 DrawLine(p.Pos, p.Pos - back * 16f, new Color(0.8f, 0.95f, 1f, 0.55f), 3f);
-                DrawCircle(p.Pos, 3.5f, Colors.White);
-                DrawCircle(p.Pos, 6f, new Color(0.7f, 0.9f, 1f, 0.35f));
+                Blit(bullet, p.Pos, rot, 12f, new Color(0.9f, 0.98f, 1f));
             }
         }
     }
 
-    // ---------------- hero ----------------
     private void DrawHero()
     {
         var h = World.HeroView;
         if (!h.Alive)
         {
-            DrawArc(Vector2.Zero, World.B.PlanetRadius + 20f, 0, Mathf.Tau, 40, new Color(1f, 0.5f, 0.5f, 0.3f), 2f);
-            DrawString(ThemeDB.FallbackFont, new Vector2(-40, -World.B.PlanetRadius - 26f),
-                       $"SHIP DOWN — {Mathf.CeilToInt(h.RespawnLeft)}s", HorizontalAlignment.Center, 80, 18, new Color(1f, 0.5f, 0.5f));
+            DrawArc(Vector2.Zero, World.B.PlanetRadius + 22f, 0, Mathf.Tau, 40, new Color(1f, 0.5f, 0.5f, 0.3f), 2f);
+            DrawString(ThemeDB.FallbackFont, new Vector2(-42, -World.B.PlanetRadius - 28f),
+                       $"SHIP DOWN — {Mathf.CeilToInt(h.RespawnLeft)}s", HorizontalAlignment.Center, 84, 18, new Color(1f, 0.5f, 0.5f));
             return;
         }
 
-        float ang = h.Pos.Angle() + Mathf.Pi / 2f;
-        var fwd = Vector2.FromAngle(ang);
-        var side = new Vector2(-fwd.Y, fwd.X);
-        var col = new Color(0.55f, 0.9f, 1f);
+        // face the direction of travel, else point outward
+        Vector2 vel = h.Pos - _lastHeroPos; _lastHeroPos = h.Pos;
+        float rot = vel.LengthSquared() > 0.5f ? vel.Angle() + Mathf.Pi / 2f : h.Pos.Angle() + Mathf.Pi / 2f + Mathf.Pi;
+        DrawCircle(h.Pos, 34f, new Color(0.55f, 0.9f, 1f, 0.12f));
+        Blit(Art.Ship, h.Pos, rot, 52f, new Color(0.92f, 0.98f, 1f));
 
-        DrawCircle(h.Pos, 26f, new Color(col, 0.10f));
-        // engine glow
-        DrawCircle(h.Pos - fwd * 14f, 6f, new Color(0.6f, 0.8f, 1f, 0.6f));
-
-        var hull = new[]
-        {
-            h.Pos + fwd * 20f,
-            h.Pos + side * 12f + fwd * 2f,
-            h.Pos + side * 8f - fwd * 14f,
-            h.Pos - side * 8f - fwd * 14f,
-            h.Pos - side * 12f + fwd * 2f,
-        };
-        DrawColoredPolygon(hull, col);
-        DrawPolyline(hull, new Color(0.85f, 0.97f, 1f), 2f, true);
-
-        DrawArc(h.Pos, World.Cfg.Hero.PointDefenseRange, 0, Mathf.Tau, 40, new Color(col, 0.05f), 1.2f);
+        DrawArc(h.Pos, World.Cfg.Hero.PointDefenseRange, 0, Mathf.Tau, 40, new Color(0.55f, 0.9f, 1f, 0.045f), 1.2f);
 
         if (h.OverdriveLeft > 0f)
-        {
-            float pulse = 20f + 4f * Mathf.Sin(World.GameTime * 20f);
-            DrawArc(h.Pos, pulse, 0, Mathf.Tau, 22, new Color(1f, 0.55f, 0.2f), 2.5f);
-        }
+            DrawArc(h.Pos, 24f + 4f * Mathf.Sin(World.GameTime * 20f), 0, Mathf.Tau, 22, new Color(1f, 0.55f, 0.2f), 2.5f);
         if (World.DronesActiveLeft > 0f)
             for (int d = 0; d < World.DroneCount; d++)
             {
                 float a = World.GameTime * 3.5f + d * Mathf.Tau / Mathf.Max(1, World.DroneCount);
-                var dp = h.Pos + Vector2.FromAngle(a) * 30f;
+                var dp = h.Pos + Vector2.FromAngle(a) * 32f;
                 DrawCircle(dp, 4f, new Color(0.7f, 1f, 0.9f));
-                DrawCircle(dp, 7f, new Color(0.7f, 1f, 0.9f, 0.3f));
             }
 
-        // hull bar
         float hf = h.MaxHull > 0 ? h.Hull / h.MaxHull : 1f;
-        var bp = h.Pos + new Vector2(-20, -28);
-        DrawRect(new Rect2(bp, new Vector2(40, 4)), new Color(0, 0, 0, 0.6f));
-        DrawRect(new Rect2(bp, new Vector2(40 * hf, 4)), col);
+        var bp = h.Pos + new Vector2(-22, -32);
+        DrawRect(new Rect2(bp, new Vector2(44, 4)), new Color(0, 0, 0, 0.6f));
+        DrawRect(new Rect2(bp, new Vector2(44 * hf, 4)), new Color(0.5f, 0.85f, 1f));
     }
 
-    // ---------------- ability zones (live from sim state) ----------------
     private void DrawAbilityZones()
     {
         var ab = World.AbilityView;
+        float t = World.GameTime;
         for (int i = 0; i < ab.Length; i++)
         {
             ref readonly var a = ref ab[i];
             if (a.DefIndex < 0 || a.ActiveLeft <= 0f) continue;
             var def = World.AbilityDefs[a.DefIndex];
-            float t = World.GameTime;
             switch (def.Kind)
             {
                 case "barrage":
-                {
                     for (int s = 0; s <= 8; s++)
                     {
                         float an = a.P0 - a.P1 + 2f * a.P1 * s / 8f;
@@ -501,11 +398,9 @@ public sealed partial class SimRenderer : Node2D
                         DrawCircle(dir * Mathf.Lerp(World.B.SpawnRadius, World.B.PlanetRadius + 8f, phase), 4f, new Color(1f, 0.9f, 0.5f, 0.8f));
                     }
                     break;
-                }
                 case "lance":
                     DrawLine(World.HeroView.Pos, a.Anchor, new Color(1f, 0.4f, 0.95f, 0.7f), 5f + 2f * Mathf.Sin(t * 30f));
-                    DrawLine(World.HeroView.Pos, a.Anchor, new Color(1f, 1f, 1f, 0.6f), 2f);
-                    DrawCircle(a.Anchor, def.Radius * Mathf.Max(0.3f, World.Mods.AbilityRadiusMult), new Color(1f, 0.4f, 0.95f, 0.14f));
+                    DrawLine(World.HeroView.Pos, a.Anchor, new Color(1, 1, 1, 0.6f), 2f);
                     DrawArc(a.Anchor, def.Radius, t * 4f, t * 4f + 4f, 16, new Color(1f, 0.6f, 1f), 3f);
                     break;
                 case "slow":
@@ -529,7 +424,7 @@ public sealed partial class SimRenderer : Node2D
                     break;
                 case "barrier":
                     if (a.P2 > 0f)
-                        DrawArc(Vector2.Zero, World.B.PlanetRadius + 12f, 0, Mathf.Tau, 64, new Color(0.4f, 0.85f, 1f, 0.5f + 0.2f * Mathf.Sin(t * 8f)), 4f);
+                        DrawArc(Vector2.Zero, World.B.PlanetRadius + 14f, 0, Mathf.Tau, 64, new Color(0.4f, 0.85f, 1f, 0.5f + 0.2f * Mathf.Sin(t * 8f)), 4f);
                     break;
                 case "repair":
                     for (int s = 0; s < 6; s++)
@@ -543,8 +438,7 @@ public sealed partial class SimRenderer : Node2D
         }
     }
 
-    // ---------------- fx + beams ----------------
-    private void DrawBeamsAndFx(bool back)
+    private void DrawFxLayer(bool back)
     {
         if (back)
         {
@@ -558,28 +452,24 @@ public sealed partial class SimRenderer : Node2D
             return;
         }
 
+        var flare = Art.Flare;
         foreach (var f in _fx)
         {
             float k = Mathf.Clamp(f.Age / f.Life, 0f, 1f);
             switch (f.Kind)
             {
                 case FxKind.Muzzle:
-                    DrawCircle(f.A, f.R * (1f + k), new Color(f.Col, 1f - k));
-                    DrawCircle(f.A, f.R * 0.5f * (1f + k), new Color(1, 1, 1, (1f - k) * 0.9f));
+                    Blit(flare, f.A, 0f, f.R * (2f + k * 2f), new Color(f.Col, (1f - k) * 0.9f));
                     break;
                 case FxKind.Tracer:
                     DrawLine(f.A, f.B, new Color(f.Col, (1f - k) * f.Col.A), f.R);
                     break;
                 case FxKind.Spark:
-                    for (int s = 0; s < 6; s++)
-                    {
-                        var d = Vector2.FromAngle(s * Mathf.Pi / 3f + f.Life * 13f) * f.R * (0.5f + k);
-                        DrawLine(f.A, f.A + d, new Color(f.Col, 1f - k), 2f);
-                    }
+                    Blit(flare, f.A, k * 3f, f.R * (1.5f + k), new Color(f.Col, 1f - k));
                     break;
                 case FxKind.Boom:
                     DrawArc(f.A, f.R * (0.3f + k * 1.7f), 0, Mathf.Tau, 24, new Color(f.Col, 1f - k), 3f * (1f - k));
-                    DrawCircle(f.A, f.R * (1f - k) * 0.8f, new Color(1f, 0.9f, 0.6f, (1f - k) * 0.6f));
+                    Blit(flare, f.A, 0f, f.R * (1f - k) * 2.4f, new Color(1f, 0.85f, 0.55f, (1f - k) * 0.7f));
                     break;
                 case FxKind.Shock:
                     DrawArc(f.A, f.R * (0.1f + k), 0, Mathf.Tau, 48, new Color(f.Col, (1f - k) * 0.9f), 6f * (1f - k));
@@ -590,17 +480,14 @@ public sealed partial class SimRenderer : Node2D
                     break;
                 case FxKind.Warp:
                     DrawArc(f.A, f.R * (1f - k), 0, Mathf.Tau, 16, new Color(f.Col, (1f - k) * 0.8f), 2f);
-                    DrawLine(f.A - new Vector2(0, f.R * 2f * (1f - k)), f.A, new Color(f.Col, (1f - k) * 0.5f), 2f);
                     break;
                 case FxKind.CastRing:
                     DrawArc(f.A, f.R * (0.2f + k * 1.6f), 0, Mathf.Tau, 32, new Color(f.Col, 1f - k), 4f * (1f - k));
                     break;
                 case FxKind.Text:
-                {
-                    var p = f.A + new Vector2(-60, -20 - k * 26f);
-                    DrawString(ThemeDB.FallbackFont, p, f.Text, HorizontalAlignment.Center, 120, 16, new Color(f.Col, 1f - k));
+                    DrawString(ThemeDB.FallbackFont, f.A + new Vector2(-70, -22 - k * 28f), f.Text,
+                               HorizontalAlignment.Center, 140, 17, new Color(f.Col, 1f - k));
                     break;
-                }
             }
         }
     }
@@ -613,7 +500,7 @@ public sealed partial class SimRenderer : Node2D
         for (int i = 1; i <= seg; i++)
         {
             float tt = i / (float)seg;
-            var mid = a.Lerp(b, tt) + perp * (GD.Randf() * 2f - 1f) * 8f * (1f - tt);
+            var mid = a.Lerp(b, tt) + perp * (GD.Randf() * 2f - 1f) * 9f * (1f - tt);
             DrawLine(prev, mid, new Color(c, alpha), 2.5f);
             DrawLine(prev, mid, new Color(1, 1, 1, alpha * 0.6f), 1f);
             prev = mid;
@@ -623,8 +510,8 @@ public sealed partial class SimRenderer : Node2D
     private static Color RoleColor(string role) => role switch
     {
         "offense" => new Color(1f, 0.5f, 0.4f),
-        "control" => new Color(0.6f, 0.6f, 1f),
-        "defense" => new Color(0.4f, 0.85f, 1f),
+        "control" => new Color(0.62f, 0.62f, 1f),
+        "defense" => new Color(0.4f, 0.86f, 1f),
         _ => new Color(1f, 0.85f, 0.4f),
     };
 }

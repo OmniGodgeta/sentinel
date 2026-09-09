@@ -26,6 +26,21 @@ public sealed record BalanceDef
     // in-run turret upgrades: level 2 = base*mult, level 3 = base*mult^2
     public float TurretUpgradeCostMult { get; init; } = 0.8f;   // cost of next level = base cost * this * level
     public float TurretUpgradeStatMult { get; init; } = 1.6f;   // dmg/rate scale per level
+
+    // planet's built-in missile battery — the always-on primary defence (PDTD style)
+    public float BatteryDamage { get; init; } = 26f;
+    public float BatteryInterval { get; init; } = 1.4f;
+    public int BatterySalvo { get; init; } = 1;
+    public float BatterySplash { get; init; }
+    public float BatteryMissileSpeed { get; init; } = 300f;
+    public float BatteryRange { get; init; } = 620f;
+
+    // orbital sentinels (autonomous auto-firing escorts unlocked by level cards)
+    public float SentinelOrbitRadius { get; init; } = 190f;
+    public float SentinelDamage { get; init; } = 10f;
+    public float SentinelInterval { get; init; } = 0.7f;
+    public float SentinelRange { get; init; } = 240f;
+    public float SentinelBoltSpeed { get; init; } = 560f;
 }
 
 public sealed record HeroDef
@@ -212,6 +227,19 @@ public sealed record CodexEntry
     public string Title { get; init; } = "";
     public string Category { get; init; } = "";
     public string Text { get; init; } = "";
+}
+
+public sealed record LevelCardDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Cat { get; init; } = "";
+    public string Text { get; init; } = "";
+    public bool Repeatable { get; init; }
+    public int MaxPicks { get; init; } = 1;
+    public string UnlockTurret { get; init; } = "";
+    public string UnlockAbility { get; init; } = "";
+    public Dictionary<string, float> Effects { get; init; } = new();
 }
 
 public sealed record CardDef

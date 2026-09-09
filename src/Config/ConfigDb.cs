@@ -28,6 +28,7 @@ public sealed class ConfigDb
     private readonly Dictionary<string, AbilityDef> _abilities = new();
     private readonly Dictionary<string, CodexEntry> _codex = new();
     private readonly List<CardDef> _cards = new();
+    private readonly List<LevelCardDef> _levelCards = new();
     private readonly List<string> _turretOrder = new();
     private readonly List<string> _abilityOrder = new();
 
@@ -43,6 +44,8 @@ public sealed class ConfigDb
     public CodexEntry? Codex(string id) => _codex.TryGetValue(id, out var e) ? e : null;
     public IReadOnlyList<CodexEntry> AllCodex => new List<CodexEntry>(_codex.Values);
     public IReadOnlyList<CardDef> Cards => _cards;
+    public IReadOnlyList<LevelCardDef> LevelCards => _levelCards;
+    public LevelCardDef? LevelCard(string id) => _levelCards.Find(c => c.Id == id);
 
     public static ConfigDb Load()
     {
@@ -67,6 +70,7 @@ public sealed class ConfigDb
         foreach (var c in ReadList<CodexEntry>("res://data/codex.json"))
             db._codex[c.Id] = c;
         db._cards.AddRange(ReadList<CardDef>("res://data/cards.json"));
+        db._levelCards.AddRange(ReadList<LevelCardDef>("res://data/levelcards.json"));
         return db;
     }
 

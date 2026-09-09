@@ -67,6 +67,7 @@ public sealed partial class AbilityScreen : CanvasLayer
 
         foreach (var id in App.Cfg.AbilityOrder)
         {
+            if (!p.IsAbilityUnlocked(id)) continue;   // unlocked via level-up cards
             var def = App.Cfg.Ability(id);
             int lvl = p.AbilityLevel(id);
             bool isEquipped = s.Loadout.Contains(id);

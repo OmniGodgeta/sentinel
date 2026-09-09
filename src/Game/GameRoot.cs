@@ -42,6 +42,8 @@ public sealed partial class GameRoot : Node2D
     private readonly SimClock _clock = new();
 
     private SimRenderer _renderer = null!;
+    private Render.Starfield _starfield = null!;
+    private Render.PlanetView _planet = null!;
     private ScreenFx _fx = null!;
     private Hud _hud = null!;
     public ScreenFx Fx => _fx;
@@ -60,6 +62,11 @@ public sealed partial class GameRoot : Node2D
         _cfg = AppRoot.Instance?.Cfg ?? ConfigDb.Load();
         _world = new SimWorld(_cfg);
         _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd, Ascension);
+
+        _starfield = new Render.Starfield { Radius = _world.B.DespawnRadius };
+        AddChild(_starfield);
+        _planet = new Render.PlanetView { Diameter = _world.B.PlanetRadius * 2f };
+        AddChild(_planet);
 
         _renderer = new SimRenderer { Root = this, World = _world };
         AddChild(_renderer);
@@ -89,8 +96,10 @@ public sealed partial class GameRoot : Node2D
         WorldScale = Mathf.Clamp(Mathf.Min(sx, sy), 0.12f, 1.4f);
         WorldOrigin = new Vector2(vp.X * 0.5f, TopReserve + availH * 0.5f);
 
-        _renderer.Scale = new Vector2(WorldScale, WorldScale);
-        _renderer.Position = WorldOrigin;
+        var sv = new Vector2(WorldScale, WorldScale);
+        _renderer.Scale = sv; _renderer.Position = WorldOrigin;
+        if (_starfield != null) { _starfield.Scale = sv; _starfield.Position = WorldOrigin; }
+        if (_planet != null) { _planet.Scale = sv; _planet.Position = WorldOrigin; }
         _hud?.SetDesignWidth(designW, vp);
     }
 

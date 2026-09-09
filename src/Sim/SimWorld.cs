@@ -230,6 +230,7 @@ public sealed partial class SimWorld
         AlloyEarned = 0;
         _bossHandle = EnemyHandle.None;
         PdgActiveLeft = SalvageActiveLeft = DronesActiveLeft = 0f;
+        InitPlanetDefenses();
         _pending.Clear();
         _spawnCursor = 0;
         _aliveThisWave = 0;
@@ -257,6 +258,8 @@ public sealed partial class SimWorld
                 StepSpawns();
                 StepEnemies();
                 StepHero();
+                StepPlanetBattery();
+                StepOrbitalSentinels();
                 StepTurrets();
                 StepProjectiles();
                 StepAbilities();
@@ -325,6 +328,7 @@ public sealed partial class SimWorld
         if (Phase != SimPhase.Build || !InSlot(slot) || id == null) return;
         if (Turrets[slot].Built) return;
         if (!_turretDefIndex.TryGetValue(id, out int di)) return;
+        if (Mods.UnlockedTurrets.Count > 0 && !Mods.UnlockedTurrets.Contains(id)) return;
         var def = TurretDefs[di];
         if (Credits < def.Cost) return;
         Credits -= def.Cost;

@@ -213,8 +213,10 @@ public sealed partial class Hud : CanvasLayer
     private void RebuildTurretButtons()
     {
         foreach (Node c in _turretRow.GetChildren()) c.QueueFree();
+        var unlocked = Root.World.Mods.UnlockedTurrets;
         foreach (var id in Root.World.Cfg.TurretOrder)
         {
+            if (unlocked.Count > 0 && !unlocked.Contains(id)) continue;
             var def = Root.World.Cfg.Turret(id);
             var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(88, 50) };
             btn.AddThemeFontSizeOverride("font_size", 10);

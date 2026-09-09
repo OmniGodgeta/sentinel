@@ -38,6 +38,20 @@ public sealed class ModifierSet
     public float HeroRespawnSeconds = -1f;       // <0 = use config default
     public bool  HeroDoubleSalvo = false;        // hero level 14
 
+    // ---- planet battery + orbital sentinels ----
+    public float BatteryDamageMult = 1f;
+    public float BatteryRateMult = 1f;      // >1 = faster
+    public int   BatterySalvoAdd = 0;
+    public float BatterySplashAdd = 0f;
+    public int   SentinelCount = 0;
+    public float SentinelDamageMult = 1f;
+    public float SentinelRateMult = 1f;
+
+    // ---- unlocks (base kit is small; level cards open the rest) ----
+    public System.Collections.Generic.HashSet<string> UnlockedTurrets = new();
+    public System.Collections.Generic.HashSet<string> UnlockedAbilities = new();
+    public int AbilitySlotBonus = 0;
+
     // ---- abilities ----
     public float AbilityEffectMult = 1f;
     public float AbilityCooldownMult = 1f;
@@ -66,7 +80,13 @@ public sealed class ModifierSet
     public int HeroLevel = 1;
     public int AbilitySlots = 3;
 
-    public ModifierSet Clone() => (ModifierSet)MemberwiseClone();
+    public ModifierSet Clone()
+    {
+        var c = (ModifierSet)MemberwiseClone();
+        c.UnlockedTurrets = new System.Collections.Generic.HashSet<string>(UnlockedTurrets);
+        c.UnlockedAbilities = new System.Collections.Generic.HashSet<string>(UnlockedAbilities);
+        return c;
+    }
 
     public void ApplyEffect(string key, float v)
     {
@@ -112,6 +132,15 @@ public sealed class ModifierSet
             case "card_options": CardDraftOptions += (int)v; break;
             case "card_reroll": CardDraftRerolls += (int)v; break;
             case "loss_reward": LossRewardFrac = System.Math.Max(LossRewardFrac, v); break;
+
+            case "battery_damage": BatteryDamageMult += v; break;
+            case "battery_rate": BatteryRateMult += v; break;
+            case "battery_salvo": BatterySalvoAdd += (int)v; break;
+            case "battery_splash": BatterySplashAdd += v; break;
+            case "sentinel_count": SentinelCount += (int)v; break;
+            case "sentinel_damage": SentinelDamageMult += v; break;
+            case "sentinel_rate": SentinelRateMult += v; break;
+            case "ability_slot": AbilitySlotBonus += (int)v; break;
         }
     }
 }
