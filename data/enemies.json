@@ -1,24 +1,44 @@
 [
-  {
-    "id": "skiff",
-    "name": "Skiff",
-    "max_hp": 26,
-    "speed": 62,
-    "armor": 0,
-    "contact_damage": 18,
-    "radius": 9,
-    "bounty": 5,
-    "color": 0.02
-  },
-  {
-    "id": "hauler",
-    "name": "Hauler",
-    "max_hp": 260,
-    "speed": 26,
-    "armor": 4,
-    "contact_damage": 70,
-    "radius": 20,
-    "bounty": 22,
-    "color": 0.62
-  }
+  { "id": "skiff", "name": "Skiff", "class": "line", "max_hp": 24, "speed": 64, "armor": 0,
+    "contact_damage": 16, "radius": 9, "bounty": 5, "color": 0.02, "codex_id": "en_skiff" },
+
+  { "id": "hauler", "name": "Hauler", "class": "line", "max_hp": 280, "speed": 24, "armor": 5,
+    "contact_damage": 75, "radius": 20, "bounty": 22, "color": 0.62, "codex_id": "en_hauler" },
+
+  { "id": "interceptor", "name": "Interceptor", "class": "line", "max_hp": 40, "speed": 108,
+    "armor": 0, "evasion": 0.55, "contact_damage": 20, "radius": 8, "bounty": 9,
+    "color": 0.14, "codex_id": "en_interceptor" },
+
+  { "id": "aegis_cruiser", "name": "Aegis Cruiser", "class": "line", "max_hp": 120,
+    "shield_hp": 140, "shield_regen": 22, "shield_regen_delay": 2.5, "speed": 34, "armor": 2,
+    "contact_damage": 55, "radius": 16, "bounty": 20, "color": 0.52, "codex_id": "en_aegis" },
+
+  { "id": "bombard", "name": "Bombard", "class": "threat", "max_hp": 150, "speed": 30, "armor": 3,
+    "standoff_range": 430, "ranged_damage": 26, "ranged_interval": 2.2,
+    "contact_damage": 40, "radius": 15, "bounty": 24, "color": 0.05, "codex_id": "en_bombard" },
+
+  { "id": "carrier", "name": "Carrier", "class": "threat", "max_hp": 420, "speed": 18, "armor": 6,
+    "spawn_enemy": "skiff", "spawn_interval": 2.6, "spawn_count": 2,
+    "contact_damage": 90, "radius": 24, "bounty": 40, "color": 0.6, "codex_id": "en_carrier" },
+
+  { "id": "phase_runner", "name": "Phase Runner", "class": "threat", "max_hp": 70, "speed": 44,
+    "blink_interval": 2.8, "blink_distance": 150, "ignore_obstacles": true,
+    "contact_damage": 30, "radius": 10, "bounty": 14, "color": 0.8, "codex_id": "en_phase" },
+
+  { "id": "leech", "name": "Leech", "class": "threat", "max_hp": 55, "speed": 70, "armor": 0,
+    "leech": true, "leech_disable_seconds": 10, "contact_damage": 8, "radius": 9, "bounty": 12,
+    "color": 0.28, "codex_id": "en_leech" },
+
+  { "id": "warden", "name": "Warden", "class": "threat", "max_hp": 200, "speed": 26, "armor": 4,
+    "aura_radius": 150, "aura_heal_per_second": 14, "aura_shield_per_second": 10,
+    "contact_damage": 0, "radius": 17, "bounty": 30, "color": 0.42, "codex_id": "en_warden" },
+
+  { "id": "siege_crawler", "name": "Siege Crawler", "class": "threat", "max_hp": 340, "speed": 22,
+    "armor": 8, "cc_immune": true, "contact_damage": 95, "radius": 19, "bounty": 34,
+    "color": 0.66, "codex_id": "en_siege" },
+
+  { "id": "boss_threshing_gate", "name": "The Threshing Gate", "class": "boss",
+    "max_hp": 6000, "speed": 8, "armor": 10, "contact_damage": 400, "radius": 44, "bounty": 200,
+    "boss_mechanic": "threshing_gate", "mechanic_interval": 9, "mechanic_duration": 3.5,
+    "core_drop": 3, "alloy_drop": 12, "color": 0.98, "codex_id": "en_boss_gate" }
 ]

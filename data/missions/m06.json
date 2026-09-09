@@ -1,0 +1,365 @@
+{
+  "id": "m06",
+  "name": "Blink & Bite",
+  "intro": "Phase Runners skip your obstacles. Leeches ride a turret and switch it off for ten seconds.",
+  "seed": 20260906,
+  "waves": [
+    {
+      "groups": [
+        {
+          "enemy": "skiff",
+          "count": 7,
+          "interval": 0.68,
+          "arc_center_deg": 240,
+          "arc_spread_deg": 84
+        },
+        {
+          "enemy": "skiff",
+          "count": 1,
+          "interval": 0.68,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "phase_runner",
+          "count": 3,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "aegis_cruiser",
+          "count": 1,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "leech",
+          "count": 3,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 7,
+          "interval": 0.61,
+          "arc_center_deg": 300,
+          "arc_spread_deg": 88
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 2.29,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "leech",
+          "count": 7,
+          "interval": 2.21,
+          "start_delay": 3.4,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 2.21,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "phase_runner",
+          "count": 3,
+          "interval": 2.13,
+          "start_delay": 3.4,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "leech",
+          "count": 4,
+          "interval": 2.13,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "aegis_cruiser",
+          "count": 1,
+          "interval": 2.13,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "phase_runner",
+          "count": 4,
+          "interval": 2.06,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 9,
+          "interval": 0.54,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "phase_runner",
+          "count": 1,
+          "interval": 2.06,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 4,
+          "interval": 1.98,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.98,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 3,
+          "interval": 1.9,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "aegis_cruiser",
+          "count": 1,
+          "interval": 1.9,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "aegis_cruiser",
+          "count": 1,
+          "interval": 1.9,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 5,
+          "interval": 1.82,
+          "start_delay": 1.0,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "leech",
+          "count": 1,
+          "interval": 1.82,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 5,
+          "interval": 1.74,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.74,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "phase_runner",
+          "count": 3,
+          "interval": 1.67,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 4,
+          "interval": 1.67,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.67,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 4,
+          "interval": 1.59,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "leech",
+          "count": 9,
+          "interval": 1.59,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.59,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "skiff",
+          "count": 31,
+          "interval": 0.39,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 14,
+          "interval": 0.39,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 1,
+          "interval": 0.39,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 4,
+          "interval": 1.43,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 4,
+          "interval": 1.43,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.43,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "skiff",
+          "count": 34,
+          "interval": 0.34,
+          "start_delay": 3.4,
+          "arc_center_deg": 240,
+          "arc_spread_deg": 97
+        },
+        {
+          "enemy": "aegis_cruiser",
+          "count": 3,
+          "interval": 1.36,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "leech",
+          "count": 1,
+          "interval": 1.36,
+          "start_delay": 1.0,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "aegis_cruiser",
+          "count": 5,
+          "interval": 1.28,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 4,
+          "interval": 1.28,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.28,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "leech",
+          "count": 13,
+          "interval": 1.2,
+          "start_delay": 1.0,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "aegis_cruiser",
+          "count": 6,
+          "interval": 1.2,
+          "start_delay": 4.2,
+          "arc_center_deg": -1
+        }
+      ]
+    }
+  ]
+}

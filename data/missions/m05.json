@@ -1,0 +1,386 @@
+{
+  "id": "m05",
+  "name": "The Carrier",
+  "intro": "A Carrier prints Skiffs until it dies. Decide what to kill first.",
+  "seed": 20260905,
+  "waves": [
+    {
+      "groups": [
+        {
+          "enemy": "skiff",
+          "count": 7,
+          "interval": 0.68,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 1,
+          "interval": 0.68,
+          "start_delay": 4.2,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "skiff",
+          "count": 8,
+          "interval": 0.66,
+          "arc_center_deg": 300,
+          "arc_spread_deg": 84
+        },
+        {
+          "enemy": "skiff",
+          "count": 1,
+          "interval": 0.66,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "interceptor",
+          "count": 3,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "carrier",
+          "count": 1,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "bombard",
+          "count": 3,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "interceptor",
+          "count": 7,
+          "interval": 2.21,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "interceptor",
+          "count": 1,
+          "interval": 2.21,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "interceptor",
+          "count": 6,
+          "interval": 2.13,
+          "start_delay": 3.4,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 6,
+          "interval": 0.57,
+          "arc_center_deg": 240,
+          "arc_spread_deg": 90
+        },
+        {
+          "enemy": "interceptor",
+          "count": 1,
+          "interval": 2.13,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "hauler",
+          "count": 3,
+          "interval": 2.06,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 3,
+          "interval": 0.54,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "carrier",
+          "count": 1,
+          "interval": 2.06,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "carrier",
+          "count": 2,
+          "interval": 1.98,
+          "start_delay": 4.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.98,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "carrier",
+          "count": 2,
+          "interval": 1.9,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "carrier",
+          "count": 1,
+          "interval": 1.9,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "carrier",
+          "count": 2,
+          "interval": 1.82,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "bombard",
+          "count": 1,
+          "interval": 1.82,
+          "start_delay": 3.4,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "carrier",
+          "count": 1,
+          "interval": 1.82,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "bombard",
+          "count": 5,
+          "interval": 1.74,
+          "start_delay": 3.4,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 9,
+          "interval": 0.46,
+          "start_delay": 1.0,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.74,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "carrier",
+          "count": 3,
+          "interval": 1.67,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.67,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "carrier",
+          "count": 3,
+          "interval": 1.59,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 6,
+          "interval": 0.41,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 1,
+          "interval": 0.41,
+          "arc_center_deg": 240,
+          "arc_spread_deg": 61
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "interceptor",
+          "count": 11,
+          "interval": 1.51,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 3,
+          "interval": 1.51,
+          "start_delay": 3.4,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "interceptor",
+          "count": 2,
+          "interval": 1.51,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "interceptor",
+          "count": 1,
+          "interval": 1.51,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "bombard",
+          "count": 4,
+          "interval": 1.43,
+          "start_delay": 4.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "interceptor",
+          "count": 12,
+          "interval": 1.43,
+          "start_delay": 1.8,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 5,
+          "interval": 0.37,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.43,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "skiff",
+          "count": 31,
+          "interval": 0.34,
+          "start_delay": 1.8,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "bombard",
+          "count": 4,
+          "interval": 1.36,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "carrier",
+          "count": 1,
+          "interval": 1.36,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "carrier",
+          "count": 4,
+          "interval": 1.28,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "bombard",
+          "count": 1,
+          "interval": 1.28,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "hauler",
+          "count": 1,
+          "interval": 1.28,
+          "arc_center_deg": -1
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "enemy": "bombard",
+          "count": 6,
+          "interval": 1.2,
+          "start_delay": 4.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "carrier",
+          "count": 2,
+          "interval": 1.2,
+          "arc_center_deg": -1
+        },
+        {
+          "enemy": "skiff",
+          "count": 8,
+          "interval": 0.3,
+          "start_delay": 2.6,
+          "arc_center_deg": -1
+        }
+      ]
+    }
+  ]
+}

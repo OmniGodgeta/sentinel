@@ -18,12 +18,13 @@ project/assembly_name="Sentinel"
 
 [display]
 
-window/size/viewport_width=540
-window/size/viewport_height=960
+window/size/viewport_width=720
+window/size/viewport_height=1280
 window/size/window_width_override=540
 window/size/window_height_override=960
+window/size/resizable=true
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 window/handheld/orientation="portrait"
 
 [rendering]

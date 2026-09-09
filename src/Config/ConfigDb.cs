@@ -20,26 +20,32 @@ public sealed class ConfigDb
 
     public BalanceDef Balance { get; private set; } = new();
     public HeroDef Hero { get; private set; } = new();
+    public ArcDef Arc { get; private set; } = new();
 
     private readonly Dictionary<string, TurretDef> _turrets = new();
     private readonly Dictionary<string, EnemyDef> _enemies = new();
     private readonly Dictionary<string, AbilityDef> _abilities = new();
+    private readonly Dictionary<string, CodexEntry> _codex = new();
     private readonly List<string> _turretOrder = new();
     private readonly List<string> _abilityOrder = new();
 
     public IReadOnlyList<string> TurretOrder => _turretOrder;
     public IReadOnlyList<string> AbilityOrder => _abilityOrder;
+    public IReadOnlyDictionary<string, AbilityDef> Abilities => _abilities;
 
     public TurretDef Turret(string id) => _turrets[id];
     public EnemyDef Enemy(string id) => _enemies[id];
     public AbilityDef Ability(string id) => _abilities[id];
     public bool HasEnemy(string id) => _enemies.ContainsKey(id);
+    public bool HasAbility(string id) => _abilities.ContainsKey(id);
+    public CodexEntry? Codex(string id) => _codex.TryGetValue(id, out var e) ? e : null;
 
     public static ConfigDb Load()
     {
         var db = new ConfigDb();
         db.Balance = ReadOne<BalanceDef>("res://data/balance.json") ?? new BalanceDef();
         db.Hero = ReadOne<HeroDef>("res://data/hero.json") ?? new HeroDef();
+        db.Arc = ReadOne<ArcDef>("res://data/arc_01.json") ?? new ArcDef();
 
         foreach (var t in ReadList<TurretDef>("res://data/turrets.json"))
         {
@@ -53,6 +59,8 @@ public sealed class ConfigDb
             db._abilities[a.Id] = a;
             db._abilityOrder.Add(a.Id);
         }
+        foreach (var c in ReadList<CodexEntry>("res://data/codex.json"))
+            db._codex[c.Id] = c;
         return db;
     }
 

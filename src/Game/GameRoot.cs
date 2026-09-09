@@ -6,14 +6,24 @@ using Sentinel.UI;
 
 namespace Sentinel.Game;
 
+public readonly record struct MissionOutcome(
+    string MissionId, bool Won, int WavesCleared, int WaveCount,
+    double ResearchData, double Xp, int Cores, float PlanetIntegrityPct, bool HeroSurvived);
+
 /// <summary>
-/// Top-level mission node. Owns the config, the sim, the clock, the renderer and
-/// the HUD, and translates raw input into queued <see cref="SimCommand"/>s.
+/// One mission: owns the config view, the sim, the clock, the renderer and the
+/// HUD, and translates raw input into queued <see cref="SimCommand"/>s.
+/// Instanced by <see cref="AppRoot"/>; reports back through <see cref="MissionEnded"/>.
 /// </summary>
 public sealed partial class GameRoot : Node2D
 {
     [Export] public string MissionPath = "res://data/missions/mission_01.json";
     [Export] public string[] EquippedAbilities = { "kinetic_barrage", "aegis_barrier", "overdrive" };
+
+    public int StartSpeed = 1;
+    public event System.Action<MissionOutcome>? MissionEnded;
+    public event System.Action? ExitToMenu;
+    private bool _outcomeReported;
 
     // world-to-screen transform for the play field, fitted to the viewport
     public float WorldScale { get; private set; } = 0.44f;
@@ -54,38 +64,59 @@ public sealed partial class GameRoot : Node2D
         FitViewport();
         GetViewport().SizeChanged += FitViewport;
 
-        _clock.SetSpeed(1);
+        _clock.SetSpeed(StartSpeed);
+        _hud.SyncSpeed(StartSpeed);
     }
 
     private void FitViewport()
     {
         Vector2 vp = GetViewport().GetVisibleRect().Size;
+        // the game is a portrait column; on a wide window it's centred and letterboxed
+        float designW = Mathf.Min(vp.X, vp.Y * 0.62f);
         float availH = Mathf.Max(200f, vp.Y - TopReserve - BottomReserve);
-        // fit ~90% of the spawn ring into the smaller available axis
         float fitRadius = _world.B.SpawnRadius * 0.92f;
-        float sx = (vp.X * 0.98f) / (2f * fitRadius);
+        float sx = (designW * 0.98f) / (2f * fitRadius);
         float sy = availH / (2f * fitRadius);
-        WorldScale = Mathf.Clamp(Mathf.Min(sx, sy), 0.12f, 1.2f);
+        WorldScale = Mathf.Clamp(Mathf.Min(sx, sy), 0.12f, 1.4f);
         WorldOrigin = new Vector2(vp.X * 0.5f, TopReserve + availH * 0.5f);
 
         _renderer.Scale = new Vector2(WorldScale, WorldScale);
         _renderer.Position = WorldOrigin;
+        _hud?.SetDesignWidth(designW, vp);
     }
 
     public override void _Process(double delta)
     {
         // speed hotkeys (desktop) — HUD buttons call SetSpeed too
-        if (Input.IsActionJustPressed("speed_1")) _clock.SetSpeed(1);
-        if (Input.IsActionJustPressed("speed_2")) _clock.SetSpeed(2);
-        if (Input.IsActionJustPressed("speed_3")) _clock.SetSpeed(3);
-        if (Input.IsActionJustPressed("speed_4")) _clock.SetSpeed(4);
+        if (Input.IsActionJustPressed("speed_1")) { SetSpeed(1); _hud.SyncSpeed(1); }
+        if (Input.IsActionJustPressed("speed_2")) { SetSpeed(2); _hud.SyncSpeed(2); }
+        if (Input.IsActionJustPressed("speed_3")) { SetSpeed(3); _hud.SyncSpeed(3); }
+        if (Input.IsActionJustPressed("speed_4")) { SetSpeed(4); _hud.SyncSpeed(4); }
+        if (Input.IsActionJustPressed("ui_cancel")) TogglePause();
 
         _clock.Advance((float)delta, _world.StepTick);
 
         ConsumeSimEvents();
         _renderer.QueueRedraw();
         _hud.Refresh();
+
+        if (!_outcomeReported && _world.Phase is SimPhase.Won or SimPhase.Lost)
+        {
+            _outcomeReported = true;
+            _clock.Paused = true;
+            MissionEnded?.Invoke(new MissionOutcome(
+                _world.Mission.Id,
+                _world.Phase == SimPhase.Won,
+                _world.WavesCleared, _world.WaveCount,
+                _world.ResearchDataEarned, _world.XpEarned, _world.CoresEarned,
+                _world.PlanetIntegrityMax > 0 ? _world.PlanetIntegrity / _world.PlanetIntegrityMax : 0f,
+                _world.HeroView.Alive));
+        }
     }
+
+    public void TogglePause() => _clock.Paused = !_clock.Paused;
+    public bool IsPaused => _clock.Paused;
+    public void GoToMenu() => ExitToMenu?.Invoke();
 
     private void ConsumeSimEvents()
     {
@@ -186,12 +217,14 @@ public sealed partial class GameRoot : Node2D
     }
 
     // ---- HUD callbacks ----
-    public void SetSpeed(int s) => _clock.SetSpeed(s);
+    public void SetSpeed(int s) { _clock.SetSpeed(s); AppRoot.Instance?.RememberSpeed(s); }
 
     public void RequestBuild(int slot, string turretId)
         => _world.Enqueue(SimCommand.Build(slot, turretId));
 
     public void RequestSell(int slot) => _world.Enqueue(SimCommand.Sell(slot));
+    public void RequestUpgrade(int slot) => _world.Enqueue(SimCommand.Upgrade(slot));
+    public void RequestFork(int slot, int fork) => _world.Enqueue(SimCommand.Fork(slot, fork));
 
     public void RequestLaunchWave() => _world.Enqueue(SimCommand.Wave());
 
@@ -213,6 +246,9 @@ public sealed partial class GameRoot : Node2D
     {
         _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities);
         _clock.Reset();
+        _clock.SetSpeed(StartSpeed);
+        _hud.SyncSpeed(StartSpeed);
         _pendingReticleSlot = -1;
+        _outcomeReported = false;
     }
 }

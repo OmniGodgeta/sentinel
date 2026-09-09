@@ -56,6 +56,8 @@ public sealed partial class SimWorld
     // ---- run state ----
     public MissionDef Mission { get; private set; } = new();
     public SimPhase Phase { get; private set; } = SimPhase.Build;
+    public long Tick { get; private set; }               // sim ticks since Load
+    public float GameTime => Tick * SimClock.TickDelta;
     public int WaveIndex { get; private set; }          // 0-based index of current/next wave
     public int WaveCount => Mission.Waves.Count;
     public float PhaseTimer { get; private set; }       // build: seconds left; wave: seconds elapsed
@@ -65,6 +67,8 @@ public sealed partial class SimWorld
     public int WavesCleared { get; private set; }
     public float ResearchDataEarned { get; private set; }
     public float XpEarned { get; private set; }
+    public int CoresEarned { get; private set; }
+    public int AlloyEarned { get; private set; }
     public RunStats Stats;
 
     // active-wave spawn scheduler
@@ -192,6 +196,11 @@ public sealed partial class SimWorld
 
         Phase = SimPhase.Build;
         PhaseTimer = B.BuildPhaseSeconds;
+        Tick = 0;
+        CoresEarned = 0;
+        AlloyEarned = 0;
+        _bossHandle = EnemyHandle.None;
+        PdgActiveLeft = SalvageActiveLeft = DronesActiveLeft = 0f;
         _pending.Clear();
         _spawnCursor = 0;
         _aliveThisWave = 0;
@@ -226,6 +235,7 @@ public sealed partial class SimWorld
                 break;
         }
 
+        Tick++;
         Stats.TicksElapsed++;
     }
 
@@ -249,10 +259,16 @@ public sealed partial class SimWorld
             case CommandType.SellTurret:
                 if (InSlot(c.IntA) && Turrets[c.IntA].Built && Phase == SimPhase.Build)
                 {
-                    Credits += TurretDefs[Turrets[c.IntA].DefIndex].Cost / 2;
+                    Credits += TurretRefund(c.IntA);
                     Turrets[c.IntA].Built = false;
                     Turrets[c.IntA].Target = EnemyHandle.None;
                 }
+                break;
+            case CommandType.UpgradeTurret:
+                TryUpgradeTurret(c.IntA);
+                break;
+            case CommandType.ForkTurret:
+                TryForkTurret(c.IntA, c.IntB);
                 break;
             case CommandType.StartWave:
                 if (Phase == SimPhase.Build && WaveIndex < WaveCount)
@@ -280,13 +296,89 @@ public sealed partial class SimWorld
         var def = TurretDefs[di];
         if (Credits < def.Cost) return;
         Credits -= def.Cost;
-        Turrets[slot].Built = true;
-        Turrets[slot].DefIndex = di;
-        Turrets[slot].CooldownLeft = 0f;
-        Turrets[slot].Target = EnemyHandle.None;
-        Turrets[slot].DamageDealt = 0f;
-        // face outward from center through the slot
-        Turrets[slot].Angle = Turrets[slot].Pos.Angle();
+        ref var t = ref Turrets[slot];
+        t.Built = true;
+        t.DefIndex = di;
+        t.Level = 1;
+        t.Fork = -1;
+        t.CooldownLeft = 0f;
+        t.RampStacks = 0f;
+        t.RampGraceLeft = 0f;
+        t.DisabledLeft = 0f;
+        t.Target = EnemyHandle.None;
+        t.DamageDealt = 0f;
+        t.Angle = t.Pos.Angle();          // faces outward
+    }
+
+    public int TurretUpgradeCost(int slot)
+    {
+        if (!InSlot(slot) || !Turrets[slot].Built || Turrets[slot].Level >= 3) return -1;
+        var def = TurretDefs[Turrets[slot].DefIndex];
+        return Mathf.RoundToInt(def.Cost * B.TurretUpgradeCostMult * Turrets[slot].Level);
+    }
+
+    private int TurretRefund(int slot)
+    {
+        var t = Turrets[slot];
+        var def = TurretDefs[t.DefIndex];
+        int spent = def.Cost;
+        for (int l = 1; l < t.Level; l++)
+            spent += Mathf.RoundToInt(def.Cost * B.TurretUpgradeCostMult * l);
+        return spent / 2;
+    }
+
+    private void TryUpgradeTurret(int slot)
+    {
+        if (Phase != SimPhase.Build || !InSlot(slot) || !Turrets[slot].Built) return;
+        int cost = TurretUpgradeCost(slot);
+        if (cost < 0 || Credits < cost) return;
+        Credits -= cost;
+        Turrets[slot].Level++;
+    }
+
+    private void TryForkTurret(int slot, int forkIndex)
+    {
+        if (Phase != SimPhase.Build || !InSlot(slot) || !Turrets[slot].Built) return;
+        if (Turrets[slot].Level < 3 || Turrets[slot].Fork >= 0) return;
+        var def = TurretDefs[Turrets[slot].DefIndex];
+        if (forkIndex < 0 || forkIndex >= def.Forks.Count) return;
+        Turrets[slot].Fork = forkIndex;
+    }
+
+    // effective per-turret stats after level + fork
+    internal readonly struct TurretStats
+    {
+        public readonly float Damage, FireInterval, Range, Splash, ArmorPen, ShieldMult;
+        public readonly int Pierce, ChainJumps;
+        public TurretStats(float d, float fi, float r, float sp, float ap, float sm, int pc, int cj)
+        { Damage = d; FireInterval = fi; Range = r; Splash = sp; ArmorPen = ap; ShieldMult = sm; Pierce = pc; ChainJumps = cj; }
+    }
+
+    internal TurretStats StatsFor(in Turret t)
+    {
+        var def = TurretDefs[t.DefIndex];
+        float lvlMult = Mathf.Pow(B.TurretUpgradeStatMult, t.Level - 1);
+        float dMult = lvlMult, rateMult = 1f, rangeMult = 1f, splashMult = 1f, apAdd = 0f;
+        int pierce = def.Pierce, chain = def.ChainJumps;
+        if (t.Fork >= 0 && t.Fork < def.Forks.Count)
+        {
+            var f = def.Forks[t.Fork];
+            dMult *= f.DamageMult;
+            rateMult *= f.FireRateMult;
+            rangeMult *= f.RangeMult;
+            splashMult *= f.SplashMult;
+            apAdd += f.ArmorPenAdd;
+            pierce += f.ExtraPierce;
+            chain += f.ExtraChain;
+        }
+        return new TurretStats(
+            def.Damage * dMult,
+            def.FireInterval / Mathf.Max(0.05f, rateMult),
+            def.Range * rangeMult,
+            def.SplashRadius * splashMult,
+            def.ArmorPen + apAdd,
+            def.ShieldMult,
+            pierce, chain);
     }
 
     private void BeginWave()
@@ -340,6 +432,8 @@ public sealed partial class SimWorld
             ResearchDataEarned += B.ResearchDataPerWave;
             XpEarned += B.XpPerWave;
             Credits += B.CreditsPerWave;
+            // a Sentinel Core every few waves; bosses drop more (handled on boss kill)
+            if (WavesCleared % 4 == 0) CoresEarned += 1;
             Events.Push(SimEventKind.WaveCleared, Vector2.Zero, 0f, WaveIndex);
 
             WaveIndex++;
@@ -365,6 +459,8 @@ public sealed partial class SimWorld
         {
             ResearchDataEarned += B.ResearchDataMissionClear;
             XpEarned += B.XpMissionClear;
+            CoresEarned += 2;
+            AlloyEarned += 5;           // mission first-clear alloy (spec §11); dedup vs. record is AppRoot's job
         }
         // rewards for partial progress are already added per wave cleared.
     }
@@ -379,17 +475,29 @@ public sealed partial class SimWorld
 
         var def = _missionEnemyDefs[missionEnemyDefIndex];
         ref var e = ref Enemies[idx];
+        uint nextGen = e.Gen + 1;
+        e = default;
         e.Alive = true;
-        e.Gen++;
+        e.Gen = nextGen;
         e.DefIndex = missionEnemyDefIndex;
         e.Pos = pos;
         e.Hp = def.MaxHp;
         e.MaxHp = def.MaxHp;
+        e.Shield = def.ShieldHp;
+        e.MaxShield = def.ShieldHp;
         e.Armor = def.Armor;
         e.Radius = def.Radius;
         e.ContactDamage = def.ContactDamage;
         e.Bounty = def.Bounty;
         e.DistToCenter = pos.Length();
+        e.BaseSpeed = def.Speed;
+        e.SlowFactor = 1f;
+        e.LeechSlot = -1;
+        e.AttackTimer = def.RangedInterval;
+        e.SpawnTimer = def.SpawnInterval;
+        e.BlinkTimer = def.BlinkInterval;
+        e.MechanicTimer = def.MechanicInterval;
+        if (def.Class == "boss") _bossHandle = new EnemyHandle { Index = idx, Gen = e.Gen };
         return idx;
     }
 
@@ -397,6 +505,12 @@ public sealed partial class SimWorld
     {
         ref var e = ref Enemies[idx];
         if (!e.Alive) return;
+        var def = _missionEnemyDefs[e.DefIndex];
+
+        // a leech frees its turret when it dies
+        if (e.LeechSlot >= 0 && e.LeechSlot < Turrets.Length)
+            Turrets[e.LeechSlot].DisabledLeft = 0f;
+
         e.Alive = false;
         e.Gen++;
         _freeEnemies.Push(idx);
@@ -406,8 +520,35 @@ public sealed partial class SimWorld
         {
             Stats.EnemiesKilled++;
             Credits += e.Bounty;
+
+            // Salvage Beacon: kills inside the field pay bonus RD + XP
+            if (SalvageActiveLeft > 0f && e.Pos.DistanceSquaredTo(SalvageAnchor) <= SalvageRadius * SalvageRadius)
+            {
+                ResearchDataEarned += e.Bounty * SalvageBonusFrac;
+                XpEarned += e.Bounty * SalvageBonusFrac * 0.5f;
+            }
+
+            if (def.Class == "boss")
+            {
+                CoresEarned += Mathf.Max(1, def.CoreDrop);
+                AlloyEarned += def.AlloyDrop;
+                _bossHandle = EnemyHandle.None;
+                Events.Push(SimEventKind.MissionWon, e.Pos); // banner cue; actual win is wave-end
+            }
             Events.Push(SimEventKind.EnemyKilled, e.Pos, e.Radius);
         }
+    }
+
+    private EnemyHandle _bossHandle = EnemyHandle.None;
+    public bool TryGetBoss(out Vector2 pos, out float hpFrac, out bool shielded)
+    {
+        pos = Vector2.Zero; hpFrac = 0f; shielded = false;
+        if (!Resolve(in _bossHandle, out int bi)) return false;
+        ref readonly var b = ref Enemies[bi];
+        pos = b.Pos;
+        hpFrac = b.MaxHp > 0 ? b.Hp / b.MaxHp : 0f;
+        shielded = b.MechanicActive || b.IsShielded;
+        return true;
     }
 
     internal bool Resolve(in EnemyHandle h, out int idx)
@@ -419,7 +560,8 @@ public sealed partial class SimWorld
     internal EnemyHandle HandleOf(int idx) => new() { Index = idx, Gen = Enemies[idx].Gen };
 
     internal int SpawnProjectile(byte kind, Vector2 pos, Vector2 vel, float dmg, float splash,
-                                 EnemyHandle target, byte src, float life = 4f)
+                                 EnemyHandle target, byte src, float life = 4f,
+                                 float armorPen = 0f, float shieldMult = 1f, int pierce = 0, float slow = 0f)
     {
         int idx;
         if (_freeProjectiles.Count > 0) idx = _freeProjectiles.Pop();
@@ -433,6 +575,10 @@ public sealed partial class SimWorld
         p.Vel = vel;
         p.Damage = dmg;
         p.SplashRadius = splash;
+        p.ArmorPen = armorPen;
+        p.ShieldMult = shieldMult;
+        p.PierceLeft = pierce;
+        p.Slow = slow;
         p.Target = target;
         p.SourceTurret = src;
         p.Life = life;
@@ -446,13 +592,44 @@ public sealed partial class SimWorld
         _freeProjectiles.Push(idx);
     }
 
-    /// <summary>Apply damage to an enemy; handles armor, death, attribution.</summary>
-    internal void DamageEnemy(int idx, float amount, DamageSource src)
+    /// <summary>Apply damage to an enemy. Shields soak first (with a multiplier so
+    /// shield-strip weapons matter), then armour reduces the rest. Returns dealt.</summary>
+    internal float DamageEnemy(int idx, float amount, DamageSource src,
+                               float armorPen = 0f, float shieldMult = 1f)
     {
         ref var e = ref Enemies[idx];
-        if (!e.Alive) return;
-        float dealt = Mathf.Max(1f, amount - e.Armor);
-        e.Hp -= dealt;
+        if (!e.Alive) return 0f;
+
+        // boss invulnerable shell
+        if (e.MechanicActive && _missionEnemyDefs[e.DefIndex].BossMechanic == "threshing_gate")
+        {
+            Events.Push(SimEventKind.EnemyHit, e.Pos, 0f);
+            return 0f;
+        }
+
+        float remaining = amount;
+        float dealt = 0f;
+
+        if (e.Shield > 0.01f)
+        {
+            float toShield = remaining * shieldMult;
+            float soak = Mathf.Min(e.Shield, toShield);
+            e.Shield -= soak;
+            e.ShieldRegenTimer = 0f;
+            dealt += soak;
+            // overkill on the shield converts back to hull damage at the normal rate
+            remaining -= soak / Mathf.Max(0.01f, shieldMult);
+            if (remaining < 0f) remaining = 0f;
+        }
+
+        if (remaining > 0f)
+        {
+            float effArmor = Mathf.Max(0f, e.Armor - armorPen);
+            float hull = Mathf.Max(1f, remaining - effArmor);
+            e.Hp -= hull;
+            dealt += hull;
+        }
+
         switch (src)
         {
             case DamageSource.Turret: Stats.DamageByTurrets += dealt; break;
@@ -461,6 +638,40 @@ public sealed partial class SimWorld
         }
         Events.Push(SimEventKind.EnemyHit, e.Pos, dealt);
         if (e.Hp <= 0f) KillEnemy(idx, leaked: false);
+        return dealt;
+    }
+
+    internal void ApplySlow(int idx, float factor)
+    {
+        ref var e = ref Enemies[idx];
+        if (!e.Alive || _missionEnemyDefs[e.DefIndex].CcImmune) return;
+        if (factor < e.SlowFactor) e.SlowFactor = factor;   // strongest slow wins this tick
+    }
+
+    internal void ApplyPull(int idx, Vector2 toward, float strength)
+    {
+        ref var e = ref Enemies[idx];
+        if (!e.Alive || _missionEnemyDefs[e.DefIndex].CcImmune) return;
+        Vector2 d = toward - e.Pos;
+        float len = d.Length();
+        if (len < 1f) return;
+        Vector2 imp = d / len * strength;
+        e.PullX += imp.X;
+        e.PullY += imp.Y;
+    }
+
+    internal void HealEnemy(int idx, float amount)
+    {
+        ref var e = ref Enemies[idx];
+        if (!e.Alive) return;
+        e.Hp = Mathf.Min(e.MaxHp, e.Hp + amount);
+    }
+
+    internal void ShieldEnemy(int idx, float amount)
+    {
+        ref var e = ref Enemies[idx];
+        if (!e.Alive || e.MaxShield <= 0f) return;
+        e.Shield = Mathf.Min(e.MaxShield, e.Shield + amount);
     }
 
     internal void DamagePlanet(float amount)
@@ -483,6 +694,21 @@ public sealed partial class SimWorld
         Events.Push(SimEventKind.PlanetHit, Vector2.Zero, amount);
     }
 
+    internal void DamageTurret(int slot, float amount)
+    {
+        // Phase 1/2: turrets aren't destroyed, only the planet loses integrity when
+        // shelled — the turret hit just spills a fraction to the planet and flags VFX.
+        if (!InSlot(slot) || !Turrets[slot].Built) { DamagePlanet(amount); return; }
+        DamagePlanet(amount * 0.6f);
+        Events.Push(SimEventKind.PlanetHit, Turrets[slot].Pos, amount);
+    }
+
+    internal void DisableTurret(int slot, float seconds)
+    {
+        if (!InSlot(slot) || !Turrets[slot].Built) return;
+        if (seconds > Turrets[slot].DisabledLeft) Turrets[slot].DisabledLeft = seconds;
+    }
+
     internal enum DamageSource { Turret, Hero, Ability }
 
     // ---- geometry helpers ----
@@ -502,4 +728,22 @@ public sealed partial class SimWorld
     public ReadOnlySpan<AbilitySlot> AbilityView => Abilities;
     public int EnemiesAlive => _aliveThisWave;
     public int SpawnsRemaining => Mathf.Max(0, _pending.Count - _spawnCursor);
+
+    /// <summary>"14× Skiff  ·  3× Hauler" for the build-phase preview (spec §13).</summary>
+    public string NextWavePreview()
+    {
+        if (WaveIndex >= WaveCount) return "";
+        var counts = new Dictionary<string, int>();
+        var order = new List<string>();
+        foreach (var g in Mission.Waves[WaveIndex].Groups)
+        {
+            if (!Cfg.HasEnemy(g.Enemy)) continue;
+            string name = Cfg.Enemy(g.Enemy).Name;
+            if (!counts.ContainsKey(name)) { counts[name] = 0; order.Add(name); }
+            counts[name] += g.Count;
+        }
+        var parts = new List<string>();
+        foreach (var n in order) parts.Add($"{counts[n]}× {n}");
+        return string.Join("   ·   ", parts);
+    }
 }

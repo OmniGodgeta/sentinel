@@ -22,3 +22,8 @@ Thumbs.db
 # Scratch
 /scratch/
 telemetry/*.jsonl
+
+
+# dev screenshot artifacts
+/docs/*.png
+/docs/*.png.import

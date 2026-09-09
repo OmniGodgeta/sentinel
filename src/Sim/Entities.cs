@@ -2,9 +2,9 @@ using Godot;
 
 namespace Sentinel.Sim;
 
-// Plain data. No Godot Nodes per entity — the renderer draws these with
-// MultiMesh. Pools are fixed-size arrays with an alive flag + free list, so
-// handles (index+generation) stay valid across a whole wave.
+// Plain data. No Godot Nodes per entity — the renderer draws these with a
+// MultiMesh pass later. Pools are fixed arrays with an alive flag + free list,
+// so handles (index+generation) stay valid across a whole wave.
 
 public enum TargetMode { First, Closest, Strongest }
 
@@ -20,43 +20,70 @@ public struct Enemy
 {
     public bool Alive;
     public uint Gen;
-    public int DefIndex;        // into SimWorld.EnemyDefs
+    public int DefIndex;
     public Vector2 Pos;
     public Vector2 Vel;
     public float Hp;
     public float MaxHp;
+    public float Shield;
+    public float MaxShield;
+    public float ShieldRegenTimer;   // counts up; regen once past def delay
     public float Armor;
     public float Radius;
     public float ContactDamage;
     public int Bounty;
-    public float DistToCenter;  // cached each tick, used for "first" targeting
+    public float DistToCenter;
+    public float BaseSpeed;
+
+    // status
+    public float SlowFactor;         // 1 = normal, <1 = slowed (this tick, cleared+reapplied each tick)
+    public float PullX, PullY;       // accumulated pull impulse this tick
+
+    // behaviour timers
+    public float AttackTimer;        // bombard ranged / boss
+    public float SpawnTimer;         // carrier
+    public float BlinkTimer;         // phase runner
+    public float MechanicTimer;      // boss phase
+    public bool MechanicActive;      // boss invulnerable-shell etc.
+    public float MechanicPhase;      // 0..1 within the mechanic window
+    public int LeechSlot;            // -1 none, else the turret slot this leech is riding
+    public bool Standoff;            // bombard has stopped to shell
+
+    public readonly bool IsShielded => Shield > 0.01f;
 }
 
 public struct Projectile
 {
     public bool Alive;
-    public byte Kind;           // 0 = turret shot, 1 = hero missile
+    public byte Kind;           // 0 = turret projectile, 1 = hero missile, 2 = enemy shell
     public Vector2 Pos;
     public Vector2 Vel;
     public float Damage;
     public float SplashRadius;
-    public float ArmorPen;      // unused Phase 1, reserved
-    public float Life;          // seconds remaining before self-expire
-    public EnemyHandle Target;  // homing missiles only; None => straight shot
-    public byte SourceTurret;   // for damage attribution (index, 255 = hero)
+    public float ArmorPen;
+    public float ShieldMult;
+    public int PierceLeft;
+    public float Life;
+    public EnemyHandle Target;
+    public byte SourceTurret;   // 255 = hero, 254 = enemy
+    public float Slow;          // graviton projector: applies slow on hit (0 = none)
 }
 
 public struct Turret
 {
     public bool Built;
-    public int DefIndex;        // into SimWorld.TurretDefs
-    public int Slot;            // 0..TurretSlots-1
-    public float Angle;         // facing, radians (player can rotate in build phase)
-    public Vector2 Pos;         // on the turret ring
-    public float CooldownLeft;  // seconds until next shot
+    public int DefIndex;
+    public int Slot;
+    public int Level;           // 1..3
+    public int Fork;            // -1 = not chosen, else index into def.Forks
+    public float Angle;
+    public Vector2 Pos;
+    public float CooldownLeft;
     public EnemyHandle Target;
-    // attribution
-    public float DamageDealt;
+    public float RampStacks;    // laser lattice
+    public float RampGraceLeft; // seconds ramp persists after losing contact
+    public float DisabledLeft;  // leech / EMP
+    public float DamageDealt;   // attribution
 }
 
 public struct HeroState
@@ -68,19 +95,18 @@ public struct HeroState
     public float VolleyCooldownLeft;
     public bool Alive;
     public float RespawnLeft;
-    // Overdrive buff
     public float OverdriveLeft;
-    public float OverdriveVolleyMult;   // e.g. 0.4 => cooldown *0.4 while active
+    public float OverdriveVolleyMult;
+    public float ShieldPool;        // from Aegis "overflow to hero shield" branch etc. (reserved)
 }
 
 public struct AbilitySlot
 {
-    public int DefIndex;        // into SimWorld.AbilityDefs, -1 if empty
+    public int DefIndex;       // -1 if empty
     public float CooldownLeft;
-    // active-effect bookkeeping (Phase 1: barrage arc + barrier)
     public float ActiveLeft;
-    public float P0;            // param cache (e.g. arc center)
-    public float P1;            // (e.g. arc half-width)
-    public float P2;            // (e.g. absorb pool remaining)
-    public float TickAccum;     // for periodic effects like barrage ticks
+    public float P0, P1, P2, P3;
+    public float TickAccum;
+    public Vector2 Anchor;     // reticle position for zone abilities
+    public EnemyHandle Tether; // gravity snare focus, etc.
 }

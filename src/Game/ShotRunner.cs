@@ -14,9 +14,14 @@ public sealed partial class ShotRunner : Node2D
     private double _t;
     private int _shot;
 
+    [Export] public string Mission = "res://data/missions/m01.json";
+
     public override void _Ready()
     {
-        _game = new GameRoot();
+        var win = GetWindow();
+        win.Mode = Window.ModeEnum.Windowed;
+        win.Size = new Vector2I(540, 960);
+        _game = new GameRoot { MissionPath = Mission };
         AddChild(_game);
     }
 
@@ -51,9 +56,9 @@ public sealed partial class ShotRunner : Node2D
 
             if (_heroT > 0.5) { w.Enqueue(SimCommand.HeroTarget(NearestThreatDir() * 280f)); _heroT = 0; }
 
-            if (!_grabbed1 && w.WaveIndex == 2) { Grab("wave3"); _grabbed1 = true; }
-            if (!_grabbed2 && w.WaveIndex == 6) { Grab("wave7"); _grabbed2 = true; }
-            if (!_grabbed3 && w.WaveIndex == 11) { Grab("wave12"); _grabbed3 = true; }
+            if (!_grabbed1 && w.WaveIndex == 4) { Grab("early"); _grabbed1 = true; }
+            if (!_grabbed2 && w.WaveIndex == 12) { Grab("mid"); _grabbed2 = true; }
+            if (!_grabbed3 && w.TryGetBoss(out _, out _, out _)) { Grab("boss"); _grabbed3 = true; }
         }
 
         if (w.Phase is SimPhase.Won or SimPhase.Lost)

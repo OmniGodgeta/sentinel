@@ -19,6 +19,7 @@ public sealed class SimClock
 
     public long Tick { get; private set; }
     public int Speed { get; private set; } = 1;
+    public bool Paused { get; set; }
 
     private float _accumulator;
 
@@ -33,6 +34,7 @@ public sealed class SimClock
     {
         Tick = 0;
         _accumulator = 0f;
+        Paused = false;
     }
 
     /// <summary>
@@ -41,6 +43,7 @@ public sealed class SimClock
     /// </summary>
     public int Advance(float realDelta, System.Action step)
     {
+        if (Paused) { _accumulator = 0f; return 0; }
         _accumulator += realDelta * Speed;
         int stepped = 0;
         while (_accumulator >= TickDelta && stepped < MaxTicksPerFrame)

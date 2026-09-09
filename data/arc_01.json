@@ -1,0 +1,14 @@
+{
+  "id": "arc_01",
+  "name": "The Long Quiet",
+  "missions": [
+    { "id": "m01", "file": "res://data/missions/m01.json", "name": "1 · Seed Vault" },
+    { "id": "m02", "file": "res://data/missions/m02.json", "name": "2 · Fast Movers" },
+    { "id": "m03", "file": "res://data/missions/m03.json", "name": "3 · The Shielded" },
+    { "id": "m04", "file": "res://data/missions/m04.json", "name": "4 · Standoff" },
+    { "id": "m05", "file": "res://data/missions/m05.json", "name": "5 · The Carrier" },
+    { "id": "m06", "file": "res://data/missions/m06.json", "name": "6 · Blink & Bite" },
+    { "id": "m07", "file": "res://data/missions/m07.json", "name": "7 · Wardens" },
+    { "id": "m08", "file": "res://data/missions/m08.json", "name": "8 · The Threshing Gate" }
+  ]
+}

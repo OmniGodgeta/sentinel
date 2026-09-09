@@ -47,6 +47,16 @@ public sealed partial class SimWorld
         {
             DamageEnemy(closest, Cfg.Hero.PointDefenseDps * dt, DamageSource.Hero);
         }
+
+        // Sentinel Deployment: escort drones chew on the nearest few enemies
+        if (DronesActiveLeft > 0f)
+        {
+            System.Span<int> picks = stackalloc int[8];
+            int n = NearestEnemiesTo(h.Pos, System.Math.Min(DroneCount, 8), picks);
+            for (int k = 0; k < n; k++)
+                if (Enemies[picks[k]].Pos.DistanceTo(h.Pos) <= DroneRange)
+                    DamageEnemy(picks[k], DroneDps * dt, DamageSource.Hero);
+        }
     }
 
     private void TryFireVolley(Vector2 aim)
@@ -96,7 +106,7 @@ public sealed partial class SimWorld
         {
             h.Hull = 0f;
             h.Alive = false;
-            h.RespawnLeft = 15f;
+            h.RespawnLeft = Cfg.Hero.RespawnSeconds;
             Events.Push(SimEventKind.HeroDown, h.Pos);
         }
     }
