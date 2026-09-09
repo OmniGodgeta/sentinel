@@ -59,7 +59,10 @@ public sealed partial class SimWorld
     public long Tick { get; private set; }               // sim ticks since Load
     public float GameTime => Tick * SimClock.TickDelta;
     public int WaveIndex { get; private set; }          // 0-based index of current/next wave
-    public int WaveCount => Mission.Waves.Count;
+    private bool _endless;
+    public bool IsEndless => _endless;
+    public int WaveCount => _endless ? int.MaxValue : Mission.Waves.Count;
+    public float EndlessScale => _endless ? 1f + WaveIndex * 0.05f : 1f;
     public float PhaseTimer { get; private set; }       // build: seconds left; wave: seconds elapsed
     public float PlanetIntegrity { get; private set; }
     public float PlanetIntegrityMax { get; private set; }
@@ -128,24 +131,28 @@ public sealed partial class SimWorld
                      float[]? abilityEffect = null, float[]? abilityCd = null)
     {
         Mission = mission;
-        Mods = mods ?? new Meta.ModifierSet();
+        Mods = (mods ?? new Meta.ModifierSet()).Clone();   // run-scoped copy — card draft mutates it
         Rng = new DetRandom(mission.Seed);
+        _draftRng = new DetRandom(mission.Seed ^ 0x9E3779B97F4A7C15UL);
+        _runCards.Clear();
+        _draftOptions.Clear();
+        _pendingDrafts = 0;
 
-        // resolve the enemy defs this mission references
+        _endless = mission.Endless;
+
+        // resolve the enemy defs this mission references (+ the endless roster)
         var used = new List<EnemyDef>();
         _enemyDefIndex.Clear();
+        void Resolve(string id)
+        {
+            if (_enemyDefIndex.ContainsKey(id)) return;
+            if (!Cfg.HasEnemy(id)) { GD.PushError($"Mission {mission.Id}: unknown enemy '{id}'"); return; }
+            _enemyDefIndex[id] = used.Count;
+            used.Add(Cfg.Enemy(id));
+        }
         foreach (var wave in mission.Waves)
-            foreach (var g in wave.Groups)
-            {
-                if (_enemyDefIndex.ContainsKey(g.Enemy)) continue;
-                if (!Cfg.HasEnemy(g.Enemy))
-                {
-                    GD.PushError($"Mission {mission.Id}: unknown enemy '{g.Enemy}'");
-                    continue;
-                }
-                _enemyDefIndex[g.Enemy] = used.Count;
-                used.Add(Cfg.Enemy(g.Enemy));
-            }
+            foreach (var g in wave.Groups) Resolve(g.Enemy);
+        foreach (var id in mission.EndlessRoster) Resolve(id);
         _missionEnemyDefs = used.ToArray();
 
         // reset pools
@@ -281,6 +288,9 @@ public sealed partial class SimWorld
             case CommandType.ForkTurret:
                 TryForkTurret(c.IntA, c.IntB);
                 break;
+            case CommandType.PickCard:
+                if (Phase == SimPhase.Build) PickCard(c.IntA);
+                break;
             case CommandType.StartWave:
                 if (Phase == SimPhase.Build && WaveIndex < WaveCount)
                     BeginWave();
@@ -397,9 +407,62 @@ public sealed partial class SimWorld
     internal float CritRoll(float dmg)
         => Mods.TurretCritChance > 0f && Rng.Chance(Mods.TurretCritChance) ? dmg * Mods.TurretCritMult : dmg;
 
+    private WaveDef GetWave(int index)
+    {
+        if (index < Mission.Waves.Count) return Mission.Waves[index];
+        return GenerateEndlessWave(index);
+    }
+
+    /// <summary>Procedural wave for endless mode. Deterministic from the mission seed + wave index.</summary>
+    private WaveDef GenerateEndlessWave(int index)
+    {
+        var rng = new DetRandom(Mission.Seed ^ (0xA24BAED4963EE407UL + (ulong)index));
+        float budget = 10f + index * 4.5f;
+        var w = new WaveDef();
+
+        // weight table by threat; heavies unlock as depth grows
+        (string id, int weight, int minWave)[] table =
+        {
+            ("skiff", 60, 0), ("interceptor", 25, 2), ("leech", 15, 4), ("phase_runner", 14, 6),
+            ("hauler", 22, 1), ("aegis_cruiser", 20, 3), ("bombard", 18, 4),
+            ("warden", 12, 7), ("carrier", 10, 6), ("siege_crawler", 12, 8),
+        };
+        float wcost(string id) => id switch
+        { "skiff" => 1, "interceptor" => 2, "leech" => 2, "phase_runner" => 3, "hauler" => 6,
+          "aegis_cruiser" => 6, "bombard" => 5, "warden" => 6, "carrier" => 12, "siege_crawler" => 8, _ => 3 };
+
+        int guard = 0;
+        while (budget > 1f && guard++ < 14)
+        {
+            var avail = new List<(string, int)>();
+            int total = 0;
+            foreach (var t in table)
+                if (index >= t.minWave && _enemyDefIndex.ContainsKey(t.id)) { avail.Add((t.id, t.weight)); total += t.weight; }
+            if (avail.Count == 0) break;
+            int roll = rng.NextInt(total);
+            string pick = avail[0].Item1;
+            foreach (var (id, wt) in avail) { if (roll < wt) { pick = id; break; } roll -= wt; }
+
+            float c = wcost(pick);
+            int count = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(budget, budget * (pick == "skiff" ? 0.5f : 0.35f)) / c));
+            count = Mathf.Min(count, pick == "skiff" ? 40 : 8);
+            budget -= count * c;
+            w.Groups.Add(new WaveEntry
+            {
+                Enemy = pick,
+                Count = count,
+                Interval = pick == "skiff" ? 0.35f : 1.6f,
+                StartDelay = rng.NextFloat(0f, 4f),
+                ArcCenterDeg = rng.NextInt(4) == 0 ? rng.NextInt(12) * 30 : -1,
+                ArcSpreadDeg = 70,
+            });
+        }
+        return w;
+    }
+
     private void BeginWave()
     {
-        var wave = Mission.Waves[WaveIndex];
+        var wave = GetWave(WaveIndex);
         _pending.Clear();
         foreach (var g in wave.Groups)
         {
@@ -454,7 +517,7 @@ public sealed partial class SimWorld
             Events.Push(SimEventKind.WaveCleared, Vector2.Zero, 0f, WaveIndex);
 
             WaveIndex++;
-            if (WaveIndex >= WaveCount)
+            if (!_endless && WaveIndex >= Mission.Waves.Count)
             {
                 Phase = SimPhase.Won;
                 AccrueRewards(missionClear: true);
@@ -464,6 +527,7 @@ public sealed partial class SimWorld
             {
                 Phase = SimPhase.Build;
                 PhaseTimer = B.BuildPhaseSeconds;
+                OfferDraftAfterWave();
                 // top up hull a little between waves so a bad wave isn't a death sentence
                 if (Hero.Alive) Hero.Hull = Mathf.Min(Hero.MaxHull, Hero.Hull + Hero.MaxHull * 0.15f);
             }
@@ -499,6 +563,7 @@ public sealed partial class SimWorld
         else return -1;
 
         var def = _missionEnemyDefs[missionEnemyDefIndex];
+        float sc = EndlessScale;                    // 1.0 for normal missions
         ref var e = ref Enemies[idx];
         uint nextGen = e.Gen + 1;
         e = default;
@@ -506,14 +571,14 @@ public sealed partial class SimWorld
         e.Gen = nextGen;
         e.DefIndex = missionEnemyDefIndex;
         e.Pos = pos;
-        e.Hp = def.MaxHp;
-        e.MaxHp = def.MaxHp;
-        e.Shield = def.ShieldHp;
-        e.MaxShield = def.ShieldHp;
+        e.Hp = def.MaxHp * sc;
+        e.MaxHp = def.MaxHp * sc;
+        e.Shield = def.ShieldHp * sc;
+        e.MaxShield = def.ShieldHp * sc;
         e.Armor = def.Armor;
         e.Radius = def.Radius;
-        e.ContactDamage = def.ContactDamage;
-        e.Bounty = def.Bounty;
+        e.ContactDamage = def.ContactDamage * Mathf.Sqrt(sc);
+        e.Bounty = Mathf.RoundToInt(def.Bounty * Mathf.Sqrt(sc));
         e.DistToCenter = pos.Length();
         e.BaseSpeed = def.Speed;
         e.SlowFactor = 1f;
@@ -774,10 +839,10 @@ public sealed partial class SimWorld
     /// <summary>"14× Skiff  ·  3× Hauler" for the build-phase preview (spec §13).</summary>
     public string NextWavePreview()
     {
-        if (WaveIndex >= WaveCount) return "";
+        if (!_endless && WaveIndex >= Mission.Waves.Count) return "";
         var counts = new Dictionary<string, int>();
         var order = new List<string>();
-        foreach (var g in Mission.Waves[WaveIndex].Groups)
+        foreach (var g in GetWave(WaveIndex).Groups)
         {
             if (!Cfg.HasEnemy(g.Enemy)) continue;
             string name = Cfg.Enemy(g.Enemy).Name;

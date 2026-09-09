@@ -66,6 +66,8 @@ public sealed class ModifierSet
     public int HeroLevel = 1;
     public int AbilitySlots = 3;
 
+    public ModifierSet Clone() => (ModifierSet)MemberwiseClone();
+
     public void ApplyEffect(string key, float v)
     {
         switch (key)

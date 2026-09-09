@@ -33,6 +33,9 @@ public sealed partial class Hud : CanvasLayer
     private Button[] _abilityBtns = new Button[8];
     private Label _reticlePrompt = null!;
 
+    private PanelContainer _draftPanel = null!;
+    private VBoxContainer _draftCards = null!;
+
     private PanelContainer _endCard = null!;
     private Label _endText = null!;
     private Button _retryBtn = null!;
@@ -128,6 +131,19 @@ public sealed partial class Hud : CanvasLayer
         var hint = new Label { Text = "drag: move ship   ·   tap: missile volley", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
         hint.AddThemeFontSizeOverride("font_size", 11);
         wv.AddChild(hint);
+
+        // ---- card draft ----
+        _draftPanel = MakeBottomPanel();
+        _draftPanel.Visible = false;
+        AddChild(_draftPanel);
+        var dv = new VBoxContainer();
+        _draftPanel.AddChild(dv);
+        var dh = new Label { Text = "CHOOSE A CARD", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.9f, 0.5f) };
+        dh.AddThemeFontSizeOverride("font_size", 14);
+        dv.AddChild(dh);
+        _draftCards = new VBoxContainer();
+        _draftCards.AddThemeConstantOverride("separation", 5);
+        dv.AddChild(_draftCards);
 
         // ---- end card ----
         _endCard = MakeBottomPanel();
@@ -237,14 +253,19 @@ public sealed partial class Hud : CanvasLayer
         string l2 = w.Phase == SimPhase.Wave
             ? $"enemies {w.EnemiesAlive}   ·   incoming {w.SpawnsRemaining}   ·   RD {Mathf.FloorToInt(w.ResearchDataEarned)}"
             : $"RD {Mathf.FloorToInt(w.ResearchDataEarned)}   ·   XP {Mathf.FloorToInt(w.XpEarned)}   ·   Cores {w.CoresEarned}";
-        _status.Text = $"◈ {Mathf.CeilToInt(w.PlanetIntegrity)}/{Mathf.CeilToInt(w.PlanetIntegrityMax)}     ⬡ {w.Credits}     WAVE {Mathf.Min(w.WaveIndex + 1, w.WaveCount)}/{w.WaveCount}\n{l2}";
+        string waveStr = w.IsEndless ? $"WAVE {w.WaveIndex + 1}  ·  ENDLESS"
+                                     : $"WAVE {Mathf.Min(w.WaveIndex + 1, w.WaveCount)}/{w.WaveCount}";
+        _status.Text = $"◈ {Mathf.CeilToInt(w.PlanetIntegrity)}/{Mathf.CeilToInt(w.PlanetIntegrityMax)}     ⬡ {w.Credits}     {waveStr}\n{l2}";
 
-        bool build = w.Phase == SimPhase.Build;
+        bool draft = w.Phase == SimPhase.Build && w.HasPendingDraft;
+        bool build = w.Phase == SimPhase.Build && !draft;
         bool wave = w.Phase == SimPhase.Wave;
         bool ended = w.Phase is SimPhase.Won or SimPhase.Lost;
         _buildPanel.Visible = build;
         _wavePanel.Visible = wave;
         _endCard.Visible = ended;
+        _draftPanel.Visible = draft;
+        if (draft) RefreshDraft(w);
 
         if (w.TryGetBoss(out _, out float hpFrac, out _))
         { _bossBar.Visible = true; _bossBar.Value = hpFrac; }
@@ -252,9 +273,10 @@ public sealed partial class Hud : CanvasLayer
 
         if (build)
         {
-            _launch.Disabled = w.WaveIndex >= w.WaveCount;
-            _launch.Text = w.WaveIndex >= w.WaveCount ? "— last wave cleared —" : $"▶  LAUNCH WAVE {w.WaveIndex + 1}";
-            _wavePreview.Text = w.WaveIndex < w.WaveCount ? "NEXT: " + w.NextWavePreview() : "";
+            bool noMore = !w.IsEndless && w.WaveIndex >= w.WaveCount;
+            _launch.Disabled = noMore;
+            _launch.Text = noMore ? "— last wave cleared —" : $"▶  LAUNCH WAVE {w.WaveIndex + 1}";
+            _wavePreview.Text = noMore ? "" : "NEXT: " + w.NextWavePreview();
             RefreshSlotPanel(w);
         }
 
@@ -279,6 +301,38 @@ public sealed partial class Hud : CanvasLayer
         {
             _endText.Text = BuildEndReport(w);
             _menuBtn.Text = w.Phase == SimPhase.Won ? "Menu ▸" : "Menu";
+        }
+    }
+
+    private int _draftShownHash = -1;
+    private void RefreshDraft(SimWorld w)
+    {
+        int hash = 17;
+        foreach (int i in w.DraftOptionIndices) hash = hash * 31 + i;
+        hash = hash * 31 + w.RunCards.Count;
+        if (hash == _draftShownHash) return;
+        _draftShownHash = hash;
+
+        foreach (Node c in _draftCards.GetChildren()) c.QueueFree();
+        foreach (int idx in w.DraftOptionIndices)
+        {
+            var card = Root.World.Cfg.Cards[idx];
+            var col = card.Rarity switch
+            {
+                "epic" => new Color(1f, 0.55f, 0.9f),
+                "rare" => new Color(0.5f, 0.8f, 1f),
+                _ => new Color(0.85f, 0.85f, 0.85f),
+            };
+            var btn = new Button
+            {
+                Text = $"{card.Name}\n{card.Text}",
+                CustomMinimumSize = new Vector2(0, 56),
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                Modulate = col,
+            };
+            btn.AddThemeFontSizeOverride("font_size", 11);
+            btn.Pressed += () => { Root.RequestPickCard(idx); _draftShownHash = -1; };
+            _draftCards.AddChild(btn);
         }
     }
 
@@ -324,7 +378,9 @@ public sealed partial class Hud : CanvasLayer
         var s = w.Stats;
         float tot = Mathf.Max(1f, s.TotalDamage);
         var sb = new StringBuilder();
-        sb.Append(w.Phase == SimPhase.Won ? $"Cleared all {w.WaveCount} waves.\n" : $"Held {w.WavesCleared}/{w.WaveCount} waves.\n");
+        sb.Append(w.IsEndless ? $"Reached wave {w.WavesCleared + 1}.\n"
+                 : w.Phase == SimPhase.Won ? $"Cleared all {w.WaveCount} waves.\n"
+                 : $"Held {w.WavesCleared}/{w.WaveCount} waves.\n");
         sb.Append($"Research Data {Mathf.FloorToInt(w.ResearchDataEarned)}   XP {Mathf.FloorToInt(w.XpEarned)}   Cores {w.CoresEarned}\n");
         sb.Append($"Kills {s.EnemiesKilled}   ·   Leaked {s.EnemiesLeaked}\n");
         sb.Append($"Damage — turrets {Pct(s.DamageByTurrets, tot)}  hero {Pct(s.DamageByHero, tot)}  abilities {Pct(s.DamageByAbilities, tot)}");

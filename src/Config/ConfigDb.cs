@@ -26,6 +26,7 @@ public sealed class ConfigDb
     private readonly Dictionary<string, EnemyDef> _enemies = new();
     private readonly Dictionary<string, AbilityDef> _abilities = new();
     private readonly Dictionary<string, CodexEntry> _codex = new();
+    private readonly List<CardDef> _cards = new();
     private readonly List<string> _turretOrder = new();
     private readonly List<string> _abilityOrder = new();
 
@@ -39,6 +40,8 @@ public sealed class ConfigDb
     public bool HasEnemy(string id) => _enemies.ContainsKey(id);
     public bool HasAbility(string id) => _abilities.ContainsKey(id);
     public CodexEntry? Codex(string id) => _codex.TryGetValue(id, out var e) ? e : null;
+    public IReadOnlyList<CodexEntry> AllCodex => new List<CodexEntry>(_codex.Values);
+    public IReadOnlyList<CardDef> Cards => _cards;
 
     public static ConfigDb Load()
     {
@@ -61,6 +64,7 @@ public sealed class ConfigDb
         }
         foreach (var c in ReadList<CodexEntry>("res://data/codex.json"))
             db._codex[c.Id] = c;
+        db._cards.AddRange(ReadList<CardDef>("res://data/cards.json"));
         return db;
     }
 

@@ -52,6 +52,14 @@ public sealed partial class SimTest : Node
                  $"deterministic={(modDet ? "ok" : "FAIL")}  changed-outcome={(modChanged ? "ok" : "FAIL")}");
         allOk &= modDet && modChanged;
 
+        // endless: run deep, twice, check determinism + that it actually escalates
+        var e1 = RunOnce(cfg, "res://data/missions/endless.json");
+        var e2 = RunOnce(cfg, "res://data/missions/endless.json");
+        bool eDet = e1.ticks == e2.ticks && e1.waves == e2.waves && Mathf.IsEqualApprox(e1.integ, e2.integ);
+        GD.Print($"endless: reached wave {e1.waves + 1}   kills {e1.kills}   ticks {e1.ticks}   rd {e1.rd:0}   " +
+                 $"deterministic={(eDet ? "ok" : "FAIL")}");
+        allOk &= eDet && e1.waves > 3;   // must get past the 3 scripted intro waves
+
         GD.Print(allOk ? "ALL CHECKS OK" : "SOME CHECKS FAILED");
         GetTree().Quit(allOk ? 0 : 1);
     }

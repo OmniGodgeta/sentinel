@@ -228,6 +228,7 @@ public sealed partial class GameRoot : Node2D
     public void RequestSell(int slot) => _world.Enqueue(SimCommand.Sell(slot));
     public void RequestUpgrade(int slot) => _world.Enqueue(SimCommand.Upgrade(slot));
     public void RequestFork(int slot, int fork) => _world.Enqueue(SimCommand.Fork(slot, fork));
+    public void RequestPickCard(int cardIndex) => _world.Enqueue(SimCommand.Card(cardIndex));
 
     public void RequestLaunchWave() => _world.Enqueue(SimCommand.Wave());
 

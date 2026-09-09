@@ -172,6 +172,10 @@ public sealed record MissionDef
     public string Intro { get; init; } = "";
     public ulong Seed { get; init; } = 1;
     public int StartingCreditsOverride { get; init; } = -1;
+    public bool Endless { get; init; }
+    /// <summary>Enemies the procedural endless generator may use (needs their defs
+    /// resolved up front). Ignored for normal missions.</summary>
+    public List<string> EndlessRoster { get; init; } = new();
     public List<WaveDef> Waves { get; init; } = new();
 }
 
@@ -195,4 +199,17 @@ public sealed record CodexEntry
     public string Title { get; init; } = "";
     public string Category { get; init; } = "";
     public string Text { get; init; } = "";
+}
+
+public sealed record CardDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Text { get; init; } = "";
+    public string Rarity { get; init; } = "common";   // common | rare | epic
+    public int Weight { get; init; } = 60;
+    /// <summary>effect key -> value, applied to the run's ModifierSet on pick.</summary>
+    public Dictionary<string, float> Effects { get; init; } = new();
+    public float IntegrityBonus { get; init; }         // also added to current + max integrity
+    public float HullBonus { get; init; }              // also added to current + max hero hull
 }

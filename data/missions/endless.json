@@ -1,0 +1,18 @@
+{
+  "id": "endless",
+  "name": "The Long Watch",
+  "intro": "One planet. No last wave. See how deep you can hold.",
+  "seed": 77000,
+  "endless": true,
+  "endless_roster": [
+    "skiff", "hauler", "interceptor", "aegis_cruiser", "bombard",
+    "carrier", "phase_runner", "leech", "warden", "siege_crawler"
+  ],
+  "waves": [
+    { "groups": [ { "enemy": "skiff", "count": 8, "interval": 0.6, "arc_center_deg": -1 } ] },
+    { "groups": [ { "enemy": "skiff", "count": 12, "interval": 0.5, "arc_center_deg": -1 },
+                  { "enemy": "hauler", "count": 1, "interval": 1, "start_delay": 2, "arc_center_deg": -1 } ] },
+    { "groups": [ { "enemy": "skiff", "count": 16, "interval": 0.45, "arc_center_deg": -1 },
+                  { "enemy": "interceptor", "count": 3, "interval": 1, "start_delay": 3, "arc_center_deg": -1 } ] }
+  ]
+}

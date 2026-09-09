@@ -37,6 +37,7 @@ public sealed class SaveGame
     // equipped ability loadout (ids). Length tracks hero-level slot count.
     public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
 
+    public int EndlessBest { get; set; }
     public Settings Options { get; set; } = new();
 
     [JsonIgnore] public int CommanderLevel => XpToCommanderLevel(Xp);

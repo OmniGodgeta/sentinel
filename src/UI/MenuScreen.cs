@@ -15,6 +15,7 @@ public sealed partial class MenuScreen : CanvasLayer
     private VBoxContainer _loadoutRow = null!;
     private VBoxContainer _missionList = null!;
     private Label _totals = null!;
+    private Button _endlessBtn = null!;
 
     public override void _Ready()
     {
@@ -50,9 +51,12 @@ public sealed partial class MenuScreen : CanvasLayer
         var rBtn = new Button { Text = "Research", CustomMinimumSize = new Vector2(150, 40) };
         rBtn.Pressed += () => App.ShowResearch();
         nav.AddChild(rBtn);
-        var aBtn = new Button { Text = "Protocols", CustomMinimumSize = new Vector2(150, 40) };
+        var aBtn = new Button { Text = "Protocols", CustomMinimumSize = new Vector2(140, 40) };
         aBtn.Pressed += () => App.ShowAbilities();
         nav.AddChild(aBtn);
+        var cBtn = new Button { Text = "Codex", CustomMinimumSize = new Vector2(110, 40) };
+        cBtn.Pressed += () => App.ShowCodex();
+        nav.AddChild(cBtn);
 
         var lh = new Label { Text = "LOADOUT  (tap a slot to swap · full editor in Protocols)" };
         lh.AddThemeFontSizeOverride("font_size", 11);
@@ -73,6 +77,12 @@ public sealed partial class MenuScreen : CanvasLayer
         _missionList.AddThemeConstantOverride("separation", 6);
         _missionList.CustomMinimumSize = new Vector2(440, 0);
         scroll.AddChild(_missionList);
+
+        var endless = new Button { CustomMinimumSize = new Vector2(0, 44) };
+        endless.AddThemeFontSizeOverride("font_size", 14);
+        endless.Pressed += () => App.StartMission("res://data/missions/endless.json", "endless");
+        _endlessBtn = endless;
+        root.AddChild(endless);
 
         var wipe = new Button { Text = "reset progress", Modulate = new Color(1, 1, 1, 0.4f), CustomMinimumSize = new Vector2(0, 30) };
         wipe.Pressed += () =>
@@ -114,6 +124,8 @@ public sealed partial class MenuScreen : CanvasLayer
             btn.Pressed += () => CycleLoadout(slot);
             _loadoutRow.AddChild(btn);
         }
+
+        _endlessBtn.Text = s.EndlessBest > 0 ? $"ENDLESS — best: wave {s.EndlessBest}" : "ENDLESS";
 
         foreach (Node c in _missionList.GetChildren()) c.QueueFree();
         var arcOrder = new List<string>();

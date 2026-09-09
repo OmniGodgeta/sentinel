@@ -41,6 +41,7 @@ public sealed partial class AppRoot : Node
     public void ShowMenu() => SwapTo(new MenuScreen { App = this });
     public void ShowResearch() => SwapTo(new ResearchScreen { App = this });
     public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });
+    public void ShowCodex() => SwapTo(new CodexScreen { App = this });
 
     public void StartMission(string missionFile, string missionId)
     {
@@ -78,6 +79,13 @@ public sealed partial class AppRoot : Node
         Save.ResearchData += o.ResearchData;
         Save.Xp += o.Xp;
         Save.SentinelCores += o.Cores;
+
+        if (o.MissionId == "endless")
+        {
+            if (o.WavesCleared > Save.EndlessBest) Save.EndlessBest = o.WavesCleared;
+            Save.Save();
+            return;
+        }
 
         if (o.Won)
         {

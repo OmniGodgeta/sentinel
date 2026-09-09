@@ -13,6 +13,7 @@ public enum CommandType
     SellTurret,
     UpgradeTurret,
     ForkTurret,
+    PickCard,
     StartWave,
 }
 
@@ -38,5 +39,6 @@ public struct SimCommand
     public static SimCommand Sell(int slot) => new() { Type = CommandType.SellTurret, IntA = slot };
     public static SimCommand Upgrade(int slot) => new() { Type = CommandType.UpgradeTurret, IntA = slot };
     public static SimCommand Fork(int slot, int fork) => new() { Type = CommandType.ForkTurret, IntA = slot, IntB = fork };
+    public static SimCommand Card(int cardIndex) => new() { Type = CommandType.PickCard, IntA = cardIndex };
     public static SimCommand Wave() => new() { Type = CommandType.StartWave };
 }
