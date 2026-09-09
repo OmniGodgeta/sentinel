@@ -6,6 +6,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+permissions:
+  contents: write   # create releases / upload assets on tag builds
+
 env:
   GODOT_VERSION: 4.7.2-stable
   # Godot dir name inside the templates tpz / editor settings

@@ -1,59 +1,65 @@
 # Sentinel
 
-Radial tower defense for Android. Zero ads, zero microtransactions, 100% free —
-a hard architectural rule, not a launch decision (see `docs/design-spec.md` §9).
+Radial tower defense for Android. **Zero ads, zero microtransactions, 100% free** —
+a hard architectural rule, not a launch decision (`docs/design-spec.md` §9,
+`docs/deviations.md`).
 
 Built with **Godot 4.7.2 (.NET / C#)**. Target: Android arm64, personal sideload.
 
-## Status — Phase 1 (greybox)
+Download the latest APK from the [Releases](../../releases) page, or grab the
+artifact from any green [Actions](../../actions) run.
 
-Per the design spec's build order (§15), this is step 1–2: *one mission, no art,
-verify the core loop is fun at 4x before building the five progression systems.*
+## Status — greybox alpha (v0.1.0)
 
-Working now:
-- Deterministic fixed-timestep sim (`SimClock` + `SimWorld`), 1×/2×/3×/4× speed —
-  4× runs 4× the sim ticks per frame, not an animation multiplier.
-- Verified: two runs from the same seed + input stream are byte-identical
-  (`scenes/SimTest.tscn`). Gives replays and reproducible bug reports for free.
-- Build phase: place / sell turrets in 12 radial slots (Autocannon, Flak).
-- Wave phase: drag the hero battleship, tap to fire the 15s missile volley,
-  3 abilities on cooldown (Kinetic Barrage, Aegis Barrier, Overdrive).
-- Turrets have real firing arcs — a north turret can't defend the south face.
-- 20-wave mission (Skiff + Hauler). Rewards paid per wave cleared, **win or loss**.
-- End-of-run damage attribution (turrets / hero / abilities).
-- Everything tunable lives in `data/*.json`; no balance value is a code literal.
+Everything is grey shapes. Balance is deliberately untuned. What works:
 
-Not yet: art, sound, the research tree / progression, card draft, the other
-6 turrets / 8 enemies / 9 abilities, bosses, offline collectors, the shop.
+- **Deterministic fixed-timestep sim** — 1×/2×/3×/4× speed is *more sim ticks per
+  frame*, not sped-up animation. Same seed + inputs → identical run (verified in
+  `scenes/SimTest.tscn`). ~300 sim-ticks/ms headless.
+- **Build / wave loop** — 12 radial turret slots with real firing arcs. A north
+  turret cannot defend the south face.
+- **8 turrets** (Autocannon, Flak, Railgun, Tesla, Missile Silo, Laser Lattice,
+  Graviton, Nanite Forge), each with in-run L1→L3 upgrades and an A/B fork at L3.
+- **10 enemies** with signature behaviours (evasion, regenerating shields,
+  standoff shelling, a Skiff-spawning Carrier, blink, turret-leech, heal/shield
+  aura, CC immunity) + a boss (The Threshing Gate — periodic invulnerable shell).
+- **12 Sentinel abilities**, tap-to-cast, queue to the next tick (safe at 4×).
+- **Hero battleship** — drag to reposition, 15s manual missile volley, auto
+  point-defence.
+- **Campaign** — 8-mission arc, each debuts one enemy.
+- **Progression** — research tree (5 branches × 6 tiers), Commander level, hero
+  level 1–20 (ability slots at L8 / L20), ability leveling via Sentinel Cores.
+- **Card draft** between waves — run-scoped modifier cards.
+- **Endless mode** — one planet, procedural waves forever, personal best saved.
+- **Ascension** — replay the arc at 10 escalating difficulty tiers.
+- **Codex** — in-world lore for the setting and the enemies.
+
+Not yet: art, sound, the shop, weekly seeded runs, first-encounter codex gating.
 
 ## Layout
 
 ```
-src/Sim/        deterministic simulation — no rendering deps
-  SimClock.cs        fixed-timestep driver + speed
-  DetRandom.cs       PCG PRNG (the only randomness the sim may touch)
-  SimWorld.cs        authoritative state + fixed per-tick step order
-  Systems/*          spawn, enemy, hero, turret, projectile, ability
-src/Config/     JSON → typed defs (ConfigDb)
-src/Render/     SimRenderer — greybox immediate-mode draw (MultiMesh pass comes later)
-src/UI/         Hud — built in code for now
-src/Game/       GameRoot (input→commands), SimTest, ShotRunner
-data/           balance, hero, turrets, enemies, abilities, missions/*
+src/Sim/        deterministic simulation
+  SimClock / DetRandom / SimWorld / Systems/*
+src/Meta/       SaveGame, ModifierSet, Progression, ResearchDb
+src/Config/     JSON -> typed defs (ConfigDb)
+src/Render/     SimRenderer — greybox immediate-mode draw
+src/UI/         Hud, MenuScreen, ResearchScreen, AbilityScreen, CodexScreen
+src/Game/       AppRoot (shell), GameRoot (one mission), SimTest, ShotRunner
+data/           balance, hero, turrets, enemies, abilities, cards, research,
+                ascension, codex, arc_01, missions/*
+tools/          gen_missions.py, gen_research.py
 ```
 
 ## Build
 
 ```bash
-# desktop editor / run
-godot --path . scenes/Main.tscn
-
-# determinism + perf check (headless)
-godot --headless scenes/SimTest.tscn --quit
-
-# Android debug APK  ->  build/sentinel-debug.apk
+godot --path . scenes/Main.tscn                        # run
+godot --headless scenes/SimTest.tscn --quit            # determinism + balance table
 dotnet build Sentinel.csproj
 godot --headless --export-debug "Android" build/sentinel-debug.apk
 ```
 
-Requires: Godot 4.7.2 **mono** build, .NET 9 SDK, Android SDK + JDK 21
-(paths in Godot editor settings). TFM is `net9.0` to match the export template.
+Requires Godot 4.7.2 **mono**, .NET 9 SDK, Android SDK + JDK (paths in Godot
+editor settings). CI (`.github/workflows/build-apk.yml`) does all of this on
+every push and attaches the APK to tagged releases.
