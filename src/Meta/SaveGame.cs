@@ -26,7 +26,15 @@ public sealed class SaveGame
     // per-mission record: id -> best star tier (0..3), and whether ever cleared
     public Dictionary<string, MissionRecord> Missions { get; set; } = new();
 
-    // equipped ability loadout (ids); research/unlocks come later
+    // research: node id -> ranks bought; branch -> chosen capstone id
+    public Dictionary<string, int> ResearchRanks { get; set; } = new();
+    public Dictionary<string, string> Capstones { get; set; } = new();
+
+    // ability leveling: ability id -> level (1..20); "<id>:<milestone>" -> branch choice
+    public Dictionary<string, int> AbilityLevels { get; set; } = new();
+    public Dictionary<string, string> AbilityBranches { get; set; } = new();
+
+    // equipped ability loadout (ids). Length tracks hero-level slot count.
     public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
 
     public Settings Options { get; set; } = new();

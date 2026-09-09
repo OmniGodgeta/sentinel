@@ -1,0 +1,900 @@
+[
+  {
+    "id": "arm_dmg",
+    "branch": "armaments",
+    "tier": 1,
+    "name": "Munitions Standard",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 1,
+    "effects": {
+      "turret_damage": 0.05
+    },
+    "text": "Turret damage +5% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_range",
+    "branch": "armaments",
+    "tier": 1,
+    "name": "Targeting Optics",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 1,
+    "effects": {
+      "turret_range": 0.04
+    },
+    "text": "Turret range +4% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_rof",
+    "branch": "armaments",
+    "tier": 2,
+    "name": "Autoloaders",
+    "rank_count": 5,
+    "cost_base": 90,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 8,
+    "effects": {
+      "turret_fire_rate": 0.04
+    },
+    "text": "Turret fire rate +4% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_crit",
+    "branch": "armaments",
+    "tier": 2,
+    "name": "Weak-Point Scan",
+    "rank_count": 3,
+    "cost_base": 90,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 8,
+    "effects": {
+      "turret_crit_chance": 0.03
+    },
+    "text": "Turret crit chance +3% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_pen",
+    "branch": "armaments",
+    "tier": 3,
+    "name": "Armour-Piercing Cores",
+    "rank_count": 3,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "turret_armor_pen": 3
+    },
+    "text": "Turret armour penetration +3 per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_splash",
+    "branch": "armaments",
+    "tier": 3,
+    "name": "Fragmentation",
+    "rank_count": 4,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "turret_splash": 0.12
+    },
+    "text": "Turret splash radius +12% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_upcost",
+    "branch": "armaments",
+    "tier": 4,
+    "name": "Modular Mounts",
+    "rank_count": 3,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "turret_upgrade_cost": -0.08
+    },
+    "text": "In-run turret upgrades cost 8% less per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_critdmg",
+    "branch": "armaments",
+    "tier": 4,
+    "name": "Overpressure Rounds",
+    "rank_count": 3,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "turret_crit_mult": 0.25
+    },
+    "text": "Turret crit damage +25% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_multi",
+    "branch": "armaments",
+    "tier": 5,
+    "name": "Fire Distribution",
+    "rank_count": 1,
+    "cost_base": 650,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 35,
+    "effects": {
+      "turret_extra_target": 1
+    },
+    "text": "Turrets engage +1 target.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_buildfire",
+    "branch": "armaments",
+    "tier": 5,
+    "name": "Standing Orders",
+    "rank_count": 1,
+    "cost_base": 500,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 35,
+    "effects": {
+      "turret_build_phase_fire": 1
+    },
+    "text": "Turrets keep firing during the build phase.",
+    "is_capstone": false
+  },
+  {
+    "id": "arm_cap_sat",
+    "branch": "armaments",
+    "tier": 6,
+    "name": "Saturation Doctrine",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "arm_doctrine",
+    "effects": {
+      "turret_fire_rate": 0.25,
+      "turret_damage": -0.1
+    },
+    "text": "+25% fire rate, \u221210% damage per shot."
+  },
+  {
+    "id": "arm_cap_prec",
+    "branch": "armaments",
+    "tier": 6,
+    "name": "Precision Doctrine",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "arm_doctrine",
+    "effects": {
+      "turret_damage": 0.35,
+      "turret_fire_rate": -0.1
+    },
+    "text": "+35% damage, \u221210% fire rate."
+  },
+  {
+    "id": "for_integ",
+    "branch": "fortification",
+    "tier": 1,
+    "name": "Reinforced Crust",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 5,
+    "effects": {
+      "planet_integrity": 0.08
+    },
+    "text": "Planet integrity +8% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_shield",
+    "branch": "fortification",
+    "tier": 1,
+    "name": "Static Envelope",
+    "rank_count": 3,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 5,
+    "effects": {
+      "planet_start_shield": 70
+    },
+    "text": "Start each run with +70 planet shield per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_regen",
+    "branch": "fortification",
+    "tier": 2,
+    "name": "Between-Wave Repair",
+    "rank_count": 4,
+    "cost_base": 90,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 8,
+    "effects": {
+      "planet_regen_per_wave": 0.015
+    },
+    "text": "Restore 1.5% integrity per wave cleared, per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_dr",
+    "branch": "fortification",
+    "tier": 3,
+    "name": "Deflection Plating",
+    "rank_count": 3,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "planet_damage_taken": -0.04
+    },
+    "text": "Damage to the planet \u22124% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_regen2",
+    "branch": "fortification",
+    "tier": 3,
+    "name": "Nanite Reserves",
+    "rank_count": 3,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "planet_regen_per_wave": 0.02
+    },
+    "text": "+2% integrity per wave cleared, per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_leak",
+    "branch": "fortification",
+    "tier": 4,
+    "name": "Interior Bulkheads",
+    "rank_count": 3,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "leaked_damage": -0.1
+    },
+    "text": "Leaked enemies deal 10% less damage per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_shield2",
+    "branch": "fortification",
+    "tier": 4,
+    "name": "Hardened Envelope",
+    "rank_count": 2,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "planet_start_shield": 120
+    },
+    "text": "+120 starting shield per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_desperation",
+    "branch": "fortification",
+    "tier": 5,
+    "name": "Last Stand Protocol",
+    "rank_count": 1,
+    "cost_base": 600,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 35,
+    "effects": {
+      "desperation": 1
+    },
+    "text": "Below 30% integrity: +20% all damage.",
+    "is_capstone": false
+  },
+  {
+    "id": "for_cap_bastion",
+    "branch": "fortification",
+    "tier": 6,
+    "name": "Bastion",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "fort_doctrine",
+    "effects": {
+      "planet_integrity": 0.4
+    },
+    "text": "+40% max integrity, no regeneration."
+  },
+  {
+    "id": "for_cap_resil",
+    "branch": "fortification",
+    "tier": 6,
+    "name": "Resilience",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "fort_doctrine",
+    "effects": {
+      "planet_integrity": 0.15,
+      "planet_regen_per_wave": 0.02
+    },
+    "text": "+15% integrity, +2% regen per wave cleared."
+  },
+  {
+    "id": "fle_hull",
+    "branch": "fleet",
+    "tier": 1,
+    "name": "Hull Bracing",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 10,
+    "effects": {
+      "hero_hull": 0.08
+    },
+    "text": "Hero hull +8% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_mdmg",
+    "branch": "fleet",
+    "tier": 1,
+    "name": "Warhead Yield",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 10,
+    "effects": {
+      "hero_missile_damage": 0.06
+    },
+    "text": "Missile volley damage +6% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_move",
+    "branch": "fleet",
+    "tier": 1,
+    "name": "Manoeuvring Thrusters",
+    "rank_count": 3,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 10,
+    "effects": {
+      "hero_move_speed": 0.08
+    },
+    "text": "Hero drag speed +8% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_mcd",
+    "branch": "fleet",
+    "tier": 2,
+    "name": "Rapid Racks",
+    "rank_count": 4,
+    "cost_base": 90,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 10,
+    "effects": {
+      "hero_missile_cd": -0.5
+    },
+    "text": "Missile cooldown \u22120.5s per rank (floor 11s).",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_mcount",
+    "branch": "fleet",
+    "tier": 2,
+    "name": "Extra Tubes",
+    "rank_count": 2,
+    "cost_base": 90,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 10,
+    "effects": {
+      "hero_extra_missile": 1
+    },
+    "text": "+1 missile per volley per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_pd",
+    "branch": "fleet",
+    "tier": 3,
+    "name": "Point-Defence Boost",
+    "rank_count": 3,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "hero_point_defense": 0.25
+    },
+    "text": "Hero point-defence damage +25% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_mdmg2",
+    "branch": "fleet",
+    "tier": 3,
+    "name": "Incendiary Payload",
+    "rank_count": 3,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "hero_missile_damage": 0.1
+    },
+    "text": "Missile damage +10% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_dr",
+    "branch": "fleet",
+    "tier": 4,
+    "name": "Ablative Hull",
+    "rank_count": 2,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "hero_hull": 0.12
+    },
+    "text": "Hero hull +12% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_mcd2",
+    "branch": "fleet",
+    "tier": 4,
+    "name": "Overpressure Feed",
+    "rank_count": 2,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "hero_missile_cd": -1.0
+    },
+    "text": "Missile cooldown \u22121s per rank (floor 11s).",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_respawn",
+    "branch": "fleet",
+    "tier": 5,
+    "name": "Emergency Reconstruction",
+    "rank_count": 1,
+    "cost_base": 650,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 35,
+    "effects": {
+      "hero_respawn": 8
+    },
+    "text": "Hero respawns in 8s instead of 15s.",
+    "is_capstone": false
+  },
+  {
+    "id": "fle_cap_dread",
+    "branch": "fleet",
+    "tier": 6,
+    "name": "Dreadnought",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "fleet_doctrine",
+    "effects": {
+      "hero_hull": 1.0,
+      "hero_move_speed": -0.25
+    },
+    "text": "Double hull, hero moves 25% slower."
+  },
+  {
+    "id": "fle_cap_inter",
+    "branch": "fleet",
+    "tier": 6,
+    "name": "Interceptor",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "fleet_doctrine",
+    "effects": {
+      "hero_move_speed": 0.4,
+      "hero_missile_cd": -1.5,
+      "hero_hull": -0.2
+    },
+    "text": "+40% drag speed and reload, \u221220% hull."
+  },
+  {
+    "id": "sen_eff",
+    "branch": "sentinel",
+    "tier": 1,
+    "name": "Protocol Tuning",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 15,
+    "effects": {
+      "ability_effect": 0.05
+    },
+    "text": "Ability effect +5% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "sen_cd",
+    "branch": "sentinel",
+    "tier": 2,
+    "name": "Capacitor Banks",
+    "rank_count": 5,
+    "cost_base": 90,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 15,
+    "effects": {
+      "ability_cooldown": -0.04
+    },
+    "text": "Ability cooldowns \u22124% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "sen_rad",
+    "branch": "sentinel",
+    "tier": 3,
+    "name": "Field Projection",
+    "rank_count": 4,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "ability_radius": 0.08
+    },
+    "text": "Ability radius / duration +8% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "sen_ready",
+    "branch": "sentinel",
+    "tier": 4,
+    "name": "Warm Start",
+    "rank_count": 1,
+    "cost_base": 320,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "ability_start_ready": 1
+    },
+    "text": "Abilities start each run off cooldown.",
+    "is_capstone": false
+  },
+  {
+    "id": "sen_eff2",
+    "branch": "sentinel",
+    "tier": 4,
+    "name": "Resonance Cascade",
+    "rank_count": 3,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "ability_effect": 0.06
+    },
+    "text": "Ability effect +6% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "sen_cd2",
+    "branch": "sentinel",
+    "tier": 5,
+    "name": "Superconductors",
+    "rank_count": 1,
+    "cost_base": 600,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 35,
+    "effects": {
+      "ability_cooldown": -0.1
+    },
+    "text": "Ability cooldowns \u221210%.",
+    "is_capstone": false
+  },
+  {
+    "id": "sen_core",
+    "branch": "sentinel",
+    "tier": 5,
+    "name": "Core Refinement",
+    "rank_count": 1,
+    "cost_base": 600,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 35,
+    "effects": {
+      "core_gain": 0.25
+    },
+    "text": "Sentinel Core gain +25%.",
+    "is_capstone": false
+  },
+  {
+    "id": "sen_cap_rapid",
+    "branch": "sentinel",
+    "tier": 6,
+    "name": "Rapid Protocols",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "sent_doctrine",
+    "effects": {
+      "ability_cooldown": -0.2,
+      "ability_effect": -0.15
+    },
+    "text": "\u221220% cooldowns, \u221215% ability effect."
+  },
+  {
+    "id": "sen_cap_heavy",
+    "branch": "sentinel",
+    "tier": 6,
+    "name": "Heavy Protocols",
+    "rank_count": 1,
+    "cost_base": 2400,
+    "currency": "rd",
+    "alloy_cost": 6,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "sent_doctrine",
+    "effects": {
+      "ability_effect": 0.3,
+      "ability_cooldown": 0.15
+    },
+    "text": "+30% ability effect, +15% cooldowns."
+  },
+  {
+    "id": "log_rd",
+    "branch": "logistics",
+    "tier": 1,
+    "name": "Data Sifting",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 1,
+    "effects": {
+      "rd_gain": 0.06
+    },
+    "text": "Research Data gain +6% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_xp",
+    "branch": "logistics",
+    "tier": 1,
+    "name": "After-Action Analysis",
+    "rank_count": 5,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 1,
+    "effects": {
+      "xp_gain": 0.06
+    },
+    "text": "XP gain +6% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_credits",
+    "branch": "logistics",
+    "tier": 1,
+    "name": "Forward Depot",
+    "rank_count": 3,
+    "cost_base": 50,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 1,
+    "effects": {
+      "start_credits": 40
+    },
+    "text": "Start each run with +40 credits per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_core",
+    "branch": "logistics",
+    "tier": 2,
+    "name": "Core Salvage",
+    "rank_count": 3,
+    "cost_base": 90,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 8,
+    "effects": {
+      "core_gain": 0.1
+    },
+    "text": "Sentinel Core gain +10% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_cards",
+    "branch": "logistics",
+    "tier": 2,
+    "name": "Requisition Options",
+    "rank_count": 1,
+    "cost_base": 140,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 8,
+    "effects": {
+      "card_options": 1
+    },
+    "text": "Card draft offers 3 options instead of 2. (draft: later)",
+    "is_capstone": false
+  },
+  {
+    "id": "log_income",
+    "branch": "logistics",
+    "tier": 3,
+    "name": "Battlefield Reclamation",
+    "rank_count": 3,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "wave_income": 0.1
+    },
+    "text": "In-run income per wave +10% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_alloy",
+    "branch": "logistics",
+    "tier": 3,
+    "name": "Exotic Assay",
+    "rank_count": 2,
+    "cost_base": 160,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 16,
+    "effects": {
+      "alloy_gain": 0.15
+    },
+    "text": "Exotic Alloy gain +15% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_reroll",
+    "branch": "logistics",
+    "tier": 4,
+    "name": "Contingency Planning",
+    "rank_count": 2,
+    "cost_base": 320,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "card_reroll": 1
+    },
+    "text": "+1 card draft reroll per run per rank. (draft: later)",
+    "is_capstone": false
+  },
+  {
+    "id": "log_rd2",
+    "branch": "logistics",
+    "tier": 4,
+    "name": "Deep Archives",
+    "rank_count": 3,
+    "cost_base": 300,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 25,
+    "effects": {
+      "rd_gain": 0.08
+    },
+    "text": "Research Data gain +8% per rank.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_loss",
+    "branch": "logistics",
+    "tier": 5,
+    "name": "No Wasted Sorties",
+    "rank_count": 1,
+    "cost_base": 550,
+    "currency": "rd",
+    "alloy_cost": 0,
+    "commander_gate": 35,
+    "effects": {
+      "loss_reward": 1.0
+    },
+    "text": "A lost run pays 100% of its rewards.",
+    "is_capstone": false
+  },
+  {
+    "id": "log_cap_prospect",
+    "branch": "logistics",
+    "tier": 6,
+    "name": "Prospector",
+    "rank_count": 1,
+    "cost_base": 2200,
+    "currency": "rd",
+    "alloy_cost": 5,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "log_doctrine",
+    "effects": {
+      "rd_gain": 0.35
+    },
+    "text": "+35% Research Data, no Alloy bonus."
+  },
+  {
+    "id": "log_cap_vanguard",
+    "branch": "logistics",
+    "tier": 6,
+    "name": "Vanguard",
+    "rank_count": 1,
+    "cost_base": 2200,
+    "currency": "rd",
+    "alloy_cost": 5,
+    "commander_gate": 50,
+    "is_capstone": true,
+    "capstone_group": "log_doctrine",
+    "effects": {
+      "alloy_gain": 0.35
+    },
+    "text": "+35% Exotic Alloy, no Data bonus."
+  }
+]

@@ -43,8 +43,19 @@ public sealed partial class MenuScreen : CanvasLayer
         root.AddChild(_totals);
 
         root.AddChild(new HSeparator());
-        var lh = new Label { Text = "LOADOUT  (tap a slot to change)" };
-        lh.AddThemeFontSizeOverride("font_size", 12);
+
+        var nav = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        nav.AddThemeConstantOverride("separation", 8);
+        root.AddChild(nav);
+        var rBtn = new Button { Text = "Research", CustomMinimumSize = new Vector2(150, 40) };
+        rBtn.Pressed += () => App.ShowResearch();
+        nav.AddChild(rBtn);
+        var aBtn = new Button { Text = "Protocols", CustomMinimumSize = new Vector2(150, 40) };
+        aBtn.Pressed += () => App.ShowAbilities();
+        nav.AddChild(aBtn);
+
+        var lh = new Label { Text = "LOADOUT  (tap a slot to swap · full editor in Protocols)" };
+        lh.AddThemeFontSizeOverride("font_size", 11);
         root.AddChild(lh);
         _loadoutRow = new VBoxContainer();
         _loadoutRow.AddThemeConstantOverride("separation", 5);
@@ -69,6 +80,11 @@ public sealed partial class MenuScreen : CanvasLayer
             App.Save.ResearchData = App.Save.Xp = App.Save.ExoticAlloy = 0;
             App.Save.SentinelCores = 0;
             App.Save.Missions.Clear();
+            App.Save.ResearchRanks.Clear();
+            App.Save.Capstones.Clear();
+            App.Save.AbilityLevels.Clear();
+            App.Save.AbilityBranches.Clear();
+            App.Save.Loadout = new System.Collections.Generic.List<string> { "kinetic_barrage", "aegis_barrier", "overdrive" };
             App.Save.Save();
             Rebuild();
         };
@@ -79,11 +95,15 @@ public sealed partial class MenuScreen : CanvasLayer
 
     private void Rebuild()
     {
+        App.RefreshProgression();
         var s = App.Save;
-        _totals.Text = $"Commander {s.CommanderLevel}   ·   RD {Mathf.FloorToInt((float)s.ResearchData)}   ·   Alloy {Mathf.FloorToInt((float)s.ExoticAlloy)}   ·   Cores {s.SentinelCores}";
+        var p = App.Prog;
+        _totals.Text =
+            $"Commander {p.Commander}   ·   Hero {p.Hero}/20   ·   {p.AbilitySlots} slots\n" +
+            $"RD {Mathf.FloorToInt((float)s.ResearchData)}   ·   Alloy {Mathf.FloorToInt((float)s.ExoticAlloy)}   ·   Cores {s.SentinelCores}";
 
         foreach (Node c in _loadoutRow.GetChildren()) c.QueueFree();
-        int slots = App.Cfg.Hero.AbilitySlots;
+        int slots = p.AbilitySlots;
         while (s.Loadout.Count < slots) s.Loadout.Add(App.Cfg.AbilityOrder[0]);
         for (int i = 0; i < slots; i++)
         {

@@ -14,7 +14,9 @@ public sealed partial class AppRoot : Node
     public static AppRoot Instance { get; private set; } = null!;
 
     public ConfigDb Cfg { get; private set; } = null!;
+    public ResearchDb Research { get; private set; } = null!;
     public SaveGame Save { get; private set; } = null!;
+    public Progression Prog { get; private set; } = null!;
 
     private Node? _current;
 
@@ -22,9 +24,13 @@ public sealed partial class AppRoot : Node
     {
         Instance = this;
         Cfg = ConfigDb.Load();
+        Research = ResearchDb.Load();
         Save = SaveGame.Load();
+        Prog = new Progression(Save, Research, Cfg);
         ShowMenu();
     }
+
+    public void RefreshProgression() => Prog = new Progression(Save, Research, Cfg);
 
     public override void _Notification(int what)
     {
@@ -32,17 +38,30 @@ public sealed partial class AppRoot : Node
             Save.Save();
     }
 
-    public void ShowMenu()
-    {
-        SwapTo(new MenuScreen { App = this });
-    }
+    public void ShowMenu() => SwapTo(new MenuScreen { App = this });
+    public void ShowResearch() => SwapTo(new ResearchScreen { App = this });
+    public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });
 
     public void StartMission(string missionFile, string missionId)
     {
+        RefreshProgression();
+        int slots = Prog.AbilitySlots;
+        var loadout = Save.Loadout.GetRange(0, System.Math.Min(slots, Save.Loadout.Count)).ToArray();
+        var eff = new float[loadout.Length];
+        var cd = new float[loadout.Length];
+        for (int i = 0; i < loadout.Length; i++)
+        {
+            eff[i] = Prog.AbilityEffectMult(loadout[i]);
+            cd[i] = Prog.AbilityCdMult(loadout[i]);
+        }
+
         var g = new GameRoot
         {
             MissionPath = missionFile,
-            EquippedAbilities = Save.Loadout.ToArray(),
+            EquippedAbilities = loadout,
+            AbilityEffect = eff,
+            AbilityCd = cd,
+            Mods = Prog.BuildModifiers(),
             StartSpeed = Save.Options.Speed,
         };
         g.MissionEnded += o => OnMissionEnded(o);

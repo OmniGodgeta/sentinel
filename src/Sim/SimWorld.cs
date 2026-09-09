@@ -63,6 +63,7 @@ public sealed partial class SimWorld
     public float PhaseTimer { get; private set; }       // build: seconds left; wave: seconds elapsed
     public float PlanetIntegrity { get; private set; }
     public float PlanetIntegrityMax { get; private set; }
+    public float PlanetShield { get; private set; }
     public int Credits { get; private set; }
     public int WavesCleared { get; private set; }
     public float ResearchDataEarned { get; private set; }
@@ -120,9 +121,14 @@ public sealed partial class SimWorld
     private EnemyDef[] _missionEnemyDefs = Array.Empty<EnemyDef>();
     internal EnemyDef EnemyDefAt(int i) => _missionEnemyDefs[i];
 
-    public void Load(MissionDef mission, string[] equippedAbilityIds)
+    internal Meta.ModifierSet Mods = new();
+
+    public void Load(MissionDef mission, string[] equippedAbilityIds,
+                     Meta.ModifierSet? mods = null,
+                     float[]? abilityEffect = null, float[]? abilityCd = null)
     {
         Mission = mission;
+        Mods = mods ?? new Meta.ModifierSet();
         Rng = new DetRandom(mission.Seed);
 
         // resolve the enemy defs this mission references
@@ -163,11 +169,12 @@ public sealed partial class SimWorld
         }
 
         // hero
+        float heroHull = Cfg.Hero.MaxHull * Mathf.Max(0.2f, Mods.HeroHullMult);
         Hero = new HeroState
         {
             OrbitRadius = (B.HeroOrbitMin + B.HeroOrbitMax) * 0.5f,
-            MaxHull = Cfg.Hero.MaxHull,
-            Hull = Cfg.Hero.MaxHull,
+            MaxHull = heroHull,
+            Hull = heroHull,
             Alive = true,
             VolleyCooldownLeft = 0f,
             OverdriveVolleyMult = 1f,
@@ -175,19 +182,23 @@ public sealed partial class SimWorld
         Hero.Pos = new Vector2(0, -Hero.OrbitRadius);
         _heroTarget = Hero.Pos;
 
-        // abilities
-        Abilities = new AbilitySlot[Cfg.Hero.AbilitySlots];
+        // abilities — slot count from hero level, ids + levels from the loadout
+        int slots = Mathf.Clamp(Mods.AbilitySlots, 3, 5);
+        Abilities = new AbilitySlot[slots];
         for (int i = 0; i < Abilities.Length; i++)
         {
             int defIdx = -1;
             if (i < equippedAbilityIds.Length && _abilityDefIndex.TryGetValue(equippedAbilityIds[i], out int di))
                 defIdx = di;
-            Abilities[i] = new AbilitySlot { DefIndex = defIdx, CooldownLeft = 0f };
+            float eff = (abilityEffect != null && i < abilityEffect.Length) ? abilityEffect[i] : 1f;
+            float cdm = (abilityCd != null && i < abilityCd.Length) ? abilityCd[i] : 1f;
+            Abilities[i] = new AbilitySlot { DefIndex = defIdx, CooldownLeft = 0f, EffMult = eff, CdMult = cdm };
         }
 
-        PlanetIntegrityMax = B.PlanetIntegrity;
-        PlanetIntegrity = B.PlanetIntegrity;
-        Credits = B.StartingCredits;
+        PlanetIntegrityMax = B.PlanetIntegrity * Mathf.Max(0.2f, Mods.PlanetIntegrityMult);
+        PlanetIntegrity = PlanetIntegrityMax;
+        PlanetShield = Mods.PlanetStartShield;
+        Credits = B.StartingCredits + Mods.StartCreditsAdd;
         WaveIndex = 0;
         WavesCleared = 0;
         ResearchDataEarned = 0f;
@@ -314,7 +325,8 @@ public sealed partial class SimWorld
     {
         if (!InSlot(slot) || !Turrets[slot].Built || Turrets[slot].Level >= 3) return -1;
         var def = TurretDefs[Turrets[slot].DefIndex];
-        return Mathf.RoundToInt(def.Cost * B.TurretUpgradeCostMult * Turrets[slot].Level);
+        return Mathf.RoundToInt(def.Cost * B.TurretUpgradeCostMult * Turrets[slot].Level
+                                * Mathf.Max(0.3f, Mods.TurretUpgradeCostMult));
     }
 
     private int TurretRefund(int slot)
@@ -372,14 +384,18 @@ public sealed partial class SimWorld
             chain += f.ExtraChain;
         }
         return new TurretStats(
-            def.Damage * dMult,
-            def.FireInterval / Mathf.Max(0.05f, rateMult),
-            def.Range * rangeMult,
-            def.SplashRadius * splashMult,
-            def.ArmorPen + apAdd,
+            def.Damage * dMult * Mathf.Max(0.1f, Mods.TurretDamageMult),
+            def.FireInterval / Mathf.Max(0.05f, rateMult * Mathf.Max(0.1f, Mods.TurretFireRateMult)),
+            def.Range * rangeMult * Mathf.Max(0.3f, Mods.TurretRangeMult),
+            def.SplashRadius * splashMult * Mathf.Max(0.1f, Mods.TurretSplashMult),
+            def.ArmorPen + apAdd + Mods.TurretArmorPenAdd,
             def.ShieldMult,
             pierce, chain);
     }
+
+    /// <summary>Roll a turret crit for this shot (research-driven).</summary>
+    internal float CritRoll(float dmg)
+        => Mods.TurretCritChance > 0f && Rng.Chance(Mods.TurretCritChance) ? dmg * Mods.TurretCritMult : dmg;
 
     private void BeginWave()
     {
@@ -429,11 +445,12 @@ public sealed partial class SimWorld
         if (doneSpawning && _aliveThisWave <= 0)
         {
             WavesCleared++;
-            ResearchDataEarned += B.ResearchDataPerWave;
-            XpEarned += B.XpPerWave;
-            Credits += B.CreditsPerWave;
-            // a Sentinel Core every few waves; bosses drop more (handled on boss kill)
+            ResearchDataEarned += B.ResearchDataPerWave * Mods.ResearchDataGainMult;
+            XpEarned += B.XpPerWave * Mods.XpGainMult;
+            Credits += Mathf.RoundToInt(B.CreditsPerWave * Mods.WaveIncomeMult);
             if (WavesCleared % 4 == 0) CoresEarned += 1;
+            if (Mods.PlanetRegenPerWaveFrac > 0f)
+                PlanetIntegrity = Mathf.Min(PlanetIntegrityMax, PlanetIntegrity + PlanetIntegrityMax * Mods.PlanetRegenPerWaveFrac);
             Events.Push(SimEventKind.WaveCleared, Vector2.Zero, 0f, WaveIndex);
 
             WaveIndex++;
@@ -457,12 +474,20 @@ public sealed partial class SimWorld
     {
         if (missionClear)
         {
-            ResearchDataEarned += B.ResearchDataMissionClear;
-            XpEarned += B.XpMissionClear;
+            ResearchDataEarned += B.ResearchDataMissionClear * Mods.ResearchDataGainMult;
+            XpEarned += B.XpMissionClear * Mods.XpGainMult;
             CoresEarned += 2;
-            AlloyEarned += 5;           // mission first-clear alloy (spec §11); dedup vs. record is AppRoot's job
+            AlloyEarned += 5;           // mission first-clear alloy; AppRoot only banks it once
         }
-        // rewards for partial progress are already added per wave cleared.
+        // Sentinel Core gain multiplier + Exotic Alloy gain multiplier applied here at the end
+        CoresEarned = Mathf.RoundToInt(CoresEarned * Mods.SentinelCoreGainMult);
+        AlloyEarned = Mathf.RoundToInt(AlloyEarned * Mods.ExoticAlloyGainMult);
+        // on a loss, keep only LossRewardFrac of the run's rewards
+        if (!missionClear && Mods.LossRewardFrac < 1f)
+        {
+            ResearchDataEarned *= Mods.LossRewardFrac;
+            XpEarned *= Mods.LossRewardFrac;
+        }
     }
 
     // ---- pool helpers ----
@@ -607,6 +632,10 @@ public sealed partial class SimWorld
             return 0f;
         }
 
+        // desperation: below 30% integrity, everything hits harder (Fortification T5)
+        if (Mods.DesperationBonus && PlanetIntegrity < PlanetIntegrityMax * 0.3f)
+            amount *= 1.2f;
+
         float remaining = amount;
         float dealt = 0f;
 
@@ -674,8 +703,11 @@ public sealed partial class SimWorld
         e.Shield = Mathf.Min(e.MaxShield, e.Shield + amount);
     }
 
-    internal void DamagePlanet(float amount)
+    internal void DamagePlanet(float amount, bool leaked = false)
     {
+        amount *= Mathf.Max(0.1f, Mods.PlanetDamageTakenMult);
+        if (leaked) amount *= Mathf.Max(0.1f, Mods.LeakedDamageMult);
+
         // Aegis Barrier absorbs first.
         for (int i = 0; i < Abilities.Length; i++)
         {
@@ -690,6 +722,16 @@ public sealed partial class SimWorld
                 if (amount <= 0f) return;
             }
         }
+
+        // planet shield (Fortification "Static Envelope") soaks before integrity
+        if (PlanetShield > 0.01f)
+        {
+            float s = Mathf.Min(PlanetShield, amount);
+            PlanetShield -= s;
+            amount -= s;
+            if (amount <= 0f) { Events.Push(SimEventKind.PlanetHit, Vector2.Zero, s); return; }
+        }
+
         PlanetIntegrity -= amount;
         Events.Push(SimEventKind.PlanetHit, Vector2.Zero, amount);
     }

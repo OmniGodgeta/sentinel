@@ -37,40 +37,41 @@ public sealed partial class SimWorld
             a.TickAccum += dt;
             float interval = def.TickInterval <= 0f ? 0.2f : def.TickInterval;
 
+            float pw = AbilityPower(i);
             switch (def.Kind)
             {
                 case "barrage":
-                    while (a.TickAccum >= interval) { a.TickAccum -= interval; ApplyBarrageTick(def, a.P0, a.P1); }
+                    while (a.TickAccum >= interval) { a.TickAccum -= interval; ApplyBarrageTick(def.Damage * pw, a.P0, a.P1); }
                     break;
 
                 case "lance":
-                    while (a.TickAccum >= interval) { a.TickAccum -= interval; ApplyZoneDamage(a.Anchor, def.Radius, def.Damage); }
+                    while (a.TickAccum >= interval) { a.TickAccum -= interval; ApplyZoneDamage(a.Anchor, AbilityRad(def.Radius), def.Damage * pw); }
                     break;
 
                 case "slow":
-                    ApplyZoneSlow(a.Anchor, def.Radius, def.Value);
+                    ApplyZoneSlow(a.Anchor, AbilityRad(def.Radius), def.Value);
                     break;
 
                 case "snare":
-                    ApplyZoneSnare(a.Anchor, def.Radius, def.Value);
+                    ApplyZoneSnare(a.Anchor, AbilityRad(def.Radius), def.Value * pw);
                     break;
 
                 case "repair":
-                    PlanetIntegrity = Mathf.Min(PlanetIntegrityMax, PlanetIntegrity + def.Value * dt);
-                    if (Hero.Alive) Hero.Hull = Mathf.Min(Hero.MaxHull, Hero.Hull + def.Value2 * dt);
+                    PlanetIntegrity = Mathf.Min(PlanetIntegrityMax, PlanetIntegrity + def.Value * pw * dt);
+                    if (Hero.Alive) Hero.Hull = Mathf.Min(Hero.MaxHull, Hero.Hull + def.Value2 * pw * dt);
                     break;
             }
         }
     }
 
-    private void ApplyBarrageTick(Config.AbilityDef def, float center, float half)
+    private void ApplyBarrageTick(float dmg, float center, float half)
     {
         for (int i = 0; i < EnemyHighWater; i++)
         {
             ref readonly var e = ref Enemies[i];
             if (!e.Alive) continue;
             if (Mathf.Abs(Mathf.AngleDifference(center, e.Pos.Angle())) <= half)
-                DamageEnemy(i, def.Damage, DamageSource.Ability);
+                DamageEnemy(i, dmg, DamageSource.Ability);
         }
         Events.Push(SimEventKind.BarrageTick, Vector2.FromAngle(center) * (B.SpawnRadius * 0.6f), half);
     }
@@ -116,6 +117,7 @@ public sealed partial class SimWorld
         var def = AbilityDefs[a.DefIndex];
         a.Anchor = reticle;
         a.TickAccum = 0f;
+        float pw = AbilityPower(slot);
 
         switch (def.Kind)
         {
@@ -130,7 +132,7 @@ public sealed partial class SimWorld
                 break;
 
             case "nova":
-                CastNova(def);
+                CastNova(def, pw);
                 a.ActiveLeft = 0.4f; // vfx window
                 break;
 
@@ -140,18 +142,18 @@ public sealed partial class SimWorld
                 break;
 
             case "ion":
-                CastIon(def, reticle);
+                CastIon(def, reticle, pw);
                 a.ActiveLeft = 0.3f;
                 break;
 
             case "barrier":
-                a.P2 = Nz(def.Value, 400f);
+                a.P2 = Nz(def.Value, 400f) * pw;
                 a.ActiveLeft = Nz(def.Duration, 8f);
                 break;
 
             case "pointdef":
                 PdgActiveLeft = Nz(def.Duration, 6f);
-                PdgRadius = Nz(def.Radius, 260f);
+                PdgRadius = AbilityRad(Nz(def.Radius, 260f));
                 a.ActiveLeft = PdgActiveLeft;
                 break;
 
@@ -170,34 +172,34 @@ public sealed partial class SimWorld
             case "salvage":
                 SalvageActiveLeft = Nz(def.Duration, 10f);
                 SalvageAnchor = reticle;
-                SalvageRadius = Nz(def.Radius, 220f);
-                SalvageBonusFrac = Nz(def.Value, 0.5f);
+                SalvageRadius = AbilityRad(Nz(def.Radius, 220f));
+                SalvageBonusFrac = Nz(def.Value, 0.5f) * pw;
                 a.ActiveLeft = SalvageActiveLeft;
                 break;
 
             case "drones":
                 DronesActiveLeft = Nz(def.Duration, 10f);
                 DroneCount = def.IntValue <= 0 ? 3 : def.IntValue;
-                DroneDps = Nz(def.Damage, 20f);
-                DroneRange = Nz(def.Radius, 220f);
+                DroneDps = Nz(def.Damage, 20f) * pw;
+                DroneRange = AbilityRad(Nz(def.Radius, 220f));
                 a.ActiveLeft = DronesActiveLeft;
                 break;
         }
 
-        a.CooldownLeft = def.Cooldown;
+        a.CooldownLeft = AbilityCd(def, slot);
         Events.Push(SimEventKind.AbilityCast, reticle, 0f, slot);
     }
 
-    private void CastNova(Config.AbilityDef def)
+    private void CastNova(Config.AbilityDef def, float pw)
     {
-        float r = Nz(def.Radius, 260f);
+        float r = AbilityRad(Nz(def.Radius, 260f));
         float rSq = r * r;
         for (int i = 0; i < EnemyHighWater; i++)
         {
             ref var e = ref Enemies[i];
             if (!e.Alive) continue;
             if (e.Pos.LengthSquared() > rSq) continue;
-            DamageEnemy(i, def.Damage, DamageSource.Ability);
+            DamageEnemy(i, def.Damage * pw, DamageSource.Ability);
             if (!_missionEnemyDefs[e.DefIndex].CcImmune)
             {
                 Vector2 outward = e.Pos.LengthSquared() > 1f ? e.Pos.Normalized() : Vector2.Up;
@@ -209,7 +211,7 @@ public sealed partial class SimWorld
         Events.Push(SimEventKind.NovaPulse, Vector2.Zero, r);
     }
 
-    private void CastIon(Config.AbilityDef def, Vector2 reticle)
+    private void CastIon(Config.AbilityDef def, Vector2 reticle, float pw)
     {
         int start = ClosestEnemyTo(reticle == Vector2.Zero ? Vector2.Zero : reticle, 9999f);
         if (start < 0) return;
@@ -221,7 +223,7 @@ public sealed partial class SimWorld
             ref var e = ref Enemies[cur];
             e.Shield = 0f;                       // strip shields
             e.ShieldRegenTimer = -Nz(def.Value2, 3f); // delay regen extra
-            DamageEnemy(cur, def.Damage, DamageSource.Ability);
+            DamageEnemy(cur, def.Damage * pw, DamageSource.Ability);
             ApplySlow(cur, 0.5f);
             if (cur < 64) hit[cur] = true;
             Events.Push(SimEventKind.BarrageTick, e.Pos, 3f);
@@ -239,4 +241,19 @@ public sealed partial class SimWorld
     }
 
     private static float Nz(float v, float fallback) => v <= 0f ? fallback : v;
+
+    /// <summary>Effect multiplier for an equipped ability: its level, the branch
+    /// picks at 5/10/15/20, and the Sentinel Protocols research.</summary>
+    private float AbilityPower(int slot)
+    {
+        float eff = Abilities[slot].EffMult <= 0f ? 1f : Abilities[slot].EffMult;
+        return eff * Mathf.Max(0.2f, Mods.AbilityEffectMult);
+    }
+
+    private float AbilityCd(Config.AbilityDef def, int slot)
+    {
+        float cm = Abilities[slot].CdMult <= 0f ? 1f : Abilities[slot].CdMult;
+        return def.Cooldown * Mathf.Max(0.2f, Mods.AbilityCooldownMult) * cm;
+    }
+    private float AbilityRad(float r) => r * Mathf.Max(0.3f, Mods.AbilityRadiusMult);
 }

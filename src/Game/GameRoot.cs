@@ -17,8 +17,11 @@ public readonly record struct MissionOutcome(
 /// </summary>
 public sealed partial class GameRoot : Node2D
 {
-    [Export] public string MissionPath = "res://data/missions/mission_01.json";
+    [Export] public string MissionPath = "res://data/missions/m01.json";
     [Export] public string[] EquippedAbilities = { "kinetic_barrage", "aegis_barrier", "overdrive" };
+    public float[] AbilityEffect = System.Array.Empty<float>();
+    public float[] AbilityCd = System.Array.Empty<float>();
+    public Meta.ModifierSet Mods = new();
 
     public int StartSpeed = 1;
     public event System.Action<MissionOutcome>? MissionEnded;
@@ -51,9 +54,9 @@ public sealed partial class GameRoot : Node2D
 
     public override void _Ready()
     {
-        _cfg = ConfigDb.Load();
+        _cfg = AppRoot.Instance?.Cfg ?? ConfigDb.Load();
         _world = new SimWorld(_cfg);
-        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities);
+        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd);
 
         _renderer = new SimRenderer { Root = this, World = _world };
         AddChild(_renderer);
@@ -244,7 +247,7 @@ public sealed partial class GameRoot : Node2D
 
     public void RestartMission()
     {
-        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities);
+        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd);
         _clock.Reset();
         _clock.SetSpeed(StartSpeed);
         _hud.SyncSpeed(StartSpeed);

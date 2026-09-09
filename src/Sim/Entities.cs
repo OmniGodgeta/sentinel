@@ -103,6 +103,8 @@ public struct HeroState
 public struct AbilitySlot
 {
     public int DefIndex;       // -1 if empty
+    public float EffMult;      // effect multiplier from level + Potency picks (default 1)
+    public float CdMult;       // cooldown multiplier from Tempo picks (default 1)
     public float CooldownLeft;
     public float ActiveLeft;
     public float P0, P1, P2, P3;

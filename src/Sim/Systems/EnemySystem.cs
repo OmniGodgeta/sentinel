@@ -46,7 +46,7 @@ public sealed partial class SimWorld
             e.DistToCenter = e.Pos.Length();
             if (e.DistToCenter <= arrival)
             {
-                DamagePlanet(e.ContactDamage);
+                DamagePlanet(e.ContactDamage, leaked: true);
                 KillEnemy(i, leaked: true);
             }
         }

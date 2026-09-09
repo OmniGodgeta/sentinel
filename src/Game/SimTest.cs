@@ -35,17 +35,34 @@ public sealed partial class SimTest : Node
         }
 
         GD.Print("---------|---------------------------------------------------------------------------------------");
-        GD.Print(allOk ? "DETERMINISM OK across all missions" : "DETERMINISM FAILED");
+
+        // progression: a beefy modifier set must change the outcome AND stay deterministic
+        var mods = new Sentinel.Meta.ModifierSet();
+        foreach (var (k, v) in new (string, float)[] {
+            ("turret_damage", 0.5f), ("turret_fire_rate", 0.3f), ("planet_integrity", 0.4f),
+            ("hero_missile_damage", 0.5f), ("ability_effect", 0.4f), ("ability_cooldown", -0.3f),
+            ("rd_gain", 0.5f), ("turret_crit_chance", 0.15f) })
+            mods.ApplyEffect(k, v);
+        var baseRun = RunOnce(cfg, "res://data/missions/m07.json");
+        var modA = RunOnce(cfg, "res://data/missions/m07.json", mods);
+        var modB = RunOnce(cfg, "res://data/missions/m07.json", mods);
+        bool modDet = modA.ticks == modB.ticks && Mathf.IsEqualApprox(modA.integ, modB.integ) && modA.kills == modB.kills;
+        bool modChanged = modA.ticks != baseRun.ticks || !Mathf.IsEqualApprox(modA.rd, baseRun.rd);
+        GD.Print($"progression: base m07 integ={baseRun.integ:0} rd={baseRun.rd:0}  |  +mods integ={modA.integ:0} rd={modA.rd:0}  " +
+                 $"deterministic={(modDet ? "ok" : "FAIL")}  changed-outcome={(modChanged ? "ok" : "FAIL")}");
+        allOk &= modDet && modChanged;
+
+        GD.Print(allOk ? "ALL CHECKS OK" : "SOME CHECKS FAILED");
         GetTree().Quit(allOk ? 0 : 1);
     }
 
     private readonly record struct R(SimPhase phase, int waves, int total, float integ, int kills, int leak,
         long ticks, float rd, float dTur, float dHero, float dAbil, long ms);
 
-    private static R RunOnce(ConfigDb cfg, string file)
+    private static R RunOnce(ConfigDb cfg, string file, Sentinel.Meta.ModifierSet? mods = null)
     {
         var w = new SimWorld(cfg);
-        w.Load(cfg.LoadMission(file), Loadout);
+        w.Load(cfg.LoadMission(file), Loadout, mods);
         var sw = System.Diagnostics.Stopwatch.StartNew();
         long wt = 0;
         int guard = 0;

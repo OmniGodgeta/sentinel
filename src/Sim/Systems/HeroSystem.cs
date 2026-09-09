@@ -35,7 +35,7 @@ public sealed partial class SimWorld
 
         // movement: glide toward the drag target, staying on the orbit band
         Vector2 to = _heroTarget - h.Pos;
-        float step = Cfg.Hero.MoveSpeed * dt;
+        float step = Cfg.Hero.MoveSpeed * Mathf.Max(0.2f, Mods.HeroMoveSpeedMult) * dt;
         if (to.Length() <= step) h.Pos = _heroTarget;
         else h.Pos += to.Normalized() * step;
         h.Pos = ClampToOrbitBand(h.Pos);
@@ -45,7 +45,7 @@ public sealed partial class SimWorld
         int closest = ClosestEnemyTo(h.Pos, Cfg.Hero.PointDefenseRange);
         if (closest >= 0)
         {
-            DamageEnemy(closest, Cfg.Hero.PointDefenseDps * dt, DamageSource.Hero);
+            DamageEnemy(closest, Cfg.Hero.PointDefenseDps * Mods.HeroPointDefenseMult * dt, DamageSource.Hero);
         }
 
         // Sentinel Deployment: escort drones chew on the nearest few enemies
@@ -64,8 +64,8 @@ public sealed partial class SimWorld
         ref var h = ref Hero;
         if (!h.Alive || h.VolleyCooldownLeft > 0f) return;
 
-        int missiles = Cfg.Hero.VolleyMissiles;
-        float dmg = Cfg.Hero.MissileDamage;
+        int missiles = Cfg.Hero.VolleyMissiles + Mods.HeroExtraMissiles + (Mods.HeroDoubleSalvo ? Cfg.Hero.VolleyMissiles : 0);
+        float dmg = Cfg.Hero.MissileDamage * Mathf.Max(0.2f, Mods.HeroMissileDamageMult);
         float speed = Cfg.Hero.MissileSpeed;
         float splash = Cfg.Hero.MissileSplashRadius;
 
@@ -92,7 +92,8 @@ public sealed partial class SimWorld
             SpawnProjectile(kind: 1, h.Pos, dir * speed, dmg, splash, tgt, src: 255, life: 5f);
         }
 
-        h.VolleyCooldownLeft = Cfg.Hero.VolleyCooldown * h.OverdriveVolleyMult;
+        float cd = Mathf.Max(11f, Cfg.Hero.VolleyCooldown + Mods.HeroMissileCdAdd);
+        h.VolleyCooldownLeft = cd * h.OverdriveVolleyMult;
         Events.Push(SimEventKind.VolleyLaunched, h.Pos, missiles);
     }
 
@@ -106,7 +107,7 @@ public sealed partial class SimWorld
         {
             h.Hull = 0f;
             h.Alive = false;
-            h.RespawnLeft = Cfg.Hero.RespawnSeconds;
+            h.RespawnLeft = Mods.HeroRespawnSeconds >= 0f ? Mods.HeroRespawnSeconds : Cfg.Hero.RespawnSeconds;
             Events.Push(SimEventKind.HeroDown, h.Pos);
         }
     }

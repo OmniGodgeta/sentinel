@@ -131,7 +131,7 @@ public sealed partial class SimWorld
         ref readonly var e = ref Enemies[enemyIdx];
         Vector2 turretPos = Turrets[slot].Pos;
 
-        float dmg = st.Damage * (1f + SupportBonusAt(turretPos));
+        float dmg = CritRoll(st.Damage * (1f + SupportBonusAt(turretPos)));
         float dist = turretPos.DistanceTo(e.Pos);
         float tHit = def.ProjectileSpeed > 1f ? dist / def.ProjectileSpeed : 0f;
         Vector2 aimPos = e.Pos + e.Vel * tHit;
@@ -155,7 +155,7 @@ public sealed partial class SimWorld
 
         for (int j = 0; j < jumps && cur >= 0; j++)
         {
-            float dealt = DamageEnemy(cur, st.Damage, DamageSource.Turret, st.ArmorPen, st.ShieldMult);
+            float dealt = DamageEnemy(cur, CritRoll(st.Damage), DamageSource.Turret, st.ArmorPen, st.ShieldMult);
             Turrets[slot].DamageDealt += dealt;
             Events.Push(SimEventKind.BarrageTick, Enemies[cur].Pos, 2f);
             if (cur < 64) hitFlag[cur] = true;
