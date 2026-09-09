@@ -26,7 +26,7 @@ window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/stretch/scale_mode="fractional"
-window/handheld/orientation="portrait"
+window/handheld/orientation=1
 window/vsync/vsync_mode=1
 
 [rendering]
