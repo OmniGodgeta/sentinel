@@ -36,16 +36,20 @@ public sealed partial class SimRenderer : Node2D
     private Vector2[] _stars = System.Array.Empty<Vector2>();
     private float[] _starMag = System.Array.Empty<float>();
 
-    private static readonly Color[] EnemyColors =
+    private static readonly System.Collections.Generic.Dictionary<string, Color> EnemyColor = new()
     {
-        new(0.95f, 0.35f, 0.35f), // 0 warm red   (skiff)
-        new(0.55f, 0.65f, 1.00f), // 1 blue        (hauler / heavy)
-        new(1.00f, 0.75f, 0.30f), // 2 amber       (interceptor)
-        new(0.45f, 0.95f, 0.95f), // 3 cyan        (shielded)
-        new(0.80f, 0.45f, 1.00f), // 4 violet      (phase / special)
-        new(0.60f, 1.00f, 0.55f), // 5 green       (warden)
-        new(1.00f, 0.55f, 0.75f), // 6 pink        (siege / boss)
+        ["skiff"] = new(1.00f, 0.40f, 0.38f),
+        ["hauler"] = new(0.60f, 0.68f, 1.00f),
+        ["interceptor"] = new(1.00f, 0.78f, 0.28f),
+        ["aegis_cruiser"] = new(0.45f, 0.95f, 1.00f),
+        ["bombard"] = new(1.00f, 0.45f, 0.30f),
+        ["carrier"] = new(0.70f, 0.55f, 1.00f),
+        ["phase_runner"] = new(0.85f, 0.45f, 1.00f),
+        ["leech"] = new(0.70f, 1.00f, 0.55f),
+        ["warden"] = new(0.55f, 1.00f, 0.70f),
+        ["siege_crawler"] = new(1.00f, 0.60f, 0.45f),
     };
+    private static Color ColorFor(string id) => EnemyColor.TryGetValue(id, out var c) ? c : new Color(1f, 0.5f, 0.5f);
 
     public void AddShake(float a) => _shake = Mathf.Min(16f, _shake + a);
 
@@ -299,7 +303,7 @@ public sealed partial class SimRenderer : Node2D
             ref readonly var e = ref enemies[i];
             if (!e.Alive) continue;
             var def = World.EnemyDefAt(e.DefIndex);
-            var col = EnemyColors[System.Math.Clamp(Mathf.RoundToInt(def.Color * (EnemyColors.Length - 1)), 0, EnemyColors.Length - 1)];
+            var col = def.Class == "boss" ? new Color(1f, 0.5f, 0.85f) : ColorFor(def.Id);
             float vr = e.Radius * 2.0f + 5f;
             bool boss = def.Class == "boss";
             if (boss) vr = e.Radius + 10f;

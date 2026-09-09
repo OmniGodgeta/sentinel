@@ -115,6 +115,7 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
+        _wavePanel.OffsetTop = -136;   // just the ability bar + hint
         AddChild(_wavePanel);
         var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         _wavePanel.AddChild(wv);
