@@ -126,10 +126,21 @@ public sealed partial class SimWorld
 
     internal Meta.ModifierSet Mods = new();
 
+    private float _ascHpMult = 1f, _ascSpeedMult = 1f, _ascShieldAdd = 0f, _ascArmorAdd = 0f, _ascCountMult = 1f, _ascRewardMult = 1f;
+    public int AscensionTier { get; private set; }
+
     public void Load(MissionDef mission, string[] equippedAbilityIds,
                      Meta.ModifierSet? mods = null,
-                     float[]? abilityEffect = null, float[]? abilityCd = null)
+                     float[]? abilityEffect = null, float[]? abilityCd = null,
+                     Config.AscensionTierDef? ascension = null)
     {
+        _ascHpMult = ascension?.EnemyHpMult ?? 1f;
+        _ascSpeedMult = ascension?.EnemySpeedMult ?? 1f;
+        _ascShieldAdd = ascension?.EnemyShieldAdd ?? 0f;
+        _ascArmorAdd = ascension?.EnemyArmorAdd ?? 0f;
+        _ascCountMult = ascension?.EnemyCountMult ?? 1f;
+        _ascRewardMult = ascension?.RewardMult ?? 1f;
+        AscensionTier = ascension?.Tier ?? 0;
         Mission = mission;
         Mods = (mods ?? new Meta.ModifierSet()).Clone();   // run-scoped copy — card draft mutates it
         Rng = new DetRandom(mission.Seed);
@@ -467,7 +478,8 @@ public sealed partial class SimWorld
         foreach (var g in wave.Groups)
         {
             if (!_enemyDefIndex.TryGetValue(g.Enemy, out int edi)) continue;
-            for (int k = 0; k < g.Count; k++)
+            int count = Mathf.Max(1, Mathf.RoundToInt(g.Count * _ascCountMult));
+            for (int k = 0; k < count; k++)
             {
                 float ang;
                 if (g.ArcCenterDeg < 0f)
@@ -508,8 +520,8 @@ public sealed partial class SimWorld
         if (doneSpawning && _aliveThisWave <= 0)
         {
             WavesCleared++;
-            ResearchDataEarned += B.ResearchDataPerWave * Mods.ResearchDataGainMult;
-            XpEarned += B.XpPerWave * Mods.XpGainMult;
+            ResearchDataEarned += B.ResearchDataPerWave * Mods.ResearchDataGainMult * _ascRewardMult;
+            XpEarned += B.XpPerWave * Mods.XpGainMult * _ascRewardMult;
             Credits += Mathf.RoundToInt(B.CreditsPerWave * Mods.WaveIncomeMult);
             if (WavesCleared % 4 == 0) CoresEarned += 1;
             if (Mods.PlanetRegenPerWaveFrac > 0f)
@@ -538,10 +550,10 @@ public sealed partial class SimWorld
     {
         if (missionClear)
         {
-            ResearchDataEarned += B.ResearchDataMissionClear * Mods.ResearchDataGainMult;
-            XpEarned += B.XpMissionClear * Mods.XpGainMult;
-            CoresEarned += 2;
-            AlloyEarned += 5;           // mission first-clear alloy; AppRoot only banks it once
+            ResearchDataEarned += B.ResearchDataMissionClear * Mods.ResearchDataGainMult * _ascRewardMult;
+            XpEarned += B.XpMissionClear * Mods.XpGainMult * _ascRewardMult;
+            CoresEarned += 2 + AscensionTier / 2;
+            AlloyEarned += Mathf.RoundToInt(5 * _ascRewardMult);
         }
         // Sentinel Core gain multiplier + Exotic Alloy gain multiplier applied here at the end
         CoresEarned = Mathf.RoundToInt(CoresEarned * Mods.SentinelCoreGainMult);
@@ -563,7 +575,7 @@ public sealed partial class SimWorld
         else return -1;
 
         var def = _missionEnemyDefs[missionEnemyDefIndex];
-        float sc = EndlessScale;                    // 1.0 for normal missions
+        float sc = EndlessScale * _ascHpMult;       // 1.0 for a normal mission at tier 0
         ref var e = ref Enemies[idx];
         uint nextGen = e.Gen + 1;
         e = default;
@@ -573,14 +585,14 @@ public sealed partial class SimWorld
         e.Pos = pos;
         e.Hp = def.MaxHp * sc;
         e.MaxHp = def.MaxHp * sc;
-        e.Shield = def.ShieldHp * sc;
-        e.MaxShield = def.ShieldHp * sc;
-        e.Armor = def.Armor;
+        e.Shield = (def.ShieldHp + (def.ShieldHp > 0f ? _ascShieldAdd : 0f)) * EndlessScale;
+        e.MaxShield = e.Shield;
+        e.Armor = def.Armor + _ascArmorAdd;
         e.Radius = def.Radius;
-        e.ContactDamage = def.ContactDamage * Mathf.Sqrt(sc);
-        e.Bounty = Mathf.RoundToInt(def.Bounty * Mathf.Sqrt(sc));
+        e.ContactDamage = def.ContactDamage * Mathf.Sqrt(EndlessScale);
+        e.Bounty = Mathf.RoundToInt(def.Bounty * Mathf.Sqrt(EndlessScale));
         e.DistToCenter = pos.Length();
-        e.BaseSpeed = def.Speed;
+        e.BaseSpeed = def.Speed * _ascSpeedMult;
         e.SlowFactor = 1f;
         e.LeechSlot = -1;
         e.AttackTimer = def.RangedInterval;

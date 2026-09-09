@@ -16,6 +16,7 @@ public sealed partial class MenuScreen : CanvasLayer
     private VBoxContainer _missionList = null!;
     private Label _totals = null!;
     private Button _endlessBtn = null!;
+    private HBoxContainer _ascRow = null!;
 
     public override void _Ready()
     {
@@ -69,6 +70,9 @@ public sealed partial class MenuScreen : CanvasLayer
         var mh = new Label { Text = $"ARC 1 — {App.Cfg.Arc.Name}" };
         mh.AddThemeFontSizeOverride("font_size", 12);
         root.AddChild(mh);
+
+        _ascRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        root.AddChild(_ascRow);
 
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 300) };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
@@ -126,6 +130,25 @@ public sealed partial class MenuScreen : CanvasLayer
         }
 
         _endlessBtn.Text = s.EndlessBest > 0 ? $"ENDLESS — best: wave {s.EndlessBest}" : "ENDLESS";
+
+        // ascension stepper
+        foreach (Node c in _ascRow.GetChildren()) c.QueueFree();
+        int ascMax = p.AscensionMax;
+        if (ascMax > 0)
+        {
+            if (s.AscensionTier > ascMax) s.AscensionTier = ascMax;
+            var minus = new Button { Text = "−", CustomMinimumSize = new Vector2(38, 30) };
+            minus.Pressed += () => { s.AscensionTier = Mathf.Max(0, s.AscensionTier - 1); s.Save(); Rebuild(); };
+            _ascRow.AddChild(minus);
+            string tierName = s.AscensionTier == 0 ? "off"
+                : App.Cfg.Ascension.Find(a => a.Tier == s.AscensionTier)?.Name ?? "";
+            var lbl = new Label { Text = $"  Ascension {s.AscensionTier}/{ascMax}  {tierName}  ", VerticalAlignment = VerticalAlignment.Center };
+            lbl.AddThemeFontSizeOverride("font_size", 11);
+            _ascRow.AddChild(lbl);
+            var plus = new Button { Text = "+", CustomMinimumSize = new Vector2(38, 30) };
+            plus.Pressed += () => { s.AscensionTier = Mathf.Min(ascMax, s.AscensionTier + 1); s.Save(); Rebuild(); };
+            _ascRow.AddChild(plus);
+        }
 
         foreach (Node c in _missionList.GetChildren()) c.QueueFree();
         var arcOrder = new List<string>();

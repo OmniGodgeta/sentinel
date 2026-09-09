@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using Sentinel.Config;
 using Sentinel.Meta;
@@ -56,22 +57,35 @@ public sealed partial class AppRoot : Node
             cd[i] = Prog.AbilityCdMult(loadout[i]);
         }
 
+        // ascension only applies to arc missions, and only up to what's unlocked
+        int tier = 0;
+        Config.AscensionTierDef? asc = null;
+        if (missionId != "endless" && Save.AscensionTier > 0 && Save.AscensionTier <= Prog.AscensionMax)
+        {
+            tier = Save.AscensionTier;
+            asc = Cfg.Ascension.Find(a => a.Tier == tier);
+        }
+        var mods = Prog.BuildModifiers();
+        if (asc != null)
+            foreach (var kv in asc.PlayerEffects) mods.ApplyEffect(kv.Key, kv.Value);
+
         var g = new GameRoot
         {
             MissionPath = missionFile,
             EquippedAbilities = loadout,
             AbilityEffect = eff,
             AbilityCd = cd,
-            Mods = Prog.BuildModifiers(),
+            Mods = mods,
+            Ascension = asc,
             StartSpeed = Save.Options.Speed,
         };
-        g.MissionEnded += o => OnMissionEnded(o);
+        g.MissionEnded += o => OnMissionEnded(o, tier);
         g.ExitToMenu += ShowMenu;
         Save.Record(missionId).Attempts++;
         SwapTo(g);
     }
 
-    private void OnMissionEnded(MissionOutcome o)
+    private void OnMissionEnded(MissionOutcome o, int ascensionTier)
     {
         var rec = Save.Record(o.MissionId);
         bool firstClear = o.Won && !rec.Cleared;
@@ -92,7 +106,9 @@ public sealed partial class AppRoot : Node
             rec.Cleared = true;
             int stars = 1 + (o.PlanetIntegrityPct >= 0.75f ? 1 : 0) + (o.HeroSurvived ? 1 : 0);
             if (stars > rec.Stars) rec.Stars = stars;
-            if (firstClear) Save.ExoticAlloy += 5;   // mission first-clear alloy (spec §11)
+            if (firstClear) Save.ExoticAlloy += 5;
+            if (ascensionTier > Save.MissionBestTier.GetValueOrDefault(o.MissionId, 0))
+                Save.MissionBestTier[o.MissionId] = ascensionTier;
         }
         Save.Save();
     }

@@ -87,6 +87,22 @@ public sealed class Progression
 
     public int Ranks(string nodeId) => _save.ResearchRanks.TryGetValue(nodeId, out int r) ? r : 0;
 
+    /// <summary>Highest ascension tier the player may select: 0 until the whole arc is
+    /// cleared at tier 0, then one above the lowest per-mission cleared tier (cap 10).</summary>
+    public int AscensionMax
+    {
+        get
+        {
+            int lowest = int.MaxValue;
+            foreach (var m in _cfg.Arc.Missions)
+            {
+                if (!_save.Record(m.Id).Cleared) return 0;
+                lowest = System.Math.Min(lowest, _save.MissionBestTier.GetValueOrDefault(m.Id, 0));
+            }
+            return System.Math.Min(10, lowest + 1);
+        }
+    }
+
     public bool CanBuy(ResearchNode node, out string reason)
     {
         reason = "";

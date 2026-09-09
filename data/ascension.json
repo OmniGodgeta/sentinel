@@ -1,0 +1,22 @@
+[
+  { "tier": 1, "name": "Hardened Shells", "enemy_hp_mult": 1.15, "enemy_shield_add": 20, "reward_mult": 1.2,
+    "player_effects": {} },
+  { "tier": 2, "name": "Deep Reserves", "enemy_hp_mult": 1.30, "enemy_shield_add": 30, "reward_mult": 1.4,
+    "player_effects": { "wave_income": -0.15 } },
+  { "tier": 3, "name": "Faster Harvest", "enemy_hp_mult": 1.40, "enemy_speed_mult": 1.15, "reward_mult": 1.6,
+    "player_effects": { "turret_range": -0.12 } },
+  { "tier": 4, "name": "Reinforced Armour", "enemy_hp_mult": 1.55, "enemy_armor_add": 4, "reward_mult": 1.9,
+    "player_effects": { "turret_fire_rate": -0.12 } },
+  { "tier": 5, "name": "Overwhelming Numbers", "enemy_hp_mult": 1.7, "enemy_count_mult": 1.25, "reward_mult": 2.2,
+    "player_effects": { "planet_integrity": -0.15 } },
+  { "tier": 6, "name": "Adaptive Shields", "enemy_hp_mult": 1.9, "enemy_shield_add": 80, "reward_mult": 2.6,
+    "player_effects": { "ability_cooldown": 0.2 } },
+  { "tier": 7, "name": "Siege Doctrine", "enemy_hp_mult": 2.1, "enemy_speed_mult": 1.25, "enemy_armor_add": 6, "reward_mult": 3.1,
+    "player_effects": { "hero_hull": -0.25 } },
+  { "tier": 8, "name": "Relentless", "enemy_hp_mult": 2.4, "enemy_count_mult": 1.4, "reward_mult": 3.7,
+    "player_effects": { "turret_damage": -0.15, "planet_integrity": -0.15 } },
+  { "tier": 9, "name": "The Culling", "enemy_hp_mult": 2.8, "enemy_speed_mult": 1.3, "enemy_shield_add": 120, "reward_mult": 4.4,
+    "player_effects": { "ability_effect": -0.2, "hero_missile_damage": -0.2 } },
+  { "tier": 10, "name": "Extinction Protocol", "enemy_hp_mult": 3.4, "enemy_count_mult": 1.5, "enemy_armor_add": 8, "reward_mult": 5.5,
+    "player_effects": { "turret_damage": -0.2, "planet_integrity": -0.2, "ability_cooldown": 0.25 } }
+]

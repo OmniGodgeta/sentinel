@@ -21,6 +21,7 @@ public sealed class ConfigDb
     public BalanceDef Balance { get; private set; } = new();
     public HeroDef Hero { get; private set; } = new();
     public ArcDef Arc { get; private set; } = new();
+    public List<AscensionTierDef> Ascension { get; private set; } = new();
 
     private readonly Dictionary<string, TurretDef> _turrets = new();
     private readonly Dictionary<string, EnemyDef> _enemies = new();
@@ -49,6 +50,7 @@ public sealed class ConfigDb
         db.Balance = ReadOne<BalanceDef>("res://data/balance.json") ?? new BalanceDef();
         db.Hero = ReadOne<HeroDef>("res://data/hero.json") ?? new HeroDef();
         db.Arc = ReadOne<ArcDef>("res://data/arc_01.json") ?? new ArcDef();
+        db.Ascension = ReadList<AscensionTierDef>("res://data/ascension.json");
 
         foreach (var t in ReadList<TurretDef>("res://data/turrets.json"))
         {

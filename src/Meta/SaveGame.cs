@@ -38,6 +38,8 @@ public sealed class SaveGame
     public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
 
     public int EndlessBest { get; set; }
+    public int AscensionTier { get; set; }                         // currently selected (0 = off)
+    public Dictionary<string, int> MissionBestTier { get; set; } = new();   // mission id -> highest ascension tier cleared
     public Settings Options { get; set; } = new();
 
     [JsonIgnore] public int CommanderLevel => XpToCommanderLevel(Xp);

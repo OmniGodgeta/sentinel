@@ -41,8 +41,9 @@ jobs:
         with:
           path: |
             ~/godot/godot
+            ~/godot/GodotSharp
             ~/.local/share/godot/export_templates
-          key: godot-${{ env.GODOT_VERSION }}-mono
+          key: godot-${{ env.GODOT_VERSION }}-mono-v2
 
       - name: Download Godot (mono) + export templates
         if: steps.cache-godot.outputs.cache-hit != 'true'
@@ -78,18 +79,19 @@ jobs:
           export/android/debug_keystore_pass = "android"
           EOF
 
+      - name: Build C# project (generates GodotSharp API assemblies)
+        run: dotnet build Sentinel.csproj -v q
+
       - name: Import project
-        run: |
-          ~/godot/godot --headless --path . --import || true
+        run: ~/godot/godot --headless --path . --import || true
 
       - name: Determinism / sim check
         run: ~/godot/godot --headless --path . scenes/SimTest.tscn --quit
 
-      - name: Build C# + export APK
+      - name: Export Android APK
         run: |
           set -e
           mkdir -p build
-          dotnet build Sentinel.csproj -v q
           ~/godot/godot --headless --path . --export-debug "Android" build/sentinel-debug.apk
           test -f build/sentinel-debug.apk
           ls -la build/

@@ -193,6 +193,19 @@ public sealed record ArcDef
     public List<ArcMission> Missions { get; init; } = new();
 }
 
+public sealed record AscensionTierDef
+{
+    public int Tier { get; init; }
+    public string Name { get; init; } = "";
+    public float EnemyHpMult { get; init; } = 1f;
+    public float EnemySpeedMult { get; init; } = 1f;
+    public float EnemyShieldAdd { get; init; }
+    public float EnemyArmorAdd { get; init; }
+    public float EnemyCountMult { get; init; } = 1f;
+    public float RewardMult { get; init; } = 1f;
+    public Dictionary<string, float> PlayerEffects { get; init; } = new();
+}
+
 public sealed record CodexEntry
 {
     public string Id { get; init; } = "";

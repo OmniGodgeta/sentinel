@@ -22,6 +22,7 @@ public sealed partial class GameRoot : Node2D
     public float[] AbilityEffect = System.Array.Empty<float>();
     public float[] AbilityCd = System.Array.Empty<float>();
     public Meta.ModifierSet Mods = new();
+    public Config.AscensionTierDef? Ascension;
 
     public int StartSpeed = 1;
     public event System.Action<MissionOutcome>? MissionEnded;
@@ -56,7 +57,7 @@ public sealed partial class GameRoot : Node2D
     {
         _cfg = AppRoot.Instance?.Cfg ?? ConfigDb.Load();
         _world = new SimWorld(_cfg);
-        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd);
+        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd, Ascension);
 
         _renderer = new SimRenderer { Root = this, World = _world };
         AddChild(_renderer);
@@ -248,7 +249,7 @@ public sealed partial class GameRoot : Node2D
 
     public void RestartMission()
     {
-        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd);
+        _world.Load(_cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd, Ascension);
         _clock.Reset();
         _clock.SetSpeed(StartSpeed);
         _hud.SyncSpeed(StartSpeed);
