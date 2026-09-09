@@ -19,6 +19,7 @@ project/assembly_name="Sentinel"
 [autoload]
 
 AudioManager="*res://src/Audio/AudioManager.cs"
+MusicPlayer="*res://src/Audio/MusicPlayer.cs"
 
 [display]
 

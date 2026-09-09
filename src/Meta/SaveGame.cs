@@ -61,6 +61,7 @@ public sealed class SaveGame
         public bool ReduceFlash { get; set; }
         public bool AutoSlowOnBoss { get; set; } = true;
         public float SfxVolume { get; set; } = 0.85f;
+        public float MusicVolume { get; set; } = 0.55f;
         public bool Muted { get; set; }
         public string PlanetSkin { get; set; } = "earth";
     }

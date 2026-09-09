@@ -41,7 +41,7 @@ public sealed partial class SettingsScreen : CanvasLayer
 
         // sfx volume
         root.AddChild(Lbl("Sound effects"));
-        var vol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.SfxVolume, CustomMinimumSize = new Vector2(0, 28) };
+        var vol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.SfxVolume, CustomMinimumSize = new Vector2(0, 30) };
         vol.ValueChanged += v =>
         {
             o.SfxVolume = (float)v; App.Save.Save();
@@ -50,11 +50,21 @@ public sealed partial class SettingsScreen : CanvasLayer
         vol.DragEnded += _ => Sentinel.Audio.AudioManager.Instance?.Play("ui_confirm", -4f);
         root.AddChild(vol);
 
-        var mute = new CheckButton { Text = "Mute all sound", ButtonPressed = o.Muted };
+        root.AddChild(Lbl("Music"));
+        var mvol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.MusicVolume, CustomMinimumSize = new Vector2(0, 30) };
+        mvol.ValueChanged += v =>
+        {
+            o.MusicVolume = (float)v; App.Save.Save();
+            Sentinel.Audio.MusicPlayer.Instance?.SetVolume(o.MusicVolume, o.Muted);
+        };
+        root.AddChild(mvol);
+
+        var mute = new CheckButton { Text = "Mute everything", ButtonPressed = o.Muted };
         mute.Toggled += b =>
         {
             o.Muted = b; App.Save.Save();
             Sentinel.Audio.AudioManager.Instance?.SetVolume(o.SfxVolume, o.Muted);
+            Sentinel.Audio.MusicPlayer.Instance?.SetVolume(o.MusicVolume, o.Muted);
         };
         root.AddChild(mute);
 

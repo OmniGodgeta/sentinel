@@ -29,6 +29,7 @@ public sealed partial class AppRoot : Node
         Save = SaveGame.Load();
         Prog = new Progression(Save, Research, Cfg);
         Sentinel.Audio.AudioManager.Instance?.SetVolume(Save.Options.SfxVolume, Save.Options.Muted);
+        Sentinel.Audio.MusicPlayer.Instance?.SetVolume(Save.Options.MusicVolume, Save.Options.Muted);
         ShowMenu();
     }
 
@@ -42,6 +43,7 @@ public sealed partial class AppRoot : Node
 
     public void ShowMenu()
     {
+        Sentinel.Audio.MusicPlayer.Instance?.PlayMenu();
         RefreshProgression();
         if (Prog.PendingLevelUps > 0)
         {
@@ -101,6 +103,7 @@ public sealed partial class AppRoot : Node
         g.MissionEnded += o => OnMissionEnded(o, tier);
         g.ExitToMenu += ShowMenu;
         Save.Record(missionId).Attempts++;
+        Sentinel.Audio.MusicPlayer.Instance?.PlayGame();
         SwapTo(g);
     }
 

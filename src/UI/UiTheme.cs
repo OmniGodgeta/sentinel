@@ -14,7 +14,7 @@ public static class UiTheme
 
     private static Theme Build()
     {
-        var t = new Theme { DefaultFontSize = 14 };
+        var t = new Theme { DefaultFontSize = 16 };
 
         var panel = Flat(Panel, new Color(1, 1, 1, 0.08f), 10, 1);
         t.SetStylebox("panel", "PanelContainer", panel);
@@ -48,7 +48,7 @@ public static class UiTheme
             BgColor = bg,
             CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius,
             CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 10, ContentMarginRight = 10, ContentMarginTop = 6, ContentMarginBottom = 6,
+            ContentMarginLeft = 14, ContentMarginRight = 14, ContentMarginTop = 10, ContentMarginBottom = 10,
         };
         if (bw > 0)
         {
