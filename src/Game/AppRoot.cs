@@ -40,6 +40,7 @@ public sealed partial class AppRoot : Node
     }
 
     public void ShowMenu() => SwapTo(new MenuScreen { App = this });
+    public void ShowLevels() => SwapTo(new LevelSelectScreen { App = this });
     public void ShowResearch() => SwapTo(new ResearchScreen { App = this });
     public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });
     public void ShowCodex() => SwapTo(new CodexScreen { App = this });

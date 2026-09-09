@@ -30,7 +30,8 @@ public sealed partial class Hud : CanvasLayer
     private Button _launch = null!;
 
     private PanelContainer _wavePanel = null!;
-    private Button[] _abilityBtns = new Button[8];
+    private AbilityButton[] _abilityBtns = new AbilityButton[8];
+    private readonly bool[] _configured = new bool[8];
     private Label _reticlePrompt = null!;
 
     private PanelContainer _draftPanel = null!;
@@ -98,39 +99,49 @@ public sealed partial class Hud : CanvasLayer
         _wavePreview = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.85f, 0.5f) };
         _wavePreview.AddThemeFontSizeOverride("font_size", 12);
         bv.AddChild(_wavePreview);
-        _slotLabel = new Label { Text = "Tap a turret slot", HorizontalAlignment = HorizontalAlignment.Center };
+        _slotLabel = new Label { Text = "① tap an empty slot around the planet", HorizontalAlignment = HorizontalAlignment.Center };
         _slotLabel.AddThemeFontSizeOverride("font_size", 12);
         bv.AddChild(_slotLabel);
         _turretRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        _turretRow.AddThemeConstantOverride("separation", 6);
         bv.AddChild(_turretRow);
         _upgradeRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         bv.AddChild(_upgradeRow);
-        _launch = new Button { Text = "▶  LAUNCH WAVE", CustomMinimumSize = new Vector2(0, 46) };
-        _launch.AddThemeFontSizeOverride("font_size", 17);
+        _launch = new Button { Text = "▶   LAUNCH WAVE", CustomMinimumSize = new Vector2(0, 56) };
+        _launch.AddThemeFontSizeOverride("font_size", 20);
+        _launch.AddThemeColorOverride("font_color", new Color(0.6f, 1f, 0.7f));
         _launch.Pressed += () => Root.RequestLaunchWave();
         bv.AddChild(_launch);
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
         AddChild(_wavePanel);
-        var wv = new VBoxContainer();
+        var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         _wavePanel.AddChild(wv);
-        _reticlePrompt = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.9f, 0.4f) };
-        wv.AddChild(_reticlePrompt);
         var abRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        abRow.AddThemeConstantOverride("separation", 8);
         wv.AddChild(abRow);
         for (int i = 0; i < _abilityBtns.Length; i++)
         {
             int slot = i;
-            var btn = new Button { CustomMinimumSize = new Vector2(92, 58), Visible = false };
-            btn.AddThemeFontSizeOverride("font_size", 11);
-            btn.Pressed += () => Root.RequestAbility(slot);
+            var btn = new AbilityButton { Visible = false };
+            btn.OnPress = () => Root.RequestAbility(slot);
             abRow.AddChild(btn);
             _abilityBtns[i] = btn;
         }
-        var hint = new Label { Text = "drag: move ship   ·   tap: missile volley", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
+        var hint = new Label { Text = "drag: move ship    ·    tap play area: missile volley", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
         hint.AddThemeFontSizeOverride("font_size", 11);
         wv.AddChild(hint);
+
+        // big centred targeting prompt (over the play area)
+        _reticlePrompt = new Label
+        {
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Modulate = new Color(1f, 0.92f, 0.4f), Text = "",
+        };
+        _reticlePrompt.AddThemeFontSizeOverride("font_size", 22);
+        AddChild(_reticlePrompt);
 
         // ---- card draft ----
         _draftPanel = MakeBottomPanel();
@@ -167,6 +178,9 @@ public sealed partial class Hud : CanvasLayer
         _banner = new Label { AnchorRight = 1f, OffsetTop = 112, HorizontalAlignment = HorizontalAlignment.Center };
         _banner.AddThemeFontSizeOverride("font_size", 28);
         AddChild(_banner);
+
+        foreach (var n in new Control[] { _topBox, _buildPanel, _wavePanel, _draftPanel, _endCard })
+            n.Theme = UiTheme.Instance;
 
         RebuildTurretButtons();
     }
@@ -217,7 +231,7 @@ public sealed partial class Hud : CanvasLayer
         GetRenderer().SelectedSlot = slot;
     }
 
-    public void ShowReticlePrompt(string abilityName) => _reticlePrompt.Text = $"tap a target for {abilityName}";
+    public void ShowReticlePrompt(string abilityName) => _reticlePrompt.Text = $"▽  TAP A TARGET  ▽\n{abilityName}";
     public void ClearReticlePrompt() => _reticlePrompt.Text = "";
 
     public void FlashBanner(SimEventKind kind)
@@ -283,17 +297,15 @@ public sealed partial class Hud : CanvasLayer
         if (wave)
         {
             var abil = w.AbilityView;
+            int armed = Root.PendingReticleSlot;
             for (int i = 0; i < _abilityBtns.Length; i++)
             {
                 var btn = _abilityBtns[i];
                 if (i >= abil.Length || abil[i].DefIndex < 0) { btn.Visible = false; continue; }
                 btn.Visible = true;
                 var def = w.AbilityDefs[abil[i].DefIndex];
-                float cd = abil[i].CooldownLeft;
-                btn.Disabled = cd > 0f;
-                btn.Text = cd > 0f ? $"{def.Name}\n{Mathf.CeilToInt(cd)}s"
-                         : abil[i].ActiveLeft > 0f ? $"{def.Name}\n● {Mathf.CeilToInt(abil[i].ActiveLeft)}s"
-                         : $"{def.Name}\nREADY";
+                if (!_configured[i]) { btn.Configure(def); _configured[i] = true; }
+                btn.SetState(abil[i].CooldownLeft, def.Cooldown, abil[i].ActiveLeft, armed == i);
             }
         }
 

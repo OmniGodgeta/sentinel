@@ -600,6 +600,7 @@ public sealed partial class SimWorld
         e.BlinkTimer = def.BlinkInterval;
         e.MechanicTimer = def.MechanicInterval;
         if (def.Class == "boss") _bossHandle = new EnemyHandle { Index = idx, Gen = e.Gen };
+        Events.Push(SimEventKind.EnemySpawned, pos, e.Radius);
         return idx;
     }
 

@@ -42,7 +42,9 @@ public sealed partial class GameRoot : Node2D
     private readonly SimClock _clock = new();
 
     private SimRenderer _renderer = null!;
+    private ScreenFx _fx = null!;
     private Hud _hud = null!;
+    public ScreenFx Fx => _fx;
 
     // input state
     private bool _dragging;
@@ -61,6 +63,9 @@ public sealed partial class GameRoot : Node2D
 
         _renderer = new SimRenderer { Root = this, World = _world };
         AddChild(_renderer);
+
+        _fx = new ScreenFx();
+        AddChild(_fx);
 
         _hud = new Hud { Root = this };
         AddChild(_hud);
@@ -100,6 +105,17 @@ public sealed partial class GameRoot : Node2D
 
         _clock.Advance((float)delta, _world.StepTick);
 
+        // auto-cancel an armed aimed-ability after a few seconds of no target tap
+        if (_pendingReticleSlot >= 0)
+        {
+            _armTime += delta;
+            if (_armTime > 4.0 || _world.Phase != SimPhase.Wave)
+            {
+                _pendingReticleSlot = -1;
+                _hud.ClearReticlePrompt();
+            }
+        }
+
         ConsumeSimEvents();
         _renderer.QueueRedraw();
         _hud.Refresh();
@@ -126,21 +142,20 @@ public sealed partial class GameRoot : Node2D
     {
         foreach (var ev in _world.Events.Events)
         {
+            _renderer.OnSimEvent(ev);
             switch (ev.Kind)
             {
-                case SimEventKind.MissileImpact:
-                case SimEventKind.EnemyKilled:
-                    _renderer.AddBoom(ev.Pos, Mathf.Max(6f, ev.A));
-                    break;
                 case SimEventKind.VolleyLaunched:
-                    Input.VibrateHandheld(20);
+                    Input.VibrateHandheld(25);
                     break;
-                case SimEventKind.PlanetHit:
-                    _renderer.AddShake(Mathf.Min(6f, ev.A * 0.05f));
-                    break;
-                case SimEventKind.WaveCleared:
-                case SimEventKind.MissionWon:
                 case SimEventKind.MissionLost:
+                    Input.VibrateHandheld(120);
+                    _fx.Flash(new Color(1f, 0.3f, 0.25f), 0.5f);
+                    goto case SimEventKind.WaveCleared;
+                case SimEventKind.MissionWon:
+                    _fx.Flash(new Color(0.5f, 1f, 0.7f), 0.4f);
+                    goto case SimEventKind.WaveCleared;
+                case SimEventKind.WaveCleared:
                     _hud.FlashBanner(ev.Kind);
                     break;
             }
@@ -233,18 +248,53 @@ public sealed partial class GameRoot : Node2D
 
     public void RequestLaunchWave() => _world.Enqueue(SimCommand.Wave());
 
+    public int PendingReticleSlot => _pendingReticleSlot;
+
     public void RequestAbility(int slot)
     {
         var abil = _world.AbilityView;
         if (slot < 0 || slot >= abil.Length || abil[slot].DefIndex < 0) return;
+        if (abil[slot].CooldownLeft > 0f) return;
         var def = _world.AbilityDefs[abil[slot].DefIndex];
+
         if (def.Cast == "instant")
+        {
             _world.Enqueue(SimCommand.Cast(slot, Vector2.Zero));
+            _pendingReticleSlot = -1;
+            _hud.ClearReticlePrompt();
+            return;
+        }
+
+        // aimed ability: first tap arms it, second tap (or tapping the play area)
+        // fires it — at the nearest enemy cluster if fired from the button.
+        if (_pendingReticleSlot == slot)
+        {
+            _world.Enqueue(SimCommand.Cast(slot, AutoTargetPoint()));
+            _pendingReticleSlot = -1;
+            _hud.ClearReticlePrompt();
+        }
         else
         {
             _pendingReticleSlot = slot;
+            _armTime = 0.0;
             _hud.ShowReticlePrompt(def.Name);
         }
+    }
+
+    private double _armTime;
+
+    private Vector2 AutoTargetPoint()
+    {
+        var en = _world.EnemyView;
+        Vector2 best = new(0, -200f);
+        float bestD = float.MaxValue;
+        for (int i = 0; i < en.Length; i++)
+        {
+            if (!en[i].Alive) continue;
+            float d = en[i].Pos.LengthSquared();
+            if (d < bestD) { bestD = d; best = en[i].Pos; }
+        }
+        return best;
     }
 
     public void RestartMission()

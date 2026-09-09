@@ -50,7 +50,7 @@ public sealed partial class SimWorld
                     float dps = st.Damage * (1f + t.RampStacks);
                     float dealt = DamageEnemy(tgt, dps * dt, DamageSource.Turret, st.ArmorPen, st.ShieldMult);
                     t.DamageDealt += dealt;
-                    if ((Tick % 4) == 0) Events.Push(SimEventKind.TurretFired, t.Pos, 1f, s);
+                    Events.PushLine(SimEventKind.BeamTick, t.Pos, Enemies[tgt].Pos, 1f + t.RampStacks, s);
                     break;
 
                 case "chain":
@@ -142,7 +142,7 @@ public sealed partial class SimWorld
         SpawnProjectile(0, turretPos, dir * def.ProjectileSpeed, dmg, st.Splash, homing, (byte)slot,
                         life: 3f, armorPen: st.ArmorPen, shieldMult: st.ShieldMult, pierce: st.Pierce,
                         slow: def.SlowOnHit);
-        Events.Push(SimEventKind.TurretFired, turretPos, 0f, slot);
+        Events.PushLine(SimEventKind.TurretFired, turretPos, aimPos, def.SplashRadius > 0f ? 1f : 0f, slot);
     }
 
     private void FireChain(int slot, in TurretStats st, int firstIdx)
@@ -157,7 +157,7 @@ public sealed partial class SimWorld
         {
             float dealt = DamageEnemy(cur, CritRoll(st.Damage), DamageSource.Turret, st.ArmorPen, st.ShieldMult);
             Turrets[slot].DamageDealt += dealt;
-            Events.Push(SimEventKind.BarrageTick, Enemies[cur].Pos, 2f);
+            Events.PushLine(SimEventKind.ChainArc, from, Enemies[cur].Pos);
             if (cur < 64) hitFlag[cur] = true;
 
             Vector2 anchor = Enemies[cur].Pos;

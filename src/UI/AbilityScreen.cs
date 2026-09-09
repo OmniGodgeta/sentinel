@@ -28,6 +28,7 @@ public sealed partial class AbilityScreen : CanvasLayer
             OffsetLeft = -235, OffsetRight = 235, OffsetTop = 14, OffsetBottom = -12,
         };
         root.AddThemeConstantOverride("separation", 8);
+        root.Theme = UiTheme.Instance;
         AddChild(root);
 
         var head = new HBoxContainer();

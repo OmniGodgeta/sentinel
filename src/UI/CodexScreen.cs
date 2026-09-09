@@ -26,6 +26,7 @@ public sealed partial class CodexScreen : CanvasLayer
             OffsetLeft = -240, OffsetRight = 240, OffsetTop = 14, OffsetBottom = -12,
         };
         root.AddThemeConstantOverride("separation", 8);
+        root.Theme = UiTheme.Instance;
         AddChild(root);
 
         var head = new HBoxContainer();

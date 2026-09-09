@@ -30,6 +30,7 @@ public sealed partial class ResearchScreen : CanvasLayer
             OffsetLeft = -230, OffsetRight = 230, OffsetTop = 14, OffsetBottom = -12,
         };
         root.AddThemeConstantOverride("separation", 8);
+        root.Theme = UiTheme.Instance;
         AddChild(root);
 
         var head = new HBoxContainer();

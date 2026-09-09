@@ -1,193 +1,108 @@
-using System.Collections.Generic;
 using Godot;
 using Sentinel.Game;
 
 namespace Sentinel.UI;
 
 /// <summary>
-/// Menu: progress totals, a simple ability loadout picker, and the arc-1 mission
-/// list (locked until the previous mission is cleared).
+/// Landing screen — planet backdrop, title, a big PLAY button, a small nav row.
+/// Fully anchor-driven so it adapts to any portrait viewport.
 /// </summary>
 public sealed partial class MenuScreen : CanvasLayer
 {
     public AppRoot App = null!;
 
-    private VBoxContainer _loadoutRow = null!;
-    private VBoxContainer _missionList = null!;
-    private Label _totals = null!;
-    private Button _endlessBtn = null!;
-    private HBoxContainer _ascRow = null!;
-
     public override void _Ready()
     {
         Layer = 5;
+        AddChild(new MenuBackground { PlanetY = 0.28f });
 
-        var bg = new ColorRect { Color = new Color(0.03f, 0.03f, 0.05f) };
-        bg.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        AddChild(bg);
-
-        var center = new CenterContainer();
-        center.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        AddChild(center);
-
-        var root = new VBoxContainer { CustomMinimumSize = new Vector2(440, 0) };
-        root.AddThemeConstantOverride("separation", 9);
-        center.AddChild(root);
-
-        var title = new Label { Text = "SENTINEL", HorizontalAlignment = HorizontalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 40);
-        root.AddChild(title);
-        var sub = new Label { Text = "no ads · no purchases · ever", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.5f) };
-        root.AddChild(sub);
-
-        _totals = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _totals.AddThemeFontSizeOverride("font_size", 13);
-        root.AddChild(_totals);
-
-        root.AddChild(new HSeparator());
-
-        var nav = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        nav.AddThemeConstantOverride("separation", 8);
-        root.AddChild(nav);
-        var rBtn = new Button { Text = "Research", CustomMinimumSize = new Vector2(150, 40) };
-        rBtn.Pressed += () => App.ShowResearch();
-        nav.AddChild(rBtn);
-        var aBtn = new Button { Text = "Protocols", CustomMinimumSize = new Vector2(140, 40) };
-        aBtn.Pressed += () => App.ShowAbilities();
-        nav.AddChild(aBtn);
-        var cBtn = new Button { Text = "Codex", CustomMinimumSize = new Vector2(110, 40) };
-        cBtn.Pressed += () => App.ShowCodex();
-        nav.AddChild(cBtn);
-
-        var lh = new Label { Text = "LOADOUT  (tap a slot to swap · full editor in Protocols)" };
-        lh.AddThemeFontSizeOverride("font_size", 11);
-        root.AddChild(lh);
-        _loadoutRow = new VBoxContainer();
-        _loadoutRow.AddThemeConstantOverride("separation", 5);
-        root.AddChild(_loadoutRow);
-
-        root.AddChild(new HSeparator());
-        var mh = new Label { Text = $"ARC 1 — {App.Cfg.Arc.Name}" };
-        mh.AddThemeFontSizeOverride("font_size", 12);
-        root.AddChild(mh);
-
-        _ascRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        root.AddChild(_ascRow);
-
-        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(0, 300) };
-        scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
-        root.AddChild(scroll);
-        _missionList = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _missionList.AddThemeConstantOverride("separation", 6);
-        _missionList.CustomMinimumSize = new Vector2(440, 0);
-        scroll.AddChild(_missionList);
-
-        var endless = new Button { CustomMinimumSize = new Vector2(0, 44) };
-        endless.AddThemeFontSizeOverride("font_size", 14);
-        endless.Pressed += () => App.StartMission("res://data/missions/endless.json", "endless");
-        _endlessBtn = endless;
-        root.AddChild(endless);
-
-        var wipe = new Button { Text = "reset progress", Modulate = new Color(1, 1, 1, 0.4f), CustomMinimumSize = new Vector2(0, 30) };
-        wipe.Pressed += () =>
-        {
-            App.Save.ResearchData = App.Save.Xp = App.Save.ExoticAlloy = 0;
-            App.Save.SentinelCores = 0;
-            App.Save.Missions.Clear();
-            App.Save.ResearchRanks.Clear();
-            App.Save.Capstones.Clear();
-            App.Save.AbilityLevels.Clear();
-            App.Save.AbilityBranches.Clear();
-            App.Save.Loadout = new System.Collections.Generic.List<string> { "kinetic_barrage", "aegis_barrier", "overdrive" };
-            App.Save.Save();
-            Rebuild();
-        };
-        root.AddChild(wipe);
-
-        Rebuild();
-    }
-
-    private void Rebuild()
-    {
-        App.RefreshProgression();
         var s = App.Save;
+        App.RefreshProgression();
         var p = App.Prog;
-        _totals.Text =
-            $"Commander {p.Commander}   ·   Hero {p.Hero}/20   ·   {p.AbilitySlots} slots\n" +
-            $"RD {Mathf.FloorToInt((float)s.ResearchData)}   ·   Alloy {Mathf.FloorToInt((float)s.ExoticAlloy)}   ·   Cores {s.SentinelCores}";
 
-        foreach (Node c in _loadoutRow.GetChildren()) c.QueueFree();
-        int slots = p.AbilitySlots;
-        while (s.Loadout.Count < slots)
+        // title band, sits just under the planet (planet centre ~0.28h, radius up to ~170)
+        var titleBox = new VBoxContainer
         {
-            string add = App.Cfg.AbilityOrder[0];
-            foreach (var cand in App.Cfg.AbilityOrder)
-                if (!s.Loadout.Contains(cand)) { add = cand; break; }
-            s.Loadout.Add(add);
-        }
-        for (int i = 0; i < slots; i++)
-        {
-            int slot = i;
-            var cur = App.Cfg.Ability(s.Loadout[i]);
-            var btn = new Button { Text = $"{i + 1}.  {cur.Name}   ({cur.Role})", CustomMinimumSize = new Vector2(440, 36) };
-            btn.AddThemeFontSizeOverride("font_size", 12);
-            btn.Pressed += () => CycleLoadout(slot);
-            _loadoutRow.AddChild(btn);
-        }
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.40f, AnchorBottom = 0.40f,
+        };
+        titleBox.Theme = UiTheme.Instance;
+        AddChild(titleBox);
+        var title = new Label { Text = "SENTINEL", HorizontalAlignment = HorizontalAlignment.Center };
+        title.AddThemeFontSizeOverride("font_size", 54);
+        title.AddThemeColorOverride("font_color", new Color(0.92f, 0.96f, 1f));
+        titleBox.AddChild(title);
+        var tag = new Label { Text = "no ads  ·  no purchases  ·  ever", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
+        tag.AddThemeFontSizeOverride("font_size", 13);
+        titleBox.AddChild(tag);
 
-        _endlessBtn.Text = s.EndlessBest > 0 ? $"ENDLESS — best: wave {s.EndlessBest}" : "ENDLESS";
+        // bottom control stack, anchored to the bottom, centred, capped width
+        var wrap = new CenterContainer { AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.55f, AnchorBottom = 1f, OffsetBottom = -30 };
+        wrap.Theme = UiTheme.Instance;
+        AddChild(wrap);
+        var stack = new VBoxContainer { CustomMinimumSize = new Vector2(420, 0), SizeFlagsVertical = Control.SizeFlags.ShrinkEnd };
+        stack.AddThemeConstantOverride("separation", 12);
+        wrap.AddChild(stack);
 
-        // ascension stepper
-        foreach (Node c in _ascRow.GetChildren()) c.QueueFree();
-        int ascMax = p.AscensionMax;
-        if (ascMax > 0)
+        var totals = new Label
         {
-            if (s.AscensionTier > ascMax) s.AscensionTier = ascMax;
-            var minus = new Button { Text = "−", CustomMinimumSize = new Vector2(38, 30) };
-            minus.Pressed += () => { s.AscensionTier = Mathf.Max(0, s.AscensionTier - 1); s.Save(); Rebuild(); };
-            _ascRow.AddChild(minus);
-            string tierName = s.AscensionTier == 0 ? "off"
-                : App.Cfg.Ascension.Find(a => a.Tier == s.AscensionTier)?.Name ?? "";
-            var lbl = new Label { Text = $"  Ascension {s.AscensionTier}/{ascMax}  {tierName}  ", VerticalAlignment = VerticalAlignment.Center };
-            lbl.AddThemeFontSizeOverride("font_size", 11);
-            _ascRow.AddChild(lbl);
-            var plus = new Button { Text = "+", CustomMinimumSize = new Vector2(38, 30) };
-            plus.Pressed += () => { s.AscensionTier = Mathf.Min(ascMax, s.AscensionTier + 1); s.Save(); Rebuild(); };
-            _ascRow.AddChild(plus);
-        }
+            Text = $"Commander {p.Commander}     Hero {p.Hero}/20\nRD {F(s.ResearchData)}     Alloy {F(s.ExoticAlloy)}     Cores {s.SentinelCores}",
+            HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.72f),
+        };
+        totals.AddThemeFontSizeOverride("font_size", 13);
+        stack.AddChild(totals);
 
-        foreach (Node c in _missionList.GetChildren()) c.QueueFree();
-        var arcOrder = new List<string>();
-        foreach (var m in App.Cfg.Arc.Missions) arcOrder.Add(m.Id);
-        foreach (var m in App.Cfg.Arc.Missions)
+        var play = new Button { Text = "▶   PLAY", CustomMinimumSize = new Vector2(420, 68) };
+        play.AddThemeFontSizeOverride("font_size", 26);
+        play.AddThemeColorOverride("font_color", new Color(0.6f, 1f, 0.75f));
+        play.Pressed += PlayPressed;
+        stack.AddChild(play);
+
+        var row1 = Row();
+        row1.AddChild(Nav("Levels", App.ShowLevels));
+        row1.AddChild(Nav("Endless", () => App.StartMission("res://data/missions/endless.json", "endless")));
+        stack.AddChild(row1);
+
+        var row2 = Row();
+        row2.AddChild(Nav("Research", App.ShowResearch));
+        row2.AddChild(Nav("Protocols", App.ShowAbilities));
+        row2.AddChild(Nav("Codex", App.ShowCodex));
+        stack.AddChild(row2);
+
+        if (s.EndlessBest > 0)
         {
-            var rec = s.Record(m.Id);
-            bool open = s.IsUnlocked(m.Id, arcOrder);
-            string stars = rec.Stars > 0 ? new string('●', rec.Stars) + new string('○', 3 - rec.Stars) : "○○○";
-            var btn = new Button
-            {
-                Text = open ? $"{m.Name}      {(rec.Cleared ? stars : "· not cleared")}" : $"🔒   {m.Name}",
-                Disabled = !open,
-                CustomMinimumSize = new Vector2(440, 46),
-            };
-            btn.AddThemeFontSizeOverride("font_size", 13);
-            string file = m.File, id = m.Id;
-            btn.Pressed += () => App.StartMission(file, id);
-            _missionList.AddChild(btn);
+            var eb = new Label { Text = $"Endless best · wave {s.EndlessBest}", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.4f) };
+            eb.AddThemeFontSizeOverride("font_size", 11);
+            stack.AddChild(eb);
         }
     }
 
-    private void CycleLoadout(int slot)
+    private static HBoxContainer Row()
     {
-        var order = App.Cfg.AbilityOrder;
-        int cur = 0;
-        for (int i = 0; i < order.Count; i++) if (order[i] == App.Save.Loadout[slot]) { cur = i; break; }
-        for (int step = 1; step <= order.Count; step++)
-        {
-            string cand = order[(cur + step) % order.Count];
-            if (!App.Save.Loadout.Contains(cand)) { App.Save.Loadout[slot] = cand; break; }
-        }
-        App.Save.Save();
-        Rebuild();
+        var r = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        r.AddThemeConstantOverride("separation", 10);
+        return r;
     }
+
+    private static Button Nav(string text, System.Action onPress)
+    {
+        var b = new Button { Text = text, CustomMinimumSize = new Vector2(0, 44), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        b.AddThemeFontSizeOverride("font_size", 14);
+        b.Pressed += () => onPress();
+        return b;
+    }
+
+    private void PlayPressed()
+    {
+        var ids = new System.Collections.Generic.List<string>();
+        foreach (var m in App.Cfg.Arc.Missions) ids.Add(m.Id);
+        foreach (var m in App.Cfg.Arc.Missions)
+            if (!App.Save.Record(m.Id).Cleared && App.Save.IsUnlocked(m.Id, ids))
+            {
+                App.StartMission(m.File, m.Id);
+                return;
+            }
+        App.ShowLevels();
+    }
+
+    private static string F(double v) => Mathf.FloorToInt((float)v).ToString();
 }
