@@ -3,16 +3,10 @@ using Sentinel.Game;
 
 namespace Sentinel.UI;
 
-/// <summary>Sound, visuals, and the planet skin.</summary>
+/// <summary>Sound, haptics, accessibility. Cosmetics live in the Shop.</summary>
 public sealed partial class SettingsScreen : CanvasLayer
 {
     public AppRoot App = null!;
-
-    private static readonly (string id, string name)[] Skins =
-    {
-        ("earth", "Earth"), ("mars", "Mars"), ("ice", "Ice World"),
-        ("volcanic", "Volcanic"), ("gas", "Gas Giant"), ("shattered", "Shattered"),
-    };
 
     public override void _Ready()
     {
@@ -74,27 +68,11 @@ public sealed partial class SettingsScreen : CanvasLayer
         root.AddChild(flash);
 
         root.AddChild(new HSeparator());
-        root.AddChild(Lbl("Home planet"));
-        var grid = new GridContainer { Columns = 2 };
-        grid.AddThemeConstantOverride("h_separation", 14);
-        grid.AddThemeConstantOverride("v_separation", 14);
-        root.AddChild(grid);
-        foreach (var (id, name) in Skins)
-        {
-            var b = new Button
-            {
-                Text = name, ToggleMode = true, ButtonPressed = o.PlanetSkin == id,
-                CustomMinimumSize = new Vector2(0, 68), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            };
-            b.AddThemeFontSizeOverride("font_size", 20);
-            b.Pressed += () =>
-            {
-                o.PlanetSkin = id; App.Save.Save();
-                Sentinel.Audio.AudioManager.Instance?.Click();
-                App.ShowSettings(); // reload so the backdrop updates
-            };
-            grid.AddChild(b);
-        }
+        root.AddChild(Lbl("Appearance"));
+        var toShop = new Button { Text = "Hero hulls, worlds & ordnance colours  ›  Shop", CustomMinimumSize = new Vector2(0, 60), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        toShop.AddThemeFontSizeOverride("font_size", 17);
+        toShop.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); App.ShowShop(); };
+        root.AddChild(toShop);
     }
 
     private static Label Lbl(string t)

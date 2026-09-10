@@ -18,6 +18,7 @@ public sealed partial class AppRoot : Node
     public ResearchDb Research { get; private set; } = null!;
     public SaveGame Save { get; private set; } = null!;
     public Progression Prog { get; private set; } = null!;
+    public Shop Shop { get; private set; } = null!;
 
     private Node? _current;
 
@@ -28,6 +29,7 @@ public sealed partial class AppRoot : Node
         Research = ResearchDb.Load();
         Save = SaveGame.Load();
         Prog = new Progression(Save, Research, Cfg);
+        Shop = new Shop(Save, Cfg);
         Sentinel.Audio.AudioManager.Instance?.SetVolume(Save.Options.SfxVolume, Save.Options.Muted);
         Sentinel.Audio.MusicPlayer.Instance?.SetVolume(Save.Options.MusicVolume, Save.Options.Muted);
         ShowMenu();
@@ -36,6 +38,7 @@ public sealed partial class AppRoot : Node
     public void RefreshProgression()
     {
         Prog = new Progression(Save, Research, Cfg);
+        Shop = new Shop(Save, Cfg);
         SyncCodex();
     }
 
@@ -102,6 +105,7 @@ public sealed partial class AppRoot : Node
     public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });
     public void ShowCodex() => SwapTo(new CodexScreen { App = this });
     public void ShowSettings() => SwapTo(new SettingsScreen { App = this });
+    public void ShowShop() => SwapTo(new ShopScreen { App = this });
 
     /// <summary>Resolve the equipped ability loadout to unlocked ids + their per-ability effect/cd multipliers.</summary>
     private (string[] loadout, float[] eff, float[] cd) ResolveLoadout()

@@ -1,0 +1,49 @@
+{
+  "commendations": {
+    "per_star": 4,
+    "per_ascension_tier": 3,
+    "weekly_complete": 6,
+    "per_codex_entry": 1,
+    "endless_per_two_minutes": 3
+  },
+  "items": [
+    { "id": "hull_standard",   "tab": "fleet", "name": "Survey Vessel",     "cost": 0,  "apply": "hull:standard",
+      "desc": "The recovered Sentinel-class hull — scarred, patched, half-understood. Yours from the start." },
+    { "id": "hull_vanguard",   "tab": "fleet", "name": "Vanguard",          "cost": 35, "apply": "hull:vanguard",
+      "desc": "A pre-collapse picket ship. Lean, fast lines. Identical guns to every other hull." },
+    { "id": "hull_interceptor","tab": "fleet", "name": "Interceptor",       "cost": 35, "apply": "hull:interceptor",
+      "desc": "Escort-pattern fighter recovered from a dead carrier's rack." },
+    { "id": "hull_shipbreaker","tab": "fleet", "name": "Shipbreaker",       "cost": 45, "apply": "hull:shipbreaker",
+      "desc": "An improvised hull welded together from salvage. Ugly. Effective. Cosmetic only." },
+    { "id": "hull_warden",     "tab": "fleet", "name": "Warden",            "cost": 45, "apply": "hull:warden",
+      "desc": "Heavy archival-defense frame. Broad shoulders, same loadout." },
+    { "id": "hull_dreadnought","tab": "fleet", "name": "Dreadnought",       "cost": 60, "apply": "hull:dreadnought",
+      "desc": "A pre-collapse capital hull, scaled to a pilot who no longer exists." },
+    { "id": "hull_archive",    "tab": "fleet", "name": "Archive Ship",      "cost": 60, "apply": "hull:archive",
+      "desc": "An intact librarian vessel. It still runs its cataloguing routines between your volleys." },
+
+    { "id": "world_earth",     "tab": "worlds", "name": "Terra",            "cost": 0,  "apply": "planet:earth",
+      "desc": "The seed-vault world as it was — blue marble, live cloud deck, night side lit." },
+    { "id": "world_mars",      "tab": "worlds", "name": "Rust",             "cost": 0,  "apply": "planet:mars",
+      "desc": "A terraform that never took." },
+    { "id": "world_ice",       "tab": "worlds", "name": "Glacius",          "cost": 25, "apply": "planet:ice",
+      "desc": "Frozen to the core. The archive keeps better here." },
+    { "id": "world_volcanic",  "tab": "worlds", "name": "Forge",            "cost": 25, "apply": "planet:volcanic",
+      "desc": "Still cooling. Still bright." },
+    { "id": "world_gas",       "tab": "worlds", "name": "Halcyon",          "cost": 30, "apply": "planet:gas",
+      "desc": "A banded giant. The vault rides in low orbit." },
+    { "id": "world_shattered", "tab": "worlds", "name": "The Break",        "cost": 35, "apply": "planet:shattered",
+      "desc": "Something hit it once. The pieces still hold formation." },
+
+    { "id": "ord_ember",       "tab": "ordnance", "name": "Ember",          "cost": 0,  "apply": "ordnance:ember",
+      "desc": "Standard-issue warm ordnance flash — orange muzzle, orange bloom." },
+    { "id": "ord_ion",         "tab": "ordnance", "name": "Ion Blue",       "cost": 25, "apply": "ordnance:ion",
+      "desc": "Cold blue volley trails and impacts." },
+    { "id": "ord_plasma",      "tab": "ordnance", "name": "Plasma",         "cost": 25, "apply": "ordnance:plasma",
+      "desc": "Magenta-white ordnance. Loud." },
+    { "id": "ord_void",        "tab": "ordnance", "name": "Void Violet",    "cost": 30, "apply": "ordnance:void",
+      "desc": "Deep violet with a hard white core." },
+    { "id": "ord_mono",        "tab": "ordnance", "name": "Monochrome",     "cost": 20, "apply": "ordnance:mono",
+      "desc": "Clean white. For players who want to read the board over the spectacle." }
+  ]
+}

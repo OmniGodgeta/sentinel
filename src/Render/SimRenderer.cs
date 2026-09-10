@@ -50,6 +50,11 @@ public sealed partial class SimRenderer : Node2D
 
     public void AddShake(float a) => _shake = Mathf.Min(16f, _shake + a);
 
+    // --- Shop cosmetics (read live from the save; purely visual) ---
+    private string HullId => Sentinel.Game.AppRoot.Instance?.Save.Options.HullSkin ?? "standard";
+    private (Color muzzle, Color trail, Color bloom) Ord =>
+        Art.Ordnance(Sentinel.Game.AppRoot.Instance?.Save.Options.OrdnancePalette ?? "ember");
+
     public void OnSimEvent(in SimEvent e)
     {
         switch (e.Kind)
@@ -80,12 +85,12 @@ public sealed partial class SimRenderer : Node2D
                 }
                 break;
             case SimEventKind.MissileImpact:
-                Push(FxKind.Boom, e.Pos, e.Pos, Mathf.Max(20f, e.A * 1.6f), 0.5f, new Color(1f, 0.6f, 0.25f));
+                Push(FxKind.Boom, e.Pos, e.Pos, Mathf.Max(20f, e.A * 1.6f), 0.5f, Ord.bloom);
                 AddShake(2.5f);
                 break;
             case SimEventKind.VolleyLaunched:
-                Push(FxKind.Muzzle, e.Pos, e.Pos, 14f, 0.14f, new Color(1f, 0.8f, 0.5f));
-                Root.Fx?.Flash(new Color(1f, 0.8f, 0.5f), 0.05f);
+                Push(FxKind.Muzzle, e.Pos, e.Pos, 14f, 0.14f, Ord.muzzle);
+                Root.Fx?.Flash(Ord.muzzle, 0.05f);
                 break;
             case SimEventKind.EnemySpawned:
                 Push(FxKind.Warp, e.Pos, e.Pos, e.A + 10f, 0.35f, new Color(0.7f, 0.5f, 1f));
@@ -248,26 +253,36 @@ public sealed partial class SimRenderer : Node2D
             else
                 DrawArc(t.Pos, def.SupportRange, 0, Mathf.Tau, 26, new Color(col, 0.10f), 1.5f);
 
-            // sprite turret: tinted base platform + a gun head that aims at the target
-            float baseR = 22f;
+            // sprite turret: tinted base platform + a gun head that aims at the target.
+            // rank reads at a glance: a bigger, brighter gun and, at L3, an accent ring.
+            float lvlScale = 1f + (t.Level - 1) * 0.16f;
+            float baseR = 22f * (1f + (t.Level - 1) * 0.06f);
             DrawCircle(t.Pos, baseR, new Color(col, firing ? 0.24f : 0.13f));
-            var baseTint = disabled ? new Color(0.52f, 0.42f, 0.42f) : col.Lightened(0.12f);
-            Blit(Art.TurretBase, t.Pos, 0f, 42f, baseTint);
+            var baseTint = disabled ? new Color(0.52f, 0.42f, 0.42f) : col.Lightened(0.10f + (t.Level - 1) * 0.06f);
+            Blit(Art.TurretBase, t.Pos, 0f, 42f * (1f + (t.Level - 1) * 0.05f), baseTint);
+
+            if (t.Level >= 3 && !disabled)
+                DrawArc(t.Pos, baseR + 3.5f, 0, Mathf.Tau, 30, new Color(col.Lightened(0.35f), 0.8f), 2f);
 
             float gunRot = support ? World.GameTime * 0.6f : t.Angle + Mathf.Pi / 2f;
-            var gunTint = disabled ? new Color(0.6f, 0.55f, 0.55f) : new Color(1f, 1f, 1f);
-            Blit(Art.TurretGun(def.Id), t.Pos, gunRot, 40f, gunTint);
+            var gunTint = disabled ? new Color(0.6f, 0.55f, 0.55f) : Colors.White;
+            Blit(Art.TurretGun(def.Id), t.Pos, gunRot, 40f * lvlScale, gunTint);
 
             if (firing && !support && def.Fire != "beam")
             {
-                var muzzle = t.Pos + Vector2.FromAngle(t.Angle) * 23f;
-                Blit(Art.Flare, muzzle, 0f, 17f, new Color(1f, 0.82f, 0.45f, 0.85f));
+                var muzzle = t.Pos + Vector2.FromAngle(t.Angle) * (23f * lvlScale);
+                Blit(Art.Flare, muzzle, 0f, 17f * lvlScale, new Color(Ord.muzzle, 0.85f));
             }
 
             for (int l = 0; l < t.Level; l++)
-                DrawCircle(t.Pos + new Vector2(-6f + l * 6f, -25f), 2.6f, Colors.White);
+                DrawCircle(t.Pos + new Vector2(-6f + l * 6f, -25f), 2.8f, Colors.White);
             if (t.Fork >= 0)
-                DrawRect(new Rect2(t.Pos + new Vector2(-6, 21), new Vector2(12, 3.5f)), new Color(1f, 0.85f, 0.3f));
+            {
+                var fc = t.Fork == 0 ? new Color(1f, 0.85f, 0.3f) : new Color(0.4f, 0.85f, 1f);
+                DrawRect(new Rect2(t.Pos + new Vector2(-7, 21), new Vector2(14, 4f)), fc);
+                var tip = t.Pos + new Vector2(0, 27);
+                DrawColoredPolygon(new[] { tip + new Vector2(-4, 0), tip + new Vector2(4, 0), tip + new Vector2(0, 5) }, fc);
+            }
             if (disabled)
             {
                 DrawLine(t.Pos + new Vector2(-8, -8), t.Pos + new Vector2(8, 8), new Color(1f, 0.35f, 0.35f), 3.5f);
@@ -343,10 +358,11 @@ public sealed partial class SimRenderer : Node2D
 
             if (p.Kind == 1) // hero missile
             {
+                var (om, ot, _) = Ord;
                 float fl = 16f + Mathf.Min(p.Vel.Length() * 0.05f, 26f);
-                DrawLine(p.Pos, p.Pos - back * fl, new Color(1f, 0.55f, 0.25f, 0.5f), 5f);
-                DrawLine(p.Pos, p.Pos - back * (fl * 0.5f), new Color(1f, 0.9f, 0.6f, 0.85f), 2.5f);
-                Blit(missile, p.Pos, rot, 20f, new Color(1f, 0.95f, 0.8f));
+                DrawLine(p.Pos, p.Pos - back * fl, new Color(ot, 0.5f), 5f);
+                DrawLine(p.Pos, p.Pos - back * (fl * 0.5f), new Color(om, 0.85f), 2.5f);
+                Blit(missile, p.Pos, rot, 20f, om.Lightened(0.3f));
             }
             else if (p.Kind == 2) // enemy shell
             {
@@ -383,7 +399,7 @@ public sealed partial class SimRenderer : Node2D
         Vector2 vel = h.Pos - _lastHeroPos; _lastHeroPos = h.Pos;
         float rot = vel.LengthSquared() > 0.5f ? vel.Angle() + Mathf.Pi / 2f : h.Pos.Angle() + Mathf.Pi / 2f + Mathf.Pi;
         DrawCircle(h.Pos, 34f, new Color(0.55f, 0.9f, 1f, 0.12f));
-        Blit(Art.Ship, h.Pos, rot, 52f, new Color(0.92f, 0.98f, 1f));
+        Blit(Art.Hull(HullId), h.Pos, rot, 52f, new Color(0.92f, 0.98f, 1f));
 
         DrawArc(h.Pos, World.Cfg.Hero.PointDefenseRange, 0, Mathf.Tau, 40, new Color(0.55f, 0.9f, 1f, 0.045f), 1.2f);
 

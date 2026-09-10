@@ -255,6 +255,31 @@ public sealed record LevelCardDef
     public Dictionary<string, float> Effects { get; init; } = new();
 }
 
+public sealed record ShopItemDef
+{
+    public string Id { get; init; } = "";
+    public string Tab { get; init; } = "";       // fleet | worlds | ordnance
+    public string Name { get; init; } = "";
+    public string Desc { get; init; } = "";
+    public int Cost { get; init; }               // Commendations; 0 = owned by default
+    public string Apply { get; init; } = "";     // "category:value" set on Save.Options when equipped
+}
+
+public sealed record ShopCommendationsDef
+{
+    public int PerStar { get; init; } = 4;
+    public int PerAscensionTier { get; init; } = 3;
+    public int WeeklyComplete { get; init; } = 6;
+    public int PerCodexEntry { get; init; } = 1;
+    public int EndlessPerTwoMinutes { get; init; } = 3;
+}
+
+public sealed record ShopDef
+{
+    public ShopCommendationsDef Commendations { get; init; } = new();
+    public List<ShopItemDef> Items { get; init; } = new();
+}
+
 public sealed record CardDef
 {
     public string Id { get; init; } = "";

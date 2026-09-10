@@ -54,6 +54,12 @@ public sealed class SaveGame
     public int EndlessBest { get; set; }
     public string WeeklyId { get; set; } = "";                     // ISO week the WeeklyBest belongs to ("2026-W37")
     public int WeeklyBest { get; set; }                            // deepest wave this week
+
+    // ---- Shop (design-spec §10) — cosmetics bought with Commendations, earned by playing ----
+    /// <summary>Shop item ids the player has purchased. Free items are implicitly owned.
+    /// The Commendations balance is derived (total earned from progress − total spent here),
+    /// so it is always self-consistent and needs no separate stored counter.</summary>
+    public List<string> ShopOwned { get; set; } = new();
     public int AscensionTier { get; set; }                         // currently selected (0 = off)
     public Dictionary<string, int> MissionBestTier { get; set; } = new();   // mission id -> highest ascension tier cleared
     public Settings Options { get; set; } = new();
@@ -77,6 +83,8 @@ public sealed class SaveGame
         public float MusicVolume { get; set; } = 0.55f;
         public bool Muted { get; set; }
         public string PlanetSkin { get; set; } = "earth";
+        public string HullSkin { get; set; } = "standard";
+        public string OrdnancePalette { get; set; } = "ember";
     }
 
     // ---- commander level curve (slow, steady; XP is easy to earn, levels are not) ----

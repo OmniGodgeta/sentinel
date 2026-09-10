@@ -70,8 +70,10 @@ public sealed partial class MenuScreen : CanvasLayer
         grid.AddChild(Nav("Endless", () => App.StartMission("res://data/missions/endless.json", "endless")));
         grid.AddChild(Nav("Research", App.ShowResearch));
         grid.AddChild(Nav("Protocols", App.ShowAbilities));
+        grid.AddChild(Nav("Shop", App.ShowShop));
         grid.AddChild(Nav("Codex", App.ShowCodex));
         grid.AddChild(Nav("Settings", App.ShowSettings));
+        grid.AddChild(new Control());
 
         if (s.EndlessBest > 0)
         {
