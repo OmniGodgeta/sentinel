@@ -10,6 +10,34 @@ you finish or start anything.
 
 ---
 
+## The map
+
+```
+ DONE ─────────────────────────────────────────────►  v0.11.0 (shipped)
+  greybox loop ─ full rosters+arc1+boss ─ research/levels/abilities ─
+  card draft ─ ascension/endless/weekly ─ codex ─ art+sound pass ─
+  WAVES→SURVIVAL ─ Shop ─ loadout presets ─ menu/backdrops ─ updater
+
+                              │
+                              ▼
+        ┌───────────────────────────────────────────────┐
+        │  ⛔ THE BLOCKER — balance pass                  │   owner: USER
+        │  on a 4-yr-old Android, at 4×.                 │   deliverable:
+        │  gates: determinism · perf · pacing · hero     │   numbers +
+        │  feel · difficulty% · no dominant turret/dead  │   list of every
+        │  ability.   all knobs in data/survival.json    │   value changed
+        └───────────────────────────────────────────────┘
+                              │  (loop proven)
+                              ▼
+   1. ARC 2  ──►  2. Shop tabs      ──►  3. UX polish     ──►  4. Cloud save
+   (8 missions)   (Command Deck /       (hold-to-inspect,      5. AI sprite
+   +new enemies    Field Supplies /      "Simulate")            pipeline
+   scale curves    Archive)                                    6. weekly tuning
+   from PDTD ref                                               7. APK slim / release build
+
+   reference throughout:  ~/Work/pdtd-reference/NUMBERS.md   (the cloned game's real numbers)
+```
+
 ## 0. TL;DR
 
 - **What it is:** radial tower-defense for Android. Godot 4.7.2 **mono** / C#
