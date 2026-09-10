@@ -6,6 +6,8 @@ public enum CommandType
 {
     None,
     SetHeroTarget,
+    HeroMove,
+    HeroFocus,
     FireVolley,
     CastAbility,
     BuildTurret,
@@ -32,6 +34,10 @@ public struct SimCommand
     public string? StrA;
 
     public static SimCommand HeroTarget(Vector2 p) => new() { Type = CommandType.SetHeroTarget, Pos = p };
+    /// <summary>Continuous joystick move — <paramref name="dir"/> is a direction (magnitude 0..1); zero = stop.</summary>
+    public static SimCommand HeroMove(Vector2 dir) => new() { Type = CommandType.HeroMove, Pos = dir };
+    /// <summary>Tap on the field — the hero locks the nearest enemy to <paramref name="p"/> and fires.</summary>
+    public static SimCommand HeroFocus(Vector2 p) => new() { Type = CommandType.HeroFocus, Pos = p };
     public static SimCommand Volley(Vector2 p) => new() { Type = CommandType.FireVolley, Pos = p };
     public static SimCommand Cast(int slot, Vector2 p) => new() { Type = CommandType.CastAbility, IntA = slot, Pos = p };
     public static SimCommand Build(int slot, string id) => new() { Type = CommandType.BuildTurret, IntA = slot, StrA = id };

@@ -287,10 +287,14 @@ public sealed partial class GameRoot : Node2D
         else if (e is InputEventScreenDrag drag)
         {
             if (_pressPos.DistanceTo(drag.Position) > 12f) _dragging = true;
-            if (_dragging && _world.Phase == SimPhase.Wave)
+            // dragging on the field (not the joystick) also flies the ship there
+            if (_dragging && _world.Phase == SimPhase.Wave && !_hud.BuildOpen && _pendingReticleSlot < 0)
                 _world.Enqueue(SimCommand.HeroTarget(ScreenToWorld(drag.Position)));
         }
     }
+
+    /// <summary>HUD joystick → continuous hero movement.</summary>
+    public void HeroJoystick(Vector2 dir) => _world.Enqueue(SimCommand.HeroMove(dir));
 
     private void OnRelease(Vector2 pos)
     {
@@ -318,7 +322,8 @@ public sealed partial class GameRoot : Node2D
             }
             else
             {
-                _world.Enqueue(SimCommand.Volley(w));
+                // tap the field → the hero locks that enemy and opens fire
+                _world.Enqueue(SimCommand.HeroFocus(w));
             }
         }
         else if (_world.Phase == SimPhase.Build)

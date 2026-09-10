@@ -225,6 +225,9 @@ public sealed partial class SimWorld
         };
         Hero.Pos = new Vector2(0, -Hero.OrbitRadius);
         _heroTarget = Hero.Pos;
+        _heroMoveDir = Vector2.Zero;
+        _heroFocus = EnemyHandle.None;
+        _heroFocusLeft = 0f;
 
         // abilities — slot count from hero level, ids + levels from the loadout
         int slots = Mathf.Clamp(Mods.AbilitySlots, 3, 5);
@@ -347,7 +350,15 @@ public sealed partial class SimWorld
                     BeginWave();
                 break;
             case CommandType.SetHeroTarget:
-                _heroTarget = ClampToOrbitBand(c.Pos);
+                _heroTarget = ClampHeroPos(c.Pos);
+                _heroMoveDir = Vector2.Zero;
+                break;
+            case CommandType.HeroMove:
+                _heroMoveDir = c.Pos.LengthSquared() > 1f ? c.Pos.Normalized() : c.Pos;
+                if (_heroMoveDir != Vector2.Zero) _heroTarget = Hero.Pos;
+                break;
+            case CommandType.HeroFocus:
+                SetHeroFocus(c.Pos);
                 break;
             case CommandType.FireVolley:
                 TryFireVolley(c.Pos);

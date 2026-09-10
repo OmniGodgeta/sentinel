@@ -5,6 +5,42 @@ namespace Sentinel.Sim;
 public sealed partial class SimWorld
 {
     private Vector2 _heroTarget;
+    private Vector2 _heroMoveDir;          // joystick direction (0 = not driving)
+    private EnemyHandle _heroFocus = EnemyHandle.None;
+    private float _heroFocusLeft;
+
+    /// <summary>Position of the tapped focus target, or null.</summary>
+    public Vector2? HeroFocusPos => Resolve(in _heroFocus, out int i) ? Enemies[i].Pos : null;
+
+    /// <summary>Free flight: anywhere outside the planet, inside the arena.</summary>
+    internal Vector2 ClampHeroPos(Vector2 p)
+    {
+        float len = p.Length();
+        float min = B.PlanetRadius + 20f;
+        float max = B.DespawnRadius - 30f;
+        if (len < 0.001f) return new Vector2(0, -min);
+        if (len < min) return p / len * min;
+        if (len > max) return p / len * max;
+        return p;
+    }
+
+    /// <summary>Tap on the field — lock the nearest enemy and open fire on it.</summary>
+    private void SetHeroFocus(Vector2 worldPos)
+    {
+        if (!Hero.Alive) return;
+        int best = -1;
+        float bestD = 130f * 130f;
+        for (int i = 0; i < EnemyHighWater; i++)
+        {
+            if (!Enemies[i].Alive) continue;
+            float d = Enemies[i].Pos.DistanceSquaredTo(worldPos);
+            if (d < bestD) { bestD = d; best = i; }
+        }
+        if (best < 0) return;
+        _heroFocus = HandleOf(best);
+        _heroFocusLeft = 5f;
+        if (Hero.VolleyCooldownLeft <= 0f) TryFireVolley(Enemies[best].Pos);
+    }
 
     private void StepHero()
     {
@@ -33,19 +69,43 @@ public sealed partial class SimWorld
             if (h.OverdriveLeft <= 0f) h.OverdriveVolleyMult = 1f;
         }
 
-        // movement: glide toward the drag target, staying on the orbit band
-        Vector2 to = _heroTarget - h.Pos;
+        // movement: joystick direction drives it at full speed; otherwise glide to
+        // the last tapped point and hold there. Free flight anywhere in the arena.
         float step = Cfg.Hero.MoveSpeed * Mathf.Max(0.2f, Mods.HeroMoveSpeedMult) * dt;
-        if (to.Length() <= step) h.Pos = _heroTarget;
-        else h.Pos += to.Normalized() * step;
-        h.Pos = ClampToOrbitBand(h.Pos);
+        if (_heroMoveDir != Vector2.Zero)
+            h.Pos += _heroMoveDir * step;
+        else
+        {
+            Vector2 to = _heroTarget - h.Pos;
+            if (to.Length() <= step) h.Pos = _heroTarget;
+            else h.Pos += to.Normalized() * step;
+        }
+        h.Pos = ClampHeroPos(h.Pos);
         h.OrbitRadius = h.Pos.Length();
 
-        // point-defense auto-fire: continuous DPS to the closest enemy in range
-        int closest = ClosestEnemyTo(h.Pos, Cfg.Hero.PointDefenseRange);
-        if (closest >= 0)
+        // keep the tapped focus target while it lives
+        if (_heroFocusLeft > 0f) _heroFocusLeft -= dt;
+        if (_heroFocusLeft <= 0f || !Resolve(in _heroFocus, out _)) _heroFocus = EnemyHandle.None;
+
+        // point-defense auto-fire: the focus target if it's within reach, else the closest
+        int pd = -1;
+        if (Resolve(in _heroFocus, out int fi) && Enemies[fi].Pos.DistanceTo(h.Pos) <= Cfg.Hero.PointDefenseRange * 1.7f)
+            pd = fi;
+        else
+            pd = ClosestEnemyTo(h.Pos, Cfg.Hero.PointDefenseRange);
+        if (pd >= 0)
+            DamageEnemy(pd, Cfg.Hero.PointDefenseDps * Mods.HeroPointDefenseMult * dt, DamageSource.Hero);
+
+        // auto-launch the missile volley whenever it's ready and there's something to hit —
+        // the ship keeps firing on its own; a tap just retargets and fires now
+        if (h.VolleyCooldownLeft <= 0f)
         {
-            DamageEnemy(closest, Cfg.Hero.PointDefenseDps * Mods.HeroPointDefenseMult * dt, DamageSource.Hero);
+            if (Resolve(in _heroFocus, out int afi)) TryFireVolley(Enemies[afi].Pos);
+            else
+            {
+                int near = ClosestEnemyTo(h.Pos, B.SpawnRadius);
+                if (near >= 0) TryFireVolley(Enemies[near].Pos);
+            }
         }
 
         // Sentinel Deployment: escort drones chew on the nearest few enemies
@@ -94,7 +154,7 @@ public sealed partial class SimWorld
                             speedMax: speed * 1.35f, accel: speed * 2.4f, agility: 8f);
         }
 
-        float cd = Mathf.Max(11f, Cfg.Hero.VolleyCooldown + Mods.HeroMissileCdAdd);
+        float cd = Mathf.Max(2.5f, Cfg.Hero.VolleyCooldown + Mods.HeroMissileCdAdd);
         h.VolleyCooldownLeft = cd * h.OverdriveVolleyMult;
         Events.Push(SimEventKind.VolleyLaunched, h.Pos, missiles);
     }

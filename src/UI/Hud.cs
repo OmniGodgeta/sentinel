@@ -49,6 +49,7 @@ public sealed partial class Hud : CanvasLayer
     private AbilityButton[] _abilityBtns = new AbilityButton[8];
     private readonly bool[] _configured = new bool[8];
     private Label _reticlePrompt = null!;
+    private VirtualJoystick _joystick = null!;
 
     private PanelContainer _draftPanel = null!;
     private VBoxContainer _draftCards = null!;
@@ -171,9 +172,18 @@ public sealed partial class Hud : CanvasLayer
             abRow.AddChild(btn);
             _abilityBtns[i] = btn;
         }
-        var hint = new Label { Text = "drag: move ship   ·   tap: missile volley   ·   ⚒ : build", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
+        var hint = new Label { Text = "joystick: fly the ship   ·   tap an enemy: focus fire   ·   ⚒ : build", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
         hint.AddThemeFontSizeOverride("font_size", 14);
         wv.AddChild(hint);
+
+        // transparent movement joystick — the whole left play area is the touch zone
+        _joystick = new VirtualJoystick
+        {
+            AnchorLeft = 0f, AnchorRight = 0.55f, AnchorTop = 0f, AnchorBottom = 1f,
+            OffsetTop = 150, OffsetBottom = -210,
+        };
+        _joystick.OnMove = d => Root.HeroJoystick(d);
+        AddChild(_joystick);
 
         // big centred targeting prompt (over the play area)
         _reticlePrompt = new Label
@@ -391,6 +401,7 @@ public sealed partial class Hud : CanvasLayer
         _endCard.Visible = ended;
         _draftPanel.Visible = draft;
         _buildToggle.Visible = fighting && !draft;
+        _joystick.Visible = fighting && !BuildOpen && !draft;
         if (draft) RefreshDraft(w);
 
         if (w.TryGetBoss(out _, out float hpFrac, out _))

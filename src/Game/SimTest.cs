@@ -97,20 +97,21 @@ public sealed partial class SimTest : Node
         var clock = new SimClock();
         clock.SetSpeed(speed);
 
+        // run to a fixed game-time (~4 min of sim). The frame COUNT differs by speed
+        // but the tick count must not, so the closure no-ops once the target tick is
+        // reached — a 4x batch that would overshoot just stops advancing the sim.
+        const long targetTicks = 60 * 240;
         void Tick()
         {
+            if (w.Tick >= targetTicks) return;
             long tk = w.Tick;                 // the tick about to run
             if (w.Phase == SimPhase.Build) { Build(w); w.Enqueue(SimCommand.Wave()); }
             else WaveInputs(w, tk);
             w.StepTick();
         }
 
-        int frames = 60 * 240 / speed + 20;
-        for (int f = 0; f < frames; f++)
-        {
+        while (w.Tick < targetTicks && w.Phase is not (SimPhase.Won or SimPhase.Lost))
             clock.Advance(1f / 60f, Tick);
-            if (w.Phase is SimPhase.Won or SimPhase.Lost) break;
-        }
         var s = w.Stats;
         int total = w.IsSurvival ? Mathf.FloorToInt(w.Mission.Duration) : w.WaveCount;
         return new R(w.Phase, w.WavesCleared, total, w.PlanetIntegrity, s.EnemiesKilled, s.EnemiesLeaked,

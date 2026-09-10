@@ -403,6 +403,21 @@ public sealed partial class SimRenderer : Node2D
 
         DrawArc(h.Pos, World.Cfg.Hero.PointDefenseRange, 0, Mathf.Tau, 40, new Color(0.55f, 0.9f, 1f, 0.045f), 1.2f);
 
+        // tapped focus target — a spinning reticle + a lead line from the ship
+        if (World.HeroFocusPos is { } fp)
+        {
+            float t = World.GameTime * 4f;
+            var rc = new Color(1f, 0.55f, 0.35f);
+            DrawLine(h.Pos, fp, new Color(rc, 0.35f), 1.5f);
+            for (int q = 0; q < 4; q++)
+            {
+                float a = t + q * Mathf.Pi / 2f;
+                var d = Vector2.FromAngle(a);
+                DrawLine(fp + d * 10f, fp + d * 20f, rc, 2.5f);
+            }
+            DrawArc(fp, 15f, 0, Mathf.Tau, 20, new Color(rc, 0.5f), 1.5f);
+        }
+
         if (h.OverdriveLeft > 0f)
             DrawArc(h.Pos, 24f + 4f * Mathf.Sin(World.GameTime * 20f), 0, Mathf.Tau, 22, new Color(1f, 0.55f, 0.2f), 2.5f);
         if (World.DronesActiveLeft > 0f)
