@@ -61,6 +61,11 @@ public sealed record SurvivalDef
     public float ScaleLevelFactor { get; init; } = 0.075f;// enemy stat scale per mission Level
     public float ScaleRamp { get; init; } = 0.70f;        // enemy stat scale added by the end
     public float ScaleRampCurve { get; init; } = 1.3f;
+    /// <summary>Fraction of a timed hold at which the escalation peaks; past this it
+    /// eases back off so the final stretch isn't an unwinnable wall.</summary>
+    public float LateEaseFrac { get; init; } = 0.72f;
+    /// <summary>How much of the peak escalation is shed by the end of the hold (0..1).</summary>
+    public float LateEaseAmount { get; init; } = 0.3f;
     public float EndlessRampSeconds { get; init; } = 200f;// endless: seconds per +1.0 ramp unit
     public float SelfRepairFracPerSec { get; init; } = 0.0016f; // planet auto-repair / sec of max
     public float RewardRdMult { get; init; } = 3f;        // per survived minute, vs per-wave value

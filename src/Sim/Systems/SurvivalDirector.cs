@@ -97,6 +97,19 @@ public sealed partial class SimWorld
         }
     }
 
+    /// <summary>Shaped 0..1 escalation across a timed hold: rises with <paramref name="curve"/>
+    /// to a peak at <c>LateEaseFrac</c>, then eases back off by <c>LateEaseAmount</c> so the
+    /// last stretch of a mission is a hard fight, not an impossible one.</summary>
+    internal float SurvEscalation(float frac, float curve)
+    {
+        var S = Cfg.Survival;
+        float peak = Mathf.Clamp(S.LateEaseFrac, 0.4f, 0.95f);
+        if (frac <= peak)
+            return Mathf.Pow(Mathf.Clamp(frac / peak, 0f, 1f), curve);
+        float over = (frac - peak) / Mathf.Max(0.01f, 1f - peak);   // 0..1 across the tail
+        return 1f - Mathf.Clamp(S.LateEaseAmount, 0f, 0.9f) * Mathf.SmoothStep(0f, 1f, over);
+    }
+
     private void StepSurvivalDirector()
     {
         // stop feeding new enemies once the timer is up — the player just clears the field
@@ -115,13 +128,14 @@ public sealed partial class SimWorld
 
         // enemies-per-second target: gentle open, eased so the first ~90s stay
         // light, then climbs and keeps going in endless
-        float rampCurve = Mission.Duration > 0f ? Mathf.Pow(ramp, S.EpsRampCurve) : ramp;
+        float rampCurve = Mission.Duration > 0f ? SurvEscalation(ramp, S.EpsRampCurve) : ramp;
         float eps = (S.EpsBase + S.EpsRamp * rampCurve) * lvl * Mathf.Max(0.3f, surge)
                     * Mathf.Max(0.25f, _ascCountMult);
         _survSpawnAccum += eps * SimClock.TickDelta;
 
         // concurrency soft-cap so a stall doesn't turn into a slideshow
-        int softCap = S.SoftCapBase + Mathf.RoundToInt(S.SoftCapRamp * ramp) + Mission.Level * S.SoftCapPerLevel;
+        float capRamp = Mission.Duration > 0f ? SurvEscalation(ramp, 1f) : ramp;
+        int softCap = S.SoftCapBase + Mathf.RoundToInt(S.SoftCapRamp * capRamp) + Mission.Level * S.SoftCapPerLevel;
         int guard = 0;
         while (_survSpawnAccum >= 1f && _aliveThisWave < softCap && guard++ < 12)
         {

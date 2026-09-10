@@ -75,7 +75,7 @@ public sealed partial class SimWorld
                 var S = Cfg.Survival;
                 float dur = Mission.Duration > 0f ? Mission.Duration : 300f;
                 float ramp = Mission.Duration > 0f
-                    ? Mathf.Pow(Mathf.Clamp(PhaseTimer / dur, 0f, 1f), S.ScaleRampCurve)
+                    ? SurvEscalation(Mathf.Clamp(PhaseTimer / dur, 0f, 1f), S.ScaleRampCurve)
                     : Mathf.Min(3f, PhaseTimer / Mathf.Max(30f, S.EndlessRampSeconds));
                 return (1f + Mission.Level * S.ScaleLevelFactor) * (1f + S.ScaleRamp * ramp);
             }
