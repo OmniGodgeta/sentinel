@@ -4,8 +4,8 @@ using Sentinel.Game;
 namespace Sentinel.UI;
 
 /// <summary>
-/// Title card shown once per launch — key art, the wordmark, "tap to begin".
-/// Tapping (or a few seconds) fades into the hub menu.
+/// Title card shown once per launch — space, the Earth, the "Beyond" wordmark and
+/// a Start button. Laid out after the PDTD title screen.
 /// </summary>
 public sealed partial class SplashScreen : CanvasLayer
 {
@@ -15,76 +15,49 @@ public sealed partial class SplashScreen : CanvasLayer
     private float _t;
     private bool _leaving;
     private ColorRect _fade = null!;
-    private Label _prompt = null!;
     private Label _title = null!;
-    private Label _sub = null!;
+    private Label _titleShadow = null!;
 
     public override void _Ready()
     {
         Layer = 30;
-        AddChild(new MenuBackground { ShowPlanet = true, PlanetY = 0.56f });
+        AddChild(new MenuBackground { ShowPlanet = true, PlanetY = 0.52f, NebulaAlpha = 0.45f });
 
-        var col = new VBoxContainer
+        // wordmark — a chrome-ish look: dark drop copy + a bright silver face
+        _titleShadow = MakeTitle(new Color(0.02f, 0.05f, 0.09f, 0.9f), new Vector2(0, 4));
+        AddChild(_titleShadow);
+        _title = MakeTitle(new Color(0.86f, 0.92f, 1f), Vector2.Zero);
+        _title.AddThemeConstantOverride("outline_size", 6);
+        _title.AddThemeColorOverride("font_outline_color", new Color(0.10f, 0.22f, 0.38f, 0.9f));
+        AddChild(_title);
+
+        var start = new GlowButton
         {
-            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.22f, AnchorBottom = 0.22f,
-            OffsetBottom = 260, Alignment = BoxContainer.AlignmentMode.Begin,
+            Text = "START", FontSize = 34, Primary = true,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 1f, AnchorBottom = 1f,
+            OffsetLeft = -160, OffsetRight = 160, OffsetTop = -150, OffsetBottom = -74,
         };
-        col.AddThemeConstantOverride("separation", 10);
-        AddChild(col);
-
-        _title = new Label { Text = "B E Y O N D", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0) };
-        _title.AddThemeFontSizeOverride("font_size", 84);
-        _title.AddThemeColorOverride("font_color", UiTheme.Accent);
-        _title.AddThemeConstantOverride("outline_size", 8);
-        _title.AddThemeColorOverride("font_outline_color", new Color(0.01f, 0.03f, 0.06f, 0.95f));
-        col.AddChild(_title);
-
-        _sub = new Label { Text = "hold the line over Earth", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0) };
-        _sub.AddThemeFontSizeOverride("font_size", 20);
-        _sub.AddThemeColorOverride("font_color", new Color(UiTheme.Accent2, 0.9f));
-        col.AddChild(_sub);
-
-        _prompt = new Label
-        {
-            Text = "TAP TO BEGIN", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0),
-            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f, OffsetTop = -110,
-        };
-        _prompt.AddThemeFontSizeOverride("font_size", 24);
-        _prompt.AddThemeColorOverride("font_color", new Color(0.9f, 0.95f, 1f));
-        _prompt.AddThemeConstantOverride("outline_size", 5);
-        _prompt.AddThemeColorOverride("font_outline_color", new Color(0.01f, 0.03f, 0.06f, 0.9f));
-        AddChild(_prompt);
+        start.Pressed += Leave;
+        AddChild(start);
 
         _fade = new ColorRect { Color = new Color(0.01f, 0.012f, 0.03f, 0f), MouseFilter = Control.MouseFilterEnum.Ignore };
         _fade.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(_fade);
 
         SetProcess(true);
-        SetProcessInput(true);
     }
 
-    public override void _Input(InputEvent e)
+    private static Label MakeTitle(Color col, Vector2 off)
     {
-        if (_leaving) return;
-        if (e is InputEventScreenTouch { Pressed: true } or InputEventMouseButton { Pressed: true } or InputEventKey { Pressed: true })
-            Leave();
-    }
-
-    public override void _Process(double delta)
-    {
-        _t += (float)delta;
-        _title.Modulate = new Color(1, 1, 1, Mathf.Clamp((_t - 0.2f) * 1.4f, 0f, 1f));
-        _sub.Modulate = new Color(1, 1, 1, Mathf.Clamp((_t - 0.9f) * 1.4f, 0f, 1f));
-        if (_t > 1.4f)
-            _prompt.Modulate = new Color(1, 1, 1, 0.35f + 0.45f * (0.5f + 0.5f * Mathf.Sin(_t * 3f)));
-
-        if (!_leaving && _t > 7f) Leave();
-        if (_leaving)
+        var l = new Label
         {
-            var a = Mathf.Min(1f, _fade.Color.A + (float)delta * 2.2f);
-            _fade.Color = new Color(_fade.Color, a);
-            if (a >= 1f) { Done?.Invoke(); QueueFree(); }
-        }
+            Text = "Beyond", HorizontalAlignment = HorizontalAlignment.Center,
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.14f, AnchorBottom = 0.14f,
+            OffsetTop = off.Y, Modulate = new Color(1, 1, 1, 0),
+        };
+        l.AddThemeFontSizeOverride("font_size", 96);
+        l.AddThemeColorOverride("font_color", col);
+        return l;
     }
 
     private void Leave()
@@ -92,5 +65,20 @@ public sealed partial class SplashScreen : CanvasLayer
         if (_leaving) return;
         _leaving = true;
         Sentinel.Audio.AudioManager.Instance?.Confirm();
+    }
+
+    public override void _Process(double delta)
+    {
+        _t += (float)delta;
+        float a = Mathf.Clamp((_t - 0.15f) * 1.6f, 0f, 1f);
+        _title.Modulate = new Color(1, 1, 1, a);
+        _titleShadow.Modulate = new Color(1, 1, 1, a);
+
+        if (_leaving)
+        {
+            var fa = Mathf.Min(1f, _fade.Color.A + (float)delta * 2.4f);
+            _fade.Color = new Color(_fade.Color, fa);
+            if (fa >= 1f) { Done?.Invoke(); QueueFree(); }
+        }
     }
 }
