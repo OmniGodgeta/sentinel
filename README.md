@@ -10,14 +10,20 @@ Built with **Godot 4.7.2 (.NET / C#)**. Target: Android arm64, personal sideload
 Download the latest APK from the [Releases](../../releases) page, or grab the
 artifact from any green [Actions](../../actions) run.
 
-## Status — greybox alpha (v0.1.0)
+## Status — v0.11.0
 
-Everything is grey shapes. Balance is deliberately untuned. What works:
+Playable end to end. **Balance is untuned** — that pass is the current blocker
+(see [`docs/ROADMAP.md`](docs/ROADMAP.md), the canonical "what's done / what's
+next / what's deferred"). Agents: read [`CLAUDE.md`](CLAUDE.md) first.
 
 - **Deterministic fixed-timestep sim** — 1×/2×/3×/4× speed is *more sim ticks per
-  frame*, not sped-up animation. Same seed + inputs → identical run (verified in
-  `scenes/SimTest.tscn`). ~300 sim-ticks/ms headless.
-- **Build / wave loop** — 12 radial turret slots with real firing arcs. A north
+  frame*, not sped-up animation. Same seed + inputs → identical run, and 1× vs 4×
+  are byte-identical (both verified in `scenes/SimTest.tscn`). ~90 sim-ticks/ms
+  headless.
+- **Survival loop** — every mission is a 5-minute hold with a continuous,
+  escalating spawn director (no discrete waves). Real-time base management,
+  per-minute upgrade drafts. Endless / Weekly are open-ended.
+- **Build** — 12 radial turret slots with real firing arcs. A north
   turret cannot defend the south face.
 - **8 turrets** (Autocannon, Flak, Railgun, Tesla, Missile Silo, Laser Lattice,
   Graviton, Nanite Forge), each with in-run L1→L3 upgrades and an A/B fork at L3.
@@ -30,36 +36,52 @@ Everything is grey shapes. Balance is deliberately untuned. What works:
 - **Campaign** — 8-mission arc, each debuts one enemy.
 - **Progression** — research tree (5 branches × 6 tiers), Commander level, hero
   level 1–20 (ability slots at L8 / L20), ability leveling via Sentinel Cores.
-- **Card draft** between waves — run-scoped modifier cards.
-- **Endless mode** — one planet, procedural waves forever, personal best saved.
+- **Card draft** during the hold — run-scoped modifier cards, 4 options; the sim
+  freezes for the pick.
+- **Loadout presets** — 3 saved ability loadouts (Protocols screen).
+- **Endless mode** — one planet, no timer, best *time survived* saved.
 - **Ascension** — replay the arc at 10 escalating difficulty tiers.
-- **Codex** — in-world lore for the setting and the enemies.
+- **Weekly Challenge** — the shared endless seed under one of 8 rotating twists.
+- **Shop** — Commendations (earned from stars / Ascension / weekly / Codex) buy
+  cosmetics only: hero hulls, planet skins, ordnance colours.
+- **Codex** — in-world lore, first-encounter gated.
+- **Art / sound** — Kenney CC0 sprites + audio, a shader Earth, NASA/ESA space
+  backdrops per level. Music is copyrighted and personal-build-only.
 
-Not yet: art, sound, the shop, weekly seeded runs, first-encounter codex gating.
+Not yet (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): campaign arcs 2–6, the
+Command Deck / Field Supplies / Archive shop tabs, hold-to-inspect, cloud save,
+an AI sprite pipeline.
 
 ## Layout
 
 ```
 src/Sim/        deterministic simulation
-  SimClock / DetRandom / SimWorld / Systems/*
-src/Meta/       SaveGame, ModifierSet, Progression, ResearchDb
-src/Config/     JSON -> typed defs (ConfigDb)
-src/Render/     SimRenderer — greybox immediate-mode draw
-src/UI/         Hud, MenuScreen, ResearchScreen, AbilityScreen, CodexScreen
+  SimClock / DetRandom / SimWorld / Systems/*  (Systems/SurvivalDirector = the spawn loop)
+src/Meta/       SaveGame, ModifierSet, Progression, ResearchDb, Shop, WeeklyChallenge, UpdateChecker
+src/Config/     JSON -> typed defs (ConfigDb, Defs)
+src/Render/     SimRenderer, PlanetView, Starfield, Art, ScreenFx
+src/UI/         Hud, MenuScreen + MenuBackground + GlowButton, StarMapScreen,
+                ResearchScreen, AbilityScreen, ShopScreen, CodexScreen,
+                SettingsScreen, LevelUpScreen, UiTheme
 src/Game/       AppRoot (shell), GameRoot (one mission), SimTest, ShotRunner
-data/           balance, hero, turrets, enemies, abilities, cards, research,
-                ascension, codex, arc_01, missions/*
+data/           balance, survival, hero, turrets, enemies, abilities, cards,
+                levelcards, research, ascension, shop, codex, arc_01, missions/*
+assets/game/bg/ per-level space backdrops (NASA/ESA + EHT)
 tools/          gen_missions.py, gen_research.py
 ```
 
 ## Build
 
 ```bash
-godot --path . scenes/Main.tscn                        # run
-godot --headless scenes/SimTest.tscn --quit            # determinism + balance table
-dotnet build Sentinel.csproj
-godot --headless --export-debug "Android" build/beyond-debug.apk
+dotnet build Sentinel.csproj                            # C# only
+godot --headless --path . --import                      # import assets (first run / new assets)
+godot --path . scenes/Main.tscn                         # run
+godot --headless --path . scenes/SimTest.tscn --quit    # determinism (+ 1x/4x) + balance table
+godot --headless --path . --export-debug "Android" build/beyond-debug.apk
 ```
+
+Release: bump `config/version` in `project.godot` **and** `version/code` +
+`version/name` in `export_presets.cfg`, then push a `v*` tag.
 
 Requires Godot 4.7.2 **mono**, .NET 9 SDK, Android SDK + JDK (paths in Godot
 editor settings). CI (`.github/workflows/build-apk.yml`) does all of this on
