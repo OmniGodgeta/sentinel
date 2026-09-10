@@ -14,6 +14,7 @@ public sealed partial class AbilityScreen : CanvasLayer
 
     private Label _wallet = null!;
     private VBoxContainer _list = null!;
+    private Button[] _presetBtns = System.Array.Empty<Button>();
 
     public override void _Ready()
     {
@@ -45,6 +46,23 @@ public sealed partial class AbilityScreen : CanvasLayer
         _wallet.AddThemeFontSizeOverride("font_size", 15);
         root.AddChild(_wallet);
 
+        var pr = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        pr.AddThemeConstantOverride("separation", 8);
+        root.AddChild(pr);
+        var plbl = new Label { Text = "Preset ", VerticalAlignment = VerticalAlignment.Center };
+        plbl.AddThemeFontSizeOverride("font_size", 16);
+        pr.AddChild(plbl);
+        _presetBtns = new Button[Meta.SaveGame.PresetCount];
+        for (int i = 0; i < _presetBtns.Length; i++)
+        {
+            int pi = i;
+            var b = new Button { Text = $"{i + 1}", ToggleMode = true, CustomMinimumSize = new Vector2(66, 52) };
+            b.AddThemeFontSizeOverride("font_size", 18);
+            b.Pressed += () => { App.Save.SwitchPreset(pi); Sentinel.Audio.AudioManager.Instance?.Click(); Rebuild(); };
+            pr.AddChild(b);
+            _presetBtns[i] = b;
+        }
+
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
@@ -63,6 +81,7 @@ public sealed partial class AbilityScreen : CanvasLayer
         int slots = p.AbilitySlots;
         int equipped = System.Math.Min(s.Loadout.Count, slots);
         _wallet.Text = $"Sentinel Cores {s.SentinelCores}   ·   Hero L{p.Hero}   ·   {equipped}/{slots} slots equipped";
+        for (int i = 0; i < _presetBtns.Length; i++) _presetBtns[i].ButtonPressed = i == s.ActivePreset;
 
         foreach (Node c in _list.GetChildren()) c.QueueFree();
 
@@ -141,7 +160,7 @@ public sealed partial class AbilityScreen : CanvasLayer
         var lo = App.Save.Loadout;
         if (lo.Contains(id)) { if (lo.Count > 1) lo.Remove(id); }
         else if (lo.Count < slots) lo.Add(id);
-        App.Save.Save();
+        App.Save.CommitLoadout();
         Rebuild();
     }
 }

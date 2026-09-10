@@ -2,9 +2,9 @@ shader_type canvas_item;
 // Renders a rotating, lit Earth from an equirectangular day map + cloud map,
 // onto a square sprite. Everything outside the disc is transparent.
 
-uniform sampler2D day_tex : source_color, filter_linear;
-uniform sampler2D cloud_tex : filter_linear;
-uniform sampler2D night_tex : source_color, filter_linear;
+uniform sampler2D day_tex : source_color, filter_linear_mipmap;
+uniform sampler2D cloud_tex : filter_linear_mipmap;
+uniform sampler2D night_tex : source_color, filter_linear_mipmap;
 uniform float spin = 0.015;
 uniform vec2 light_dir = vec2(0.55, -0.35);
 uniform float atmosphere = 0.9;

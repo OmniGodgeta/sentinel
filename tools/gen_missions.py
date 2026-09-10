@@ -56,6 +56,7 @@ for mid, name, intro, seed, level, roster in MISSIONS:
         "duration": DURATION,
         "level": level,
         "roster": roster,
+        "backdrop": mid,
     }
     if mid == "m08":
         mission["boss"] = "boss_threshing_gate"
@@ -74,6 +75,7 @@ endless = {
     "endless": True,
     "duration": 0,
     "level": 4,
+    "backdrop": "endless",
     "roster": {
         "skiff": 0.0, "hauler": 0.03, "interceptor": 0.06, "aegis_cruiser": 0.1, "bombard": 0.13,
         "carrier": 0.18, "phase_runner": 0.2, "leech": 0.22, "warden": 0.28, "siege_crawler": 0.3,

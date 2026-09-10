@@ -48,8 +48,42 @@ public sealed class SaveGame
         return true;
     }
 
-    // equipped ability loadout (ids). Length tracks hero-level slot count.
+    // equipped ability loadout (ids) — the ACTIVE preset. Length tracks hero-level slot count.
     public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
+
+    // three saved loadout presets (design-spec §14) so a balance pass isn't re-equipping
+    // four abilities before every one of fifty test runs. Slot ActivePreset mirrors Loadout.
+    public const int PresetCount = 3;
+    public List<List<string>> LoadoutPresets { get; set; } = new();
+    public int ActivePreset { get; set; }
+
+    /// <summary>Ensure three presets exist and the active one matches Loadout.</summary>
+    public void NormalizePresets()
+    {
+        while (LoadoutPresets.Count < PresetCount) LoadoutPresets.Add(new List<string>());
+        if (LoadoutPresets.Count > PresetCount) LoadoutPresets.RemoveRange(PresetCount, LoadoutPresets.Count - PresetCount);
+        ActivePreset = System.Math.Clamp(ActivePreset, 0, PresetCount - 1);
+        bool allEmpty = LoadoutPresets.TrueForAll(p => p.Count == 0);
+        if (allEmpty && Loadout.Count > 0) LoadoutPresets[ActivePreset] = new List<string>(Loadout);
+        if (LoadoutPresets[ActivePreset].Count > 0) Loadout = new List<string>(LoadoutPresets[ActivePreset]);
+    }
+
+    /// <summary>Write the current Loadout back into the active preset slot.</summary>
+    public void CommitLoadout()
+    {
+        NormalizePresets();
+        LoadoutPresets[ActivePreset] = new List<string>(Loadout);
+        Save();
+    }
+
+    /// <summary>Make preset <paramref name="i"/> active and load it into Loadout.</summary>
+    public void SwitchPreset(int i)
+    {
+        NormalizePresets();
+        ActivePreset = System.Math.Clamp(i, 0, PresetCount - 1);
+        Loadout = new List<string>(LoadoutPresets[ActivePreset]);
+        Save();
+    }
 
     public int EndlessBest { get; set; }
     public string WeeklyId { get; set; } = "";                     // ISO week the WeeklyBest belongs to ("2026-W37")
@@ -124,12 +158,14 @@ public sealed class SaveGame
 
     public static SaveGame Load()
     {
-        if (!FileAccess.FileExists(Path)) return new SaveGame();
+        if (!FileAccess.FileExists(Path)) { var fresh = new SaveGame(); fresh.NormalizePresets(); return fresh; }
         try
         {
             using var f = FileAccess.Open(Path, FileAccess.ModeFlags.Read);
             var s = JsonSerializer.Deserialize<SaveGame>(f.GetAsText(), Opts);
-            return s ?? new SaveGame();
+            s ??= new SaveGame();
+            s.NormalizePresets();
+            return s;
         }
         catch (System.Exception ex)
         {

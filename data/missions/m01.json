@@ -9,5 +9,6 @@
   "roster": {
     "skiff": 0.0,
     "hauler": 0.25
-  }
+  },
+  "backdrop": "m01"
 }

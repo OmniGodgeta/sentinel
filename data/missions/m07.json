@@ -13,5 +13,6 @@
     "bombard": 0.3,
     "warden": 0.15,
     "siege_crawler": 0.25
-  }
+  },
+  "backdrop": "m07"
 }

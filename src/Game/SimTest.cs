@@ -73,8 +73,48 @@ public sealed partial class SimTest : Node
                  $"deterministic={(wkDet ? "ok" : "FAIL")}");
         allOk &= wkDet && w1.waves >= 1;
 
+        // speed-independence: the fixed-step clock must produce a byte-identical sim
+        // whether the frames are stepped at 1x or 4x (design-spec §2 / balance-pass gate)
+        var sp1 = ClockRun(cfg, 1);
+        var sp4 = ClockRun(cfg, 4);
+        bool spDet = sp1.ticks == sp4.ticks && sp1.kills == sp4.kills
+                     && Mathf.IsEqualApprox(sp1.integ, sp4.integ) && sp1.phase == sp4.phase;
+        GD.Print($"speed 1x vs 4x: 1x integ={sp1.integ:0} ticks={sp1.ticks} kills={sp1.kills}  |  " +
+                 $"4x integ={sp4.integ:0} ticks={sp4.ticks} kills={sp4.kills}  identical={(spDet ? "ok" : "FAIL")}");
+        allOk &= spDet;
+
         GD.Print(allOk ? "ALL CHECKS OK" : "SOME CHECKS FAILED");
         GetTree().Quit(allOk ? 0 : 1);
+    }
+
+    /// <summary>Run m05 for ~4 minutes of game time, feeding 1/60s "frames" through a
+    /// real <see cref="SimClock"/> at the given speed. Inputs are tick-indexed, so the
+    /// result must not depend on how many ticks a frame advances.</summary>
+    private static R ClockRun(ConfigDb cfg, int speed)
+    {
+        var w = new SimWorld(cfg);
+        w.Load(cfg.LoadMission("res://data/missions/m05.json"), Loadout, null, null, null, null);
+        var clock = new SimClock();
+        clock.SetSpeed(speed);
+
+        void Tick()
+        {
+            long tk = w.Tick;                 // the tick about to run
+            if (w.Phase == SimPhase.Build) { Build(w); w.Enqueue(SimCommand.Wave()); }
+            else WaveInputs(w, tk);
+            w.StepTick();
+        }
+
+        int frames = 60 * 240 / speed + 20;
+        for (int f = 0; f < frames; f++)
+        {
+            clock.Advance(1f / 60f, Tick);
+            if (w.Phase is SimPhase.Won or SimPhase.Lost) break;
+        }
+        var s = w.Stats;
+        int total = w.IsSurvival ? Mathf.FloorToInt(w.Mission.Duration) : w.WaveCount;
+        return new R(w.Phase, w.WavesCleared, total, w.PlanetIntegrity, s.EnemiesKilled, s.EnemiesLeaked,
+            s.TicksElapsed, w.ResearchDataEarned, s.DamageByTurrets, s.DamageByHero, s.DamageByAbilities, 0);
     }
 
     private readonly record struct R(SimPhase phase, int waves, int total, float integ, int kills, int leak,

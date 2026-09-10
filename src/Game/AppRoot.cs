@@ -135,7 +135,7 @@ public sealed partial class AppRoot : Node
 
         var m = Cfg.LoadMission("res://data/missions/endless.json") with
         {
-            Id = "weekly", Name = wk.Title, Intro = wk.MutatorBlurb, Seed = wk.Seed,
+            Id = "weekly", Name = wk.Title, Intro = wk.MutatorBlurb, Seed = wk.Seed, Backdrop = "weekly",
         };
         DiscoverMissionCodex(m);
 

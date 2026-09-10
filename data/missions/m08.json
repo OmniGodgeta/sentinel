@@ -18,5 +18,6 @@
     "warden": 0.5,
     "siege_crawler": 0.5
   },
+  "backdrop": "m08",
   "boss": "boss_threshing_gate"
 }

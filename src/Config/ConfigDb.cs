@@ -23,6 +23,7 @@ public sealed class ConfigDb
     public ArcDef Arc { get; private set; } = new();
     public List<AscensionTierDef> Ascension { get; private set; } = new();
     public ShopDef Shop { get; private set; } = new();
+    public SurvivalDef Survival { get; private set; } = new();
 
     private readonly Dictionary<string, TurretDef> _turrets = new();
     private readonly Dictionary<string, EnemyDef> _enemies = new();
@@ -56,6 +57,7 @@ public sealed class ConfigDb
         db.Arc = ReadOne<ArcDef>("res://data/arc_01.json") ?? new ArcDef();
         db.Ascension = ReadList<AscensionTierDef>("res://data/ascension.json");
         db.Shop = ReadOne<ShopDef>("res://data/shop.json") ?? new ShopDef();
+        db.Survival = ReadOne<SurvivalDef>("res://data/survival.json") ?? new SurvivalDef();
 
         foreach (var t in ReadList<TurretDef>("res://data/turrets.json"))
         {

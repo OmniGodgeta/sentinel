@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c588c5mlanx5w"
-path="res://.godot/imported/earth_night.png-47bedaf8991351bff14f2eeb6202ea55.ctex"
+uid="uid://b1vjibo7n67na"
+path="res://.godot/imported/m07.jpg-a49ccce506745689d694364661316073.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game/earth_night.png"
-dest_files=["res://.godot/imported/earth_night.png-47bedaf8991351bff14f2eeb6202ea55.ctex"]
+source_file="res://assets/game/bg/m07.jpg"
+dest_files=["res://.godot/imported/m07.jpg-a49ccce506745689d694364661316073.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

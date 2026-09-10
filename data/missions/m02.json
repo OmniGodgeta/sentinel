@@ -10,5 +10,6 @@
     "skiff": 0.0,
     "hauler": 0.15,
     "interceptor": 0.2
-  }
+  },
+  "backdrop": "m02"
 }

@@ -23,3 +23,10 @@ Sound effects (assets/audio/)
 
 Planet skins (assets/game/planets/)
   Kenney (kenney.nl) — "Planets". CC0 1.0 Universal.
+
+Level backdrops (assets/game/bg/m0*.jpg, endless.jpg, weekly.jpg)
+  NASA / ESA / STScI (Hubble & JWST), Spitzer, and the Event Horizon Telescope
+  Collaboration. NASA/ESA/STScI imagery is public domain; the EHT M87* black
+  hole image (bg/m08.jpg) is CC BY 4.0, EHT Collaboration.
+  Sourced via images.nasa.gov and Wikimedia Commons.
+  (The menu backdrop is drawn procedurally — no image.)

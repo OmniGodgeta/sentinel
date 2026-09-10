@@ -11,5 +11,6 @@
     "hauler": 0.15,
     "interceptor": 0.25,
     "aegis_cruiser": 0.2
-  }
+  },
+  "backdrop": "m03"
 }

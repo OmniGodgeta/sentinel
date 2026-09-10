@@ -43,6 +43,32 @@ public sealed record BalanceDef
     public float SentinelBoltSpeed { get; init; } = 560f;
 }
 
+/// <summary>Survival spawn-director tuning. Every balance knob for the 5-minute
+/// hold lives here so a balance pass never touches code (design-spec §14).</summary>
+public sealed record SurvivalDef
+{
+    public float EpsBase { get; init; } = 0.35f;          // enemies/sec at t=0
+    public float EpsRamp { get; init; } = 2.7f;           // added by the end of the hold
+    public float EpsRampCurve { get; init; } = 1.35f;     // >1 = slower open, sharper finish
+    public float LevelSpawnFactor { get; init; } = 0.085f;// per mission Level, extra spawn rate
+    public float SurgeA { get; init; } = 0.30f;           // slow spawn-rate wobble
+    public float SurgeB { get; init; } = 0.18f;           // faster wobble
+    public int SoftCapBase { get; init; } = 38;           // max concurrent enemies at t=0
+    public float SoftCapRamp { get; init; } = 95f;        // added by the end
+    public int SoftCapPerLevel { get; init; } = 2;
+    public float BossTimeFrac { get; init; } = 0.82f;     // when the survival boss enters
+    public float PincerChance { get; init; } = 0.28f;     // odds a spawn joins a tight bearing
+    public float ScaleLevelFactor { get; init; } = 0.075f;// enemy stat scale per mission Level
+    public float ScaleRamp { get; init; } = 0.70f;        // enemy stat scale added by the end
+    public float ScaleRampCurve { get; init; } = 1.3f;
+    public float EndlessRampSeconds { get; init; } = 200f;// endless: seconds per +1.0 ramp unit
+    public float SelfRepairFracPerSec { get; init; } = 0.0016f; // planet auto-repair / sec of max
+    public float RewardRdMult { get; init; } = 3f;        // per survived minute, vs per-wave value
+    public float RewardXpMult { get; init; } = 3f;
+    public float RewardCreditsMult { get; init; } = 1.6f;
+    public int CoreEveryNMinutes { get; init; } = 2;
+}
+
 public sealed record HeroDef
 {
     public float MaxHull { get; init; } = 400f;
@@ -200,6 +226,10 @@ public sealed record MissionDef
     public Dictionary<string, float> Roster { get; init; } = new();
     /// <summary>Optional boss id, spawned once near the end of a survival hold.</summary>
     public string Boss { get; init; } = "";
+
+    /// <summary>Backdrop key — a space image in res://assets/game/bg/&lt;backdrop&gt;.jpg
+    /// shown (dimmed) behind the play field. Empty = just the procedural starfield.</summary>
+    public string Backdrop { get; init; } = "";
 
     /// <summary>Enemies the procedural endless generator may use (needs their defs
     /// resolved up front). Ignored for normal missions.</summary>

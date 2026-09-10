@@ -72,11 +72,12 @@ public sealed partial class SimWorld
         {
             if (Mission.Survival)
             {
+                var S = Cfg.Survival;
                 float dur = Mission.Duration > 0f ? Mission.Duration : 300f;
                 float ramp = Mission.Duration > 0f
-                    ? Mathf.Pow(Mathf.Clamp(PhaseTimer / dur, 0f, 1f), 1.3f)
-                    : Mathf.Min(3f, PhaseTimer / 200f);
-                return (1f + Mission.Level * 0.075f) * (1f + 0.7f * ramp);
+                    ? Mathf.Pow(Mathf.Clamp(PhaseTimer / dur, 0f, 1f), S.ScaleRampCurve)
+                    : Mathf.Min(3f, PhaseTimer / Mathf.Max(30f, S.EndlessRampSeconds));
+                return (1f + Mission.Level * S.ScaleLevelFactor) * (1f + S.ScaleRamp * ramp);
             }
             return _endless ? 1f + WaveIndex * 0.05f : 1f;
         }

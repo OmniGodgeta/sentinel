@@ -72,6 +72,8 @@ public sealed partial class GameRoot : Node2D
         _world = new SimWorld(_cfg);
         _world.Load(MissionOverride ?? _cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd, Ascension);
 
+        AddBackdrop(_world.Mission.Backdrop);
+
         _starfield = new Render.Starfield { Radius = _world.B.DespawnRadius };
         AddChild(_starfield);
         _planet = new Render.PlanetView
@@ -95,6 +97,28 @@ public sealed partial class GameRoot : Node2D
 
         _clock.SetSpeed(StartSpeed);
         _hud.SyncSpeed(StartSpeed);
+    }
+
+    /// <summary>Space photo behind the play field (dimmed hard so gameplay stays readable).</summary>
+    private void AddBackdrop(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return;
+        string path = $"res://assets/game/bg/{key}.jpg";
+        if (!ResourceLoader.Exists(path)) return;
+
+        var layer = new CanvasLayer { Layer = -5 };
+        var tr = new TextureRect
+        {
+            Texture = GD.Load<Texture2D>(path),
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            Modulate = new Color(1f, 1f, 1f, 0.55f),
+        };
+        tr.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        layer.AddChild(tr);
+        var scrim = new ColorRect { Color = new Color(0.01f, 0.012f, 0.03f, 0.42f) };
+        scrim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        layer.AddChild(scrim);
+        AddChild(layer);
     }
 
     private void FitViewport()

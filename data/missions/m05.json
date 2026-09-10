@@ -12,5 +12,6 @@
     "interceptor": 0.2,
     "bombard": 0.3,
     "carrier": 0.25
-  }
+  },
+  "backdrop": "m05"
 }

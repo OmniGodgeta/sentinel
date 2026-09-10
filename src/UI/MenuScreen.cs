@@ -3,7 +3,8 @@ using Sentinel.Game;
 
 namespace Sentinel.UI;
 
-/// <summary>Landing screen — Earth backdrop, the BEYOND wordmark, a big PLAY button, a nav grid.</summary>
+/// <summary>Landing screen — the "Beyond" key-art look: nebula + rotating Earth,
+/// the wordmark up top, an animated control stack below.</summary>
 public sealed partial class MenuScreen : CanvasLayer
 {
     public AppRoot App = null!;
@@ -11,73 +12,92 @@ public sealed partial class MenuScreen : CanvasLayer
     public override void _Ready()
     {
         Layer = 5;
-        AddChild(new MenuBackground { PlanetY = 0.20f });
+        AddChild(new MenuBackground { ShowPlanet = true, PlanetY = 0.36f, PlanetScale = 1f });
         AddChild(new Sentinel.Meta.UpdateChecker());
 
         var s = App.Save;
         App.RefreshProgression();
         var p = App.Prog;
 
-        // one centred column holding wordmark + controls, in the lower ~58% of the screen
-        var wrap = new CenterContainer { AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.30f, AnchorBottom = 1f, OffsetBottom = -28 };
-        wrap.Theme = UiTheme.Instance;
-        AddChild(wrap);
-
-        var stack = new VBoxContainer { CustomMinimumSize = new Vector2(680, 0) };
-        stack.AddThemeConstantOverride("separation", 16);
-        wrap.AddChild(stack);
-
-        var title = new Label { Text = "BEYOND", HorizontalAlignment = HorizontalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 78);
+        // ---- wordmark, pinned near the top ----
+        var head = new VBoxContainer
+        {
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0f, OffsetTop = 46, OffsetLeft = 20, OffsetRight = -20,
+        };
+        AddChild(head);
+        var title = new Label { Text = "B E Y O N D", HorizontalAlignment = HorizontalAlignment.Center };
+        title.AddThemeFontSizeOverride("font_size", 68);
         title.AddThemeColorOverride("font_color", UiTheme.Accent);
-        stack.AddChild(title);
-
+        title.AddThemeConstantOverride("outline_size", 6);
+        title.AddThemeColorOverride("font_outline_color", new Color(0.01f, 0.03f, 0.06f, 0.9f));
+        head.AddChild(title);
         var tag = new Label { Text = "no ads   ·   no purchases   ·   ever", HorizontalAlignment = HorizontalAlignment.Center };
         tag.AddThemeFontSizeOverride("font_size", 16);
-        tag.AddThemeColorOverride("font_color", new Color(UiTheme.Accent2, 0.75f));
-        stack.AddChild(tag);
+        tag.AddThemeColorOverride("font_color", new Color(UiTheme.Accent2, 0.85f));
+        head.AddChild(tag);
+
+        // ---- control stack, lower half, on a legibility panel ----
+        var panel = new PanelContainer
+        {
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.47f, AnchorBottom = 1f,
+            OffsetLeft = 10, OffsetRight = -10, OffsetTop = 0, OffsetBottom = -14,
+        };
+        var psb = new StyleBoxFlat
+        {
+            BgColor = new Color(0.02f, 0.03f, 0.06f, 0.62f),
+            BorderColor = new Color(UiTheme.Accent, 0.14f),
+            BorderWidthTop = 1,
+            CornerRadiusTopLeft = 20, CornerRadiusTopRight = 20, CornerRadiusBottomLeft = 20, CornerRadiusBottomRight = 20,
+            ContentMarginLeft = 16, ContentMarginRight = 16, ContentMarginTop = 14, ContentMarginBottom = 14,
+        };
+        panel.AddThemeStyleboxOverride("panel", psb);
+        panel.Theme = UiTheme.Instance;
+        AddChild(panel);
+
+        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
+        panel.AddChild(scroll);
+
+        var stack = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        stack.AddThemeConstantOverride("separation", 13);
+        scroll.AddChild(stack);
 
         var totals = new Label
         {
-            Text = $"Commander {p.Commander}     Hero {p.Hero}/20\nRD {F(s.ResearchData)}     Alloy {F(s.ExoticAlloy)}     Cores {s.SentinelCores}",
-            HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.72f),
+            Text = $"Commander {p.Commander}      Hero {p.Hero}/20      ✦ {App.Shop.Balance}\nRD {F(s.ResearchData)}     Alloy {F(s.ExoticAlloy)}     Cores {s.SentinelCores}",
+            HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.82f),
         };
         totals.AddThemeFontSizeOverride("font_size", 17);
         stack.AddChild(totals);
 
-        stack.AddChild(new Control { CustomMinimumSize = new Vector2(0, 10) });
-
-        var play = new Button { Text = "▶   PLAY", CustomMinimumSize = new Vector2(0, 156), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        play.AddThemeFontSizeOverride("font_size", 50);
-        UiTheme.StylePrimary(play);
+        var play = new GlowButton { Text = "▶   PLAY", FontSize = 44, Primary = true, CustomMinimumSize = new Vector2(0, 132) };
         play.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Confirm(); PlayPressed(); };
         stack.AddChild(play);
 
         var wk = Sentinel.Meta.WeeklyChallenge.Current();
-        string wkText = $"★   WEEKLY   ·   {wk.Title}";
-        if (s.WeeklyId == wk.Id && s.WeeklyBest > 0) wkText += $"      best · {Mmss(s.WeeklyBest)}";
-        var weekly = new Button { Text = wkText, CustomMinimumSize = new Vector2(0, 84), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        weekly.AddThemeFontSizeOverride("font_size", 20);
-        weekly.AddThemeColorOverride("font_color", UiTheme.Accent2);
+        string wkText = $"★   WEEKLY · {wk.Title}";
+        if (s.WeeklyId == wk.Id && s.WeeklyBest > 0) wkText += $"   ·   best {Mmss(s.WeeklyBest)}";
+        var weekly = new GlowButton { Text = wkText, FontSize = 19, Alt = true, CustomMinimumSize = new Vector2(0, 74) };
         weekly.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); App.StartWeekly(); };
         stack.AddChild(weekly);
 
         var grid = new GridContainer { Columns = 2 };
-        grid.AddThemeConstantOverride("h_separation", 16);
-        grid.AddThemeConstantOverride("v_separation", 16);
+        grid.AddThemeConstantOverride("h_separation", 14);
+        grid.AddThemeConstantOverride("v_separation", 14);
         stack.AddChild(grid);
-        grid.AddChild(Nav("Star Map", App.ShowLevels));
-        grid.AddChild(Nav("Endless", () => App.StartMission("res://data/missions/endless.json", "endless")));
-        grid.AddChild(Nav("Research", App.ShowResearch));
-        grid.AddChild(Nav("Protocols", App.ShowAbilities));
-        grid.AddChild(Nav("Shop", App.ShowShop));
-        grid.AddChild(Nav("Codex", App.ShowCodex));
-        grid.AddChild(Nav("Settings", App.ShowSettings));
-        grid.AddChild(new Control());
+        grid.AddChild(Nav("◈   Star Map", App.ShowLevels, false));
+        grid.AddChild(Nav("∞   Endless", () => App.StartMission("res://data/missions/endless.json", "endless"), false));
+        grid.AddChild(Nav("⬡   Research", App.ShowResearch, false));
+        grid.AddChild(Nav("◆   Protocols", App.ShowAbilities, true));
+        grid.AddChild(Nav("✦   Shop", App.ShowShop, true));
+        grid.AddChild(Nav("☰   Codex", App.ShowCodex, false));
+        grid.AddChild(Nav("⚙   Settings", App.ShowSettings, true));
+        var spacer = new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        grid.AddChild(spacer);
 
         if (s.EndlessBest > 0)
         {
-            var eb = new Label { Text = $"Endless best · survived {Mmss(s.EndlessBest)}", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.4f) };
+            var eb = new Label { Text = $"Endless best · survived {Mmss(s.EndlessBest)}", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
             eb.AddThemeFontSizeOverride("font_size", 14);
             stack.AddChild(eb);
         }
@@ -85,10 +105,9 @@ public sealed partial class MenuScreen : CanvasLayer
 
     private static string Mmss(int secs) => $"{secs / 60}:{secs % 60:00}";
 
-    private static Button Nav(string text, System.Action onPress)
+    private GlowButton Nav(string text, System.Action onPress, bool alt)
     {
-        var b = new Button { Text = text, CustomMinimumSize = new Vector2(0, 116), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        b.AddThemeFontSizeOverride("font_size", 27);
+        var b = new GlowButton { Text = text, FontSize = 24, Alt = alt, CustomMinimumSize = new Vector2(0, 118) };
         b.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); onPress(); };
         return b;
     }

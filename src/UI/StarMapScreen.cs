@@ -28,7 +28,7 @@ public sealed partial class StarMapScreen : CanvasLayer
     public override void _Ready()
     {
         Layer = 6;
-        AddChild(new MenuBackground { PlanetY = -0.5f, NebulaAlpha = 0.35f });
+        AddChild(new MenuBackground { Image = "res://assets/game/bg/weekly.jpg", ShowPlanet = false });
 
         int i = 0;
         foreach (var m in App.Cfg.Arc.Missions)

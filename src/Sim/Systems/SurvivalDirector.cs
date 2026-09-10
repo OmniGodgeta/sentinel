@@ -73,7 +73,7 @@ public sealed partial class SimWorld
         get
         {
             if (Mission.Duration > 0f) return Mathf.Clamp(PhaseTimer / Mission.Duration, 0f, 1f);
-            return Mathf.Min(2.5f, PhaseTimer / 210f);
+            return Mathf.Min(2.5f, PhaseTimer / Mathf.Max(30f, Cfg.Survival.EndlessRampSeconds));
         }
     }
 
@@ -83,24 +83,25 @@ public sealed partial class SimWorld
         if (Mission.Duration > 0f && PhaseTimer >= Mission.Duration) return;
         if (_survRoster.Count == 0) return;
 
+        var S = Cfg.Survival;
         float t = PhaseTimer;
         float ramp = SurvRamp;
-        float lvl = 1f + Mission.Level * 0.085f;
+        float lvl = 1f + Mission.Level * S.LevelSpawnFactor;
 
         // slow, overlapping surges so it breathes instead of a flat stream
         float surge = 1f
-            + 0.30f * Mathf.Sin(t * 0.130f)
-            + 0.18f * Mathf.Sin(t * 0.370f + 1.3f);
+            + S.SurgeA * Mathf.Sin(t * 0.130f)
+            + S.SurgeB * Mathf.Sin(t * 0.370f + 1.3f);
 
-        // enemies-per-second target: gentle open (~0.35/s), eased so the first
-        // ~90s stay light, then climbs to ~3/s by the end and keeps going in endless
-        float rampCurve = Mission.Duration > 0f ? Mathf.Pow(ramp, 1.35f) : ramp;
-        float eps = (0.35f + 2.7f * rampCurve) * lvl * Mathf.Max(0.3f, surge)
+        // enemies-per-second target: gentle open, eased so the first ~90s stay
+        // light, then climbs and keeps going in endless
+        float rampCurve = Mission.Duration > 0f ? Mathf.Pow(ramp, S.EpsRampCurve) : ramp;
+        float eps = (S.EpsBase + S.EpsRamp * rampCurve) * lvl * Mathf.Max(0.3f, surge)
                     * Mathf.Max(0.25f, _ascCountMult);
         _survSpawnAccum += eps * SimClock.TickDelta;
 
         // concurrency soft-cap so a stall doesn't turn into a slideshow
-        int softCap = 38 + Mathf.RoundToInt(95f * ramp) + Mission.Level * 2;
+        int softCap = S.SoftCapBase + Mathf.RoundToInt(S.SoftCapRamp * ramp) + Mission.Level * S.SoftCapPerLevel;
         int guard = 0;
         while (_survSpawnAccum >= 1f && _aliveThisWave < softCap && guard++ < 12)
         {
@@ -111,7 +112,7 @@ public sealed partial class SimWorld
 
         // one boss, once, in the last stretch of a timed hold
         if (!_survBossSpawned && Mission.Boss.Length > 0 && Mission.Duration > 0f
-            && PhaseTimer >= Mission.Duration * 0.82f
+            && PhaseTimer >= Mission.Duration * Cfg.Survival.BossTimeFrac
             && _enemyDefIndex.TryGetValue(Mission.Boss, out int bdi))
         {
             _survBossSpawned = true;
@@ -144,7 +145,7 @@ public sealed partial class SimWorld
         }
 
         // mostly scattered; sometimes a tight pincer from one bearing
-        float ang = Rng.Chance(0.28f)
+        float ang = Rng.Chance(Cfg.Survival.PincerChance)
             ? Rng.NextFloat(0f, Mathf.Tau) + Rng.NextFloat(-0.25f, 0.25f)
             : Rng.NextAngle();
         Vector2 pos = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * B.SpawnRadius;
@@ -163,7 +164,7 @@ public sealed partial class SimWorld
         // down — a real breach still outpaces it
         if (PlanetIntegrity > 0f && PlanetIntegrity < PlanetIntegrityMax)
             PlanetIntegrity = Mathf.Min(PlanetIntegrityMax,
-                PlanetIntegrity + PlanetIntegrityMax * 0.0016f * SimClock.TickDelta);
+                PlanetIntegrity + PlanetIntegrityMax * Cfg.Survival.SelfRepairFracPerSec * SimClock.TickDelta);
 
         // per-minute payout (behaves like a "wave cleared" for rewards + cores + draft)
         int minutes = Mathf.FloorToInt(PhaseTimer / 60f);
@@ -172,10 +173,10 @@ public sealed partial class SimWorld
         {
             _survRewardMark++;
             WavesCleared = _survRewardMark;
-            ResearchDataEarned += B.ResearchDataPerWave * 3f * Mods.ResearchDataGainMult * _ascRewardMult;
-            XpEarned += B.XpPerWave * 3f * Mods.XpGainMult * _ascRewardMult;
-            Credits += Mathf.RoundToInt(B.CreditsPerWave * 1.6f * Mods.WaveIncomeMult);
-            if (_survRewardMark % 2 == 0) CoresEarned += 1;
+            ResearchDataEarned += B.ResearchDataPerWave * Cfg.Survival.RewardRdMult * Mods.ResearchDataGainMult * _ascRewardMult;
+            XpEarned += B.XpPerWave * Cfg.Survival.RewardXpMult * Mods.XpGainMult * _ascRewardMult;
+            Credits += Mathf.RoundToInt(B.CreditsPerWave * Cfg.Survival.RewardCreditsMult * Mods.WaveIncomeMult);
+            if (Cfg.Survival.CoreEveryNMinutes > 0 && _survRewardMark % Cfg.Survival.CoreEveryNMinutes == 0) CoresEarned += 1;
             if (Mods.PlanetRegenPerWaveFrac > 0f)
                 PlanetIntegrity = Mathf.Min(PlanetIntegrityMax,
                     PlanetIntegrity + PlanetIntegrityMax * Mods.PlanetRegenPerWaveFrac);

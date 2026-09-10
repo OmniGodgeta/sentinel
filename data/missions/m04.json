@@ -11,5 +11,6 @@
     "hauler": 0.2,
     "aegis_cruiser": 0.2,
     "bombard": 0.15
-  }
+  },
+  "backdrop": "m04"
 }
