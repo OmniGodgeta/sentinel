@@ -326,6 +326,7 @@ public sealed partial class Hud : CanvasLayer
         bool draft = w.HasPendingDraft && !ended;
         bool prep = w.Phase == SimPhase.Build && !draft;
         bool fighting = w.Phase == SimPhase.Wave && !ended;
+        if (prep || draft) _buildToggle.ButtonPressed = false;
         BuildOpen = !ended && !draft && (prep || (fighting && _buildToggle.ButtonPressed));
 
         string phaseStr;
