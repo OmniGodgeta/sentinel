@@ -6,7 +6,7 @@ config_version=5
 [application]
 
 config/name="Beyond"
-config/version="0.11.0"
+config/version="0.12.0"
 config/description="Radial tower defense over Earth. Zero ads, zero microtransactions."
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")

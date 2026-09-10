@@ -245,9 +245,12 @@ that's a data-driving gap — flag it.
 **Reference for calibration:** `~/Work/pdtd-reference/NUMBERS.md` (§6) has the
 real shipping numbers from the game Beyond clones — use the *ratios*.
 
-Known current state: the scripted SimTest bot wins m01/m02, dies ~2 min on
-m03–m08 (it has no research and doesn't adapt to mechanics; a real player will go
-further). Mid-game ramp probably still needs softening — start in `survival.json`.
+**Pass 1 done (v0.12.0, config-only, `balance-pass-1.md`)** — recalibrated
+`enemies/turrets/survival/balance/hero.json` against PDTD ratios (enemies tanky
+not deadly, armour mostly zeroed, gentler spawn rate, faster planet regen).
+Bot now wins m01–m03, loses m04 at ~4:20, and — with research mods — *survives*
+m07. Determinism made airtight (`StepTick` early-returns on terminal phase).
+The on-device pass (fps, feel, real difficulty %) is still open.
 
 ---
 

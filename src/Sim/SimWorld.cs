@@ -274,6 +274,10 @@ public sealed partial class SimWorld
     // ------------------------------------------------------------------
     public void StepTick()
     {
+        // a finished run does not advance — keeps the sim byte-identical no matter how
+        // many ticks a frame batches once the outcome is decided
+        if (Phase is SimPhase.Won or SimPhase.Lost) return;
+
         DrainCommands();
 
         switch (Phase)

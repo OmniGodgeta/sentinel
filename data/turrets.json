@@ -1,59 +1,59 @@
 [
   { "id": "autocannon", "name": "Autocannon", "fire": "projectile", "cost": 90,
-    "damage": 8, "fire_interval": 0.26, "range": 300, "arc_degrees": 90, "projectile_speed": 640,
-    "target_mode": "first", "color": 0.55, "codex_id": "tur_autocannon",
+    "damage": 7, "fire_interval": 0.26, "range": 300, "arc_degrees": 90, "projectile_speed": 640,
+    "armor_pen": 2, "target_mode": "first", "color": 0.55, "codex_id": "tur_autocannon",
     "forks": [
       { "id": "shred", "name": "Shred", "fire_rate_mult": 1.5, "damage_mult": 0.9 },
-      { "id": "slug", "name": "Slug", "armor_pen_add": 6, "damage_mult": 1.1 } ] },
+      { "id": "slug", "name": "Slug", "armor_pen_add": 8, "damage_mult": 1.15 } ] },
 
   { "id": "flak", "name": "Flak Battery", "fire": "projectile", "cost": 130,
-    "damage": 6, "fire_interval": 0.6, "range": 210, "arc_degrees": 70, "projectile_speed": 500,
-    "splash_radius": 52, "target_mode": "first", "color": 0.09, "codex_id": "tur_flak",
+    "damage": 7, "fire_interval": 0.58, "range": 220, "arc_degrees": 74, "projectile_speed": 520,
+    "splash_radius": 62, "target_mode": "first", "color": 0.09, "codex_id": "tur_flak",
     "forks": [
-      { "id": "wide", "name": "Wide Cone", "range_mult": 1.15, "splash_mult": 1.25 },
-      { "id": "airburst", "name": "Airburst", "splash_mult": 1.6, "damage_mult": 0.85 } ] },
+      { "id": "wide", "name": "Wide Cone", "range_mult": 1.2, "splash_mult": 1.3 },
+      { "id": "airburst", "name": "Airburst", "splash_mult": 1.7, "damage_mult": 0.9 } ] },
 
   { "id": "railgun", "name": "Railgun", "fire": "projectile", "cost": 220,
-    "damage": 70, "fire_interval": 1.7, "range": 380, "arc_degrees": 40, "projectile_speed": 1200,
-    "armor_pen": 8, "pierce": 2, "target_mode": "strongest", "color": 0.72, "codex_id": "tur_railgun",
+    "damage": 74, "fire_interval": 1.6, "range": 390, "arc_degrees": 40, "projectile_speed": 1200,
+    "armor_pen": 10, "pierce": 2, "target_mode": "strongest", "color": 0.72, "codex_id": "tur_railgun",
     "forks": [
       { "id": "overcharge", "name": "Overcharge", "damage_mult": 1.5, "fire_rate_mult": 0.85 },
       { "id": "cascade", "name": "Cascade", "extra_pierce": 3 } ] },
 
   { "id": "tesla", "name": "Tesla Node", "fire": "chain", "cost": 180,
-    "damage": 12, "fire_interval": 0.7, "range": 240, "arc_degrees": 120, "projectile_speed": 0,
-    "chain_jumps": 3, "chain_range": 100, "shield_mult": 2.5, "hitscan": true,
+    "damage": 14, "fire_interval": 0.66, "range": 250, "arc_degrees": 120, "projectile_speed": 0,
+    "chain_jumps": 3, "chain_range": 105, "shield_mult": 2.5, "hitscan": true,
     "target_mode": "first", "color": 0.5, "codex_id": "tur_tesla",
     "forks": [
       { "id": "arc", "name": "More Jumps", "extra_chain": 3 },
-      { "id": "strip", "name": "Shield Strip", "damage_mult": 0.8 } ] },
+      { "id": "strip", "name": "Shield Strip", "damage_mult": 0.85 } ] },
 
   { "id": "missile_silo", "name": "Missile Silo", "fire": "projectile", "cost": 200,
-    "damage": 34, "fire_interval": 1.4, "range": 360, "arc_degrees": 150, "projectile_speed": 300,
-    "splash_radius": 46, "homing": true, "target_mode": "first", "color": 0.02, "codex_id": "tur_missile",
+    "damage": 40, "fire_interval": 1.35, "range": 370, "arc_degrees": 150, "projectile_speed": 300,
+    "splash_radius": 48, "homing": true, "target_mode": "first", "color": 0.02, "codex_id": "tur_missile",
     "forks": [
       { "id": "cluster", "name": "Cluster", "fire_rate_mult": 1.6, "damage_mult": 0.6, "splash_mult": 0.8 },
       { "id": "bunker", "name": "Bunker-Buster", "damage_mult": 2.2, "fire_rate_mult": 0.7, "splash_mult": 1.3 } ] },
 
   { "id": "laser_lattice", "name": "Laser Lattice", "fire": "beam", "cost": 240,
-    "damage": 14, "fire_interval": 0.1, "range": 320, "arc_degrees": 30, "projectile_speed": 0,
-    "ramp_per_second": 0.8, "ramp_max": 3.0, "hitscan": true,
+    "damage": 18, "fire_interval": 0.1, "range": 330, "arc_degrees": 30, "projectile_speed": 0,
+    "ramp_per_second": 1.0, "ramp_max": 3.0, "hitscan": true,
     "target_mode": "strongest", "color": 0.0, "codex_id": "tur_laser",
     "forks": [
       { "id": "fastramp", "name": "Fast Ramp", "damage_mult": 0.9 },
       { "id": "persist", "name": "Persistent Ramp", "damage_mult": 1.0 } ] },
 
   { "id": "graviton", "name": "Graviton Projector", "fire": "projectile", "cost": 150,
-    "damage": 0, "fire_interval": 0.8, "range": 260, "arc_degrees": 110, "projectile_speed": 360,
+    "damage": 4, "fire_interval": 0.8, "range": 270, "arc_degrees": 110, "projectile_speed": 360,
     "slow_on_hit": 0.5, "target_mode": "first", "color": 0.78, "codex_id": "tur_graviton",
     "forks": [
-      { "id": "strong", "name": "Stronger Pull", "damage_mult": 1.0 },
+      { "id": "strong", "name": "Stronger Pull", "range_mult": 1.15, "damage_mult": 1.4 },
       { "id": "wide", "name": "Larger Radius", "range_mult": 1.35 } ] },
 
   { "id": "nanite_forge", "name": "Nanite Forge", "fire": "support", "cost": 170,
     "damage": 0, "fire_interval": 1.0, "range": 0, "arc_degrees": 360,
-    "support_buff": 0.25, "support_range": 62, "color": 0.35, "codex_id": "tur_nanite",
+    "support_buff": 0.32, "support_range": 66, "color": 0.35, "codex_id": "tur_nanite",
     "forks": [
-      { "id": "power", "name": "+Damage", "damage_mult": 1.0 },
-      { "id": "reach", "name": "+Range", "range_mult": 1.5 } ] }
+      { "id": "overclock", "name": "Overclock", "fire_rate_mult": 1.6 },
+      { "id": "broadcast", "name": "Broadcast", "range_mult": 1.6 } ] }
 ]

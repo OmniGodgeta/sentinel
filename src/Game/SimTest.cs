@@ -143,29 +143,27 @@ public sealed partial class SimTest : Node
             s.TicksElapsed, w.ResearchDataEarned, s.DamageByTurrets, s.DamageByHero, s.DamageByAbilities, sw.ElapsedMilliseconds);
     }
 
+    // a plausible player opening / fill order — a spread, not autocannon spam
+    private static readonly string[] BuildPlan =
+    {
+        "autocannon", "flak", "autocannon", "railgun", "tesla", "missile_silo",
+        "autocannon", "flak", "railgun", "laser_lattice", "autocannon", "graviton",
+    };
+
     private static void Build(SimWorld w)
     {
-        // a plausible opening: ring of autocannons, a few flak, upgrade what we can afford
-        string[] plan = { "autocannon", "autocannon", "flak", "autocannon", "railgun", "autocannon",
-                          "autocannon", "flak", "autocannon", "tesla", "autocannon", "flak" };
+        // buy what we can afford, cheapest-useful first, then upgrade spare credits
         for (int s = 0; s < w.TurretView.Length; s++)
-            if (!w.TurretView[s].Built)
-                w.Enqueue(SimCommand.Build(s, plan[s % plan.Length]));
+            if (!w.TurretView[s].Built && w.Credits > 260)
+                w.Enqueue(SimCommand.Build(s, BuildPlan[s % BuildPlan.Length]));
         for (int i = 0; i < 4; i++) w.StepTick();
-        // spend spare credits upgrading built turrets
         for (int s = 0; s < w.TurretView.Length; s++)
         {
             int c = w.TurretUpgradeCost(s);
-            if (c > 0 && w.Credits > c + 200) w.Enqueue(SimCommand.Upgrade(s));
+            if (c > 0 && w.Credits > c + 180) w.Enqueue(SimCommand.Upgrade(s));
         }
         for (int i = 0; i < 4; i++) w.StepTick();
     }
-
-    private static readonly string[] BuildPlan =
-    {
-        "autocannon", "autocannon", "flak", "autocannon", "railgun", "autocannon",
-        "autocannon", "flak", "autocannon", "tesla", "autocannon", "flak",
-    };
 
     private static void WaveInputs(SimWorld w, long tick)
     {
