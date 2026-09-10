@@ -5,6 +5,9 @@ Ships, missiles, meteors, effects, UFOs, particles
   Kenney (kenney.nl) — "Space Shooter Extension", "Alien UFO Pack",
   "Particle Pack". Licensed CC0 1.0 Universal (public domain).
 
+Turret bases + gun heads (assets/game/turrets/)
+  Kenney (kenney.nl) — "Tower Defense (Top-Down)". CC0 1.0 Universal.
+
 Earth textures (earth_day / earth_clouds / earth_night)
   NASA Visible Earth — "Blue Marble" imagery. Public domain.
   https://visibleearth.nasa.gov/collection/1484/blue-marble

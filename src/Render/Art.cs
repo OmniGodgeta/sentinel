@@ -20,6 +20,19 @@ public static class Art
     public static Texture2D Missile => Tex("res://assets/game/missile.png");
     public static Texture2D Bullet => Tex("res://assets/game/bullet.png");
     public static Texture2D Turret => Tex("res://assets/game/turret.png");
+
+    // turret art — a shared tintable base platform + a per-type gun head (Kenney TD, CC0)
+    public static Texture2D TurretBase => Tex("res://assets/game/turrets/base.png");
+    public static Texture2D TurretMuzzle => Tex("res://assets/game/turrets/muzzle.png");
+    private static readonly Dictionary<string, Texture2D> _gun = new();
+    public static Texture2D TurretGun(string id)
+    {
+        if (_gun.TryGetValue(id, out var t)) return t;
+        string p = $"res://assets/game/turrets/{id}.png";
+        t = ResourceLoader.Exists(p) ? GD.Load<Texture2D>(p) : Tex("res://assets/game/turrets/autocannon.png");
+        _gun[id] = t;
+        return t;
+    }
     public static Texture2D Smoke => Tex("res://assets/game/fx/smoke.png");
     public static Texture2D Spark => Tex("res://assets/game/fx/spark.png");
     public static Texture2D Flare => Tex("res://assets/game/fx/flare.png");

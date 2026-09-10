@@ -234,44 +234,46 @@ public sealed partial class SimRenderer : Node2D
             }
 
             var def = World.TurretDefs[t.DefIndex];
-            var col = Color.FromHsv(def.Color, 0.35f, 1f);
+            var col = Color.FromHsv(def.Color, 0.55f, 1f);
             bool disabled = t.DisabledLeft > 0f;
             bool firing = !t.Target.IsNone && t.CooldownLeft > 0.02f;
+            bool support = def.Fire == "support";
 
-            if (def.Fire != "support")
+            if (!support)
             {
                 float half = Mathf.DegToRad(def.ArcDegrees) * 0.5f;
                 DrawArc(t.Pos, def.Range, t.Angle - half, t.Angle + half, 24,
-                        new Color(col, disabled ? 0.02f : firing ? 0.11f : 0.045f), 1.5f);
+                        new Color(col, disabled ? 0.02f : firing ? 0.12f : 0.05f), 1.5f);
             }
             else
                 DrawArc(t.Pos, def.SupportRange, 0, Mathf.Tau, 26, new Color(col, 0.10f), 1.5f);
 
-            // chunky turret: glow, hull disc, barrel
-            var body = disabled ? new Color(0.45f, 0.28f, 0.28f) : col;
-            DrawCircle(t.Pos, 20f, new Color(body, firing ? 0.30f : 0.16f));
-            DrawCircle(t.Pos, 13f, body.Darkened(0.15f));
-            DrawCircle(t.Pos, 10f, body.Lightened(0.2f));
-            DrawArc(t.Pos, 13f, 0, Mathf.Tau, 16, new Color(0, 0, 0, 0.5f), 2f);
-            DrawArc(t.Pos, 13f, 0, Mathf.Tau, 16, new Color(1, 1, 1, 0.6f), 1.4f);
-            if (!disabled && def.Fire != "support")
+            // sprite turret: tinted base platform + a gun head that aims at the target
+            float baseR = 22f;
+            DrawCircle(t.Pos, baseR, new Color(col, firing ? 0.24f : 0.13f));
+            var baseTint = disabled ? new Color(0.52f, 0.42f, 0.42f) : col.Lightened(0.12f);
+            Blit(Art.TurretBase, t.Pos, 0f, 42f, baseTint);
+
+            float gunRot = support ? World.GameTime * 0.6f : t.Angle + Mathf.Pi / 2f;
+            var gunTint = disabled ? new Color(0.6f, 0.55f, 0.55f) : new Color(1f, 1f, 1f);
+            Blit(Art.TurretGun(def.Id), t.Pos, gunRot, 40f, gunTint);
+
+            if (firing && !support && def.Fire != "beam")
             {
-                var tip = t.Pos + Vector2.FromAngle(t.Angle) * 22f;
-                DrawLine(t.Pos, tip, new Color(0, 0, 0, 0.55f), 7f);
-                DrawLine(t.Pos, tip, Colors.White, 3.5f);
-                DrawCircle(tip, 3f, firing ? new Color(1f, 0.9f, 0.6f) : Colors.White);
+                var muzzle = t.Pos + Vector2.FromAngle(t.Angle) * 23f;
+                Blit(Art.Flare, muzzle, 0f, 17f, new Color(1f, 0.82f, 0.45f, 0.85f));
             }
 
             for (int l = 0; l < t.Level; l++)
-                DrawCircle(t.Pos + new Vector2(-5f + l * 5f, -22f), 2.2f, Colors.White);
+                DrawCircle(t.Pos + new Vector2(-6f + l * 6f, -25f), 2.6f, Colors.White);
             if (t.Fork >= 0)
-                DrawRect(new Rect2(t.Pos + new Vector2(-5, 18), new Vector2(10, 3)), new Color(1f, 0.85f, 0.3f));
+                DrawRect(new Rect2(t.Pos + new Vector2(-6, 21), new Vector2(12, 3.5f)), new Color(1f, 0.85f, 0.3f));
             if (disabled)
             {
-                DrawLine(t.Pos + new Vector2(-7, -7), t.Pos + new Vector2(7, 7), new Color(1f, 0.35f, 0.35f), 3f);
-                DrawLine(t.Pos + new Vector2(7, -7), t.Pos + new Vector2(-7, 7), new Color(1f, 0.35f, 0.35f), 3f);
+                DrawLine(t.Pos + new Vector2(-8, -8), t.Pos + new Vector2(8, 8), new Color(1f, 0.35f, 0.35f), 3.5f);
+                DrawLine(t.Pos + new Vector2(8, -8), t.Pos + new Vector2(-8, 8), new Color(1f, 0.35f, 0.35f), 3.5f);
             }
-            if (sel) DrawArc(t.Pos, 22f, 0, Mathf.Tau, 24, new Color(1f, 0.9f, 0.4f), 2.5f);
+            if (sel) DrawArc(t.Pos, 25f, 0, Mathf.Tau, 24, new Color(1f, 0.9f, 0.4f), 2.5f);
         }
     }
 
