@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.15.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.16.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -174,6 +174,21 @@ on-device pass.**
   centre Earth, current-stage label + big **BATTLE** button, WEEKLY, a 6-icon
   section row (Star Map / Endless / Research / Protocols / Shop / Codex).
   **No energy/stamina gate** (design rule — PDTD's ⚡ cost is deliberately absent).
+
+### v0.16.0 — futuristic font + menu readability
+- **Fonts:** Orbitron (display) + Exo 2 (body), OFL, in `assets/fonts/`, wired
+  through `UiTheme.Display` / `UiTheme.Body`. `GlowButton` gained `LabelFont` /
+  `SetFont()` (defaults to Orbitron). Used on the wordmark, BATTLE, stage label,
+  rank badge, section icons.
+- **Splash:** "Beyond" is mixed-case now, pulled close above the Earth
+  (anchor 0.335); START moved up (anchor 0.70).
+- **earth.gdshader:** `repeat_enable` on all samplers + `fract()` rotation offset
+  + seam-aware `textureLod` — fixes the texture tearing after a full rotation.
+- **MenuScreen:** bigger rank badge / name / gear / section icons; BATTLE is
+  smaller and tucked just under the planet (anchor 0.60) instead of the bottom
+  stack; app version shown bottom-centre; the currency chip is a button that
+  opens a **WALLET** popup (Commendations / Research Data / Exotic Alloy /
+  Sentinel Cores).
 
 ---
 
