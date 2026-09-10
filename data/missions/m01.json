@@ -10,5 +10,6 @@
     "skiff": 0.0,
     "hauler": 0.25
   },
-  "backdrop": "m01"
+  "backdrop": "m01",
+  "music": "eve_01"
 }

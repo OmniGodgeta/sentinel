@@ -11,5 +11,6 @@
     "hauler": 0.15,
     "interceptor": 0.2
   },
-  "backdrop": "m02"
+  "backdrop": "m02",
+  "music": "eve_02"
 }

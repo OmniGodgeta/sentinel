@@ -38,7 +38,7 @@ public sealed partial class GameRoot : Node2D
     // screen-space reserved strips (top status, bottom control panel).
     // TopReserve grows by the display's safe-area inset (notch / punch-hole) so the
     // status + speed row never sits under the camera cutout.
-    public float TopReserve { get; private set; } = 138f;
+    public float TopReserve { get; private set; } = 172f;
     public const float BottomReserve = 306f;
     public float SafeTopInset { get; private set; }
 
@@ -73,6 +73,7 @@ public sealed partial class GameRoot : Node2D
         _world.Load(MissionOverride ?? _cfg.LoadMission(MissionPath), EquippedAbilities, Mods, AbilityEffect, AbilityCd, Ascension);
 
         AddBackdrop(_world.Mission.Backdrop);
+        Sentinel.Audio.MusicPlayer.Instance?.PlayStage(_world.Mission.Music, _world.Mission.Seed);
 
         _starfield = new Render.Starfield { Radius = _world.B.DespawnRadius };
         AddChild(_starfield);
@@ -130,7 +131,7 @@ public sealed partial class GameRoot : Node2D
         var win = DisplayServer.WindowGetSize();
         float vScale = win.Y > 0 ? vp.Y / win.Y : 1f;
         SafeTopInset = Mathf.Clamp(safe.Position.Y * vScale, 0f, 240f);
-        TopReserve = 138f + SafeTopInset;
+        TopReserve = 172f + SafeTopInset;
         // the game is a portrait column; on a wide window it's centred and letterboxed
         float designW = Mathf.Min(vp.X, vp.Y * 0.62f);
         float availH = Mathf.Max(200f, vp.Y - TopReserve - BottomReserve);

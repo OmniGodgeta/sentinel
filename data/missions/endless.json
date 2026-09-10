@@ -8,6 +8,7 @@
   "duration": 0,
   "level": 4,
   "backdrop": "endless",
+  "music": "eve_11",
   "roster": {
     "skiff": 0.0,
     "hauler": 0.03,

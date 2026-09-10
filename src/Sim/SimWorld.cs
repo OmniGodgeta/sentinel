@@ -265,6 +265,8 @@ public sealed partial class SimWorld
         _survRewardMark = 0;
         _survSpawnAccum = 0f;
         _survBossSpawned = false;
+        _runXp = 0f;
+        _runLevel = 1;
     }
 
     public void Enqueue(in SimCommand cmd) => _commands.Enqueue(cmd);
@@ -525,6 +527,8 @@ public sealed partial class SimWorld
             _survRewardMark = 0;
             _survSpawnAccum = 0f;
             _survBossSpawned = false;
+        _runXp = 0f;
+        _runLevel = 1;
             Phase = SimPhase.Wave;
             PhaseTimer = 0f;
             return;
@@ -682,6 +686,7 @@ public sealed partial class SimWorld
         {
             Stats.EnemiesKilled++;
             Credits += e.Bounty;
+            if (Mission.Survival) GainRunXp(e.Bounty);
 
             // Salvage Beacon: kills inside the field pay bonus RD + XP
             if (SalvageActiveLeft > 0f && e.Pos.DistanceSquaredTo(SalvageAnchor) <= SalvageRadius * SalvageRadius)

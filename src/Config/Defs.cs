@@ -231,6 +231,10 @@ public sealed record MissionDef
     /// shown (dimmed) behind the play field. Empty = just the procedural starfield.</summary>
     public string Backdrop { get; init; } = "";
 
+    /// <summary>Battle music key (a file stem in res://assets/music/game/, e.g. "eve_05").
+    /// Empty = picked deterministically from the seed.</summary>
+    public string Music { get; init; } = "";
+
     /// <summary>Enemies the procedural endless generator may use (needs their defs
     /// resolved up front). Ignored for normal missions.</summary>
     public List<string> EndlessRoster { get; init; } = new();

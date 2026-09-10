@@ -15,6 +15,26 @@ public sealed partial class SimWorld
     private float _survSpawnAccum;      // fractional enemies owed
     private bool _survBossSpawned;
 
+    // in-run "commander level" — climbs from kill XP; each level pops an upgrade card
+    private float _runXp;
+    private int _runLevel = 1;
+    public int RunLevel => _runLevel;
+    public float RunXp => _runXp;
+    /// <summary>cumulative XP for the start of a level — L1 = 0.</summary>
+    private static float XpForRunLevel(int n) => n <= 1 ? 0f : 120f * Mathf.Pow(n - 1, 1.5f);
+    public float RunXpFloor => XpForRunLevel(_runLevel);
+    public float RunXpCeil => XpForRunLevel(_runLevel + 1);
+
+    internal void GainRunXp(float amount)
+    {
+        _runXp += amount;
+        while (_runXp >= XpForRunLevel(_runLevel + 1) && _runLevel < 99)
+        {
+            _runLevel++;
+            OfferDraftAfterWave();   // "commander promotion" — pick an upgrade
+        }
+    }
+
     private struct SurvRosterEntry
     {
         public int DefIndex;
@@ -180,7 +200,7 @@ public sealed partial class SimWorld
             if (Mods.PlanetRegenPerWaveFrac > 0f)
                 PlanetIntegrity = Mathf.Min(PlanetIntegrityMax,
                     PlanetIntegrity + PlanetIntegrityMax * Mods.PlanetRegenPerWaveFrac);
-            OfferDraftAfterWave();
+            // cards come from level-ups now (GainRunXp), not the minute mark
         }
 
         if (Mission.Duration > 0f && PhaseTimer >= Mission.Duration && _aliveThisWave <= 0)

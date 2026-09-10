@@ -32,7 +32,11 @@ public sealed partial class AppRoot : Node
         Shop = new Shop(Save, Cfg);
         Sentinel.Audio.AudioManager.Instance?.SetVolume(Save.Options.SfxVolume, Save.Options.Muted);
         Sentinel.Audio.MusicPlayer.Instance?.SetVolume(Save.Options.MusicVolume, Save.Options.Muted);
-        ShowMenu();
+
+        Sentinel.Audio.MusicPlayer.Instance?.PlayMenu();
+        var splash = new SplashScreen { App = this };
+        splash.Done += ShowMenu;
+        SwapTo(splash);
     }
 
     public void RefreshProgression()
@@ -157,7 +161,7 @@ public sealed partial class AppRoot : Node
         g.MissionEnded += o => OnMissionEnded(o, 0);
         g.ExitToMenu += ShowMenu;
         Save.Record("weekly").Attempts++;
-        Sentinel.Audio.MusicPlayer.Instance?.PlayGame();
+
         SwapTo(g);
     }
 
@@ -192,7 +196,7 @@ public sealed partial class AppRoot : Node
         g.MissionEnded += o => OnMissionEnded(o, tier);
         g.ExitToMenu += ShowMenu;
         Save.Record(missionId).Attempts++;
-        Sentinel.Audio.MusicPlayer.Instance?.PlayGame();
+
         SwapTo(g);
     }
 

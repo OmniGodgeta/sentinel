@@ -12,5 +12,6 @@
     "interceptor": 0.25,
     "aegis_cruiser": 0.2
   },
-  "backdrop": "m03"
+  "backdrop": "m03",
+  "music": "eve_03"
 }

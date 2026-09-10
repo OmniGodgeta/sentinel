@@ -14,5 +14,6 @@
     "warden": 0.15,
     "siege_crawler": 0.25
   },
-  "backdrop": "m07"
+  "backdrop": "m07",
+  "music": "eve_07"
 }

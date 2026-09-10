@@ -19,6 +19,15 @@ public sealed partial class Hud : CanvasLayer
     private Control _ctlRow = null!;
     private Label _status = null!;
     private ProgressBar _integrity = null!;
+    private ProgressBar _xpBar = null!;
+    private float _dpsSmooth;
+
+    private static StyleBoxFlat Filled(Color c, int radius) => new()
+    {
+        BgColor = c,
+        CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius,
+        CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius,
+    };
     private Button[] _speed = new Button[4];
     private Button _pause = null!;
     private Button _menuOpen = null!;
@@ -43,6 +52,7 @@ public sealed partial class Hud : CanvasLayer
 
     private PanelContainer _draftPanel = null!;
     private VBoxContainer _draftCards = null!;
+    private Label _draftHeader = null!;
 
     private PanelContainer _endCard = null!;
     private Label _endText = null!;
@@ -61,12 +71,24 @@ public sealed partial class Hud : CanvasLayer
 
         var top = new VBoxContainer { AnchorRight = 1f, OffsetLeft = 10, OffsetTop = 8, OffsetRight = -10 };
         _topBox = top;
+        top.AddThemeConstantOverride("separation", 3);
         AddChild(top);
-        _status = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _status.AddThemeFontSizeOverride("font_size", 21);
-        top.AddChild(_status);
-        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 18) };
+
+        // planet integrity — the primary bar, with the value drawn on it
+        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 22) };
+        _integrity.AddThemeStyleboxOverride("fill", Filled(new Color(0.30f, 0.85f, 0.55f), 5));
+        _integrity.AddThemeStyleboxOverride("background", Filled(new Color(0.05f, 0.03f, 0.04f, 0.85f), 5));
         top.AddChild(_integrity);
+
+        // commander level + XP bar (fills each level, pops an upgrade card)
+        _xpBar = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 0, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 9) };
+        _xpBar.AddThemeStyleboxOverride("fill", Filled(UiTheme.Accent, 4));
+        _xpBar.AddThemeStyleboxOverride("background", Filled(new Color(0.03f, 0.04f, 0.07f, 0.85f), 4));
+        top.AddChild(_xpBar);
+
+        _status = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        _status.AddThemeFontSizeOverride("font_size", 18);
+        top.AddChild(_status);
 
         // speed + pause + leave + build row
         var ctl = new HBoxContainer
@@ -168,10 +190,12 @@ public sealed partial class Hud : CanvasLayer
         _draftPanel.Visible = false;
         AddChild(_draftPanel);
         var dv = new VBoxContainer();
+        dv.AddThemeConstantOverride("separation", 6);
         _draftPanel.AddChild(dv);
-        var dh = new Label { Text = "CHOOSE AN UPGRADE", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.9f, 0.5f) };
-        dh.AddThemeFontSizeOverride("font_size", 19);
-        dv.AddChild(dh);
+        _draftHeader = new Label { Text = "COMMANDER PROMOTION", HorizontalAlignment = HorizontalAlignment.Center };
+        _draftHeader.AddThemeFontSizeOverride("font_size", 20);
+        _draftHeader.AddThemeColorOverride("font_color", UiTheme.Accent);
+        dv.AddChild(_draftHeader);
         _draftCards = new VBoxContainer();
         _draftCards.AddThemeConstantOverride("separation", 8);
         dv.AddChild(_draftCards);
@@ -252,15 +276,15 @@ public sealed partial class Hud : CanvasLayer
         float m = Mathf.Max(0f, (vp.X - designW) * 0.5f);
         float top = Root?.SafeTopInset ?? 0f;
         if (_topBox != null) { _topBox.OffsetLeft = m + 10; _topBox.OffsetRight = -(m + 10); _topBox.OffsetTop = top + 8; }
-        if (_ctlRow != null) _ctlRow.OffsetTop = top + 96;
+        if (_ctlRow != null) _ctlRow.OffsetTop = top + 112;
         foreach (var p in _panels) { p.OffsetLeft = m + 8; p.OffsetRight = -(m + 8); }
         if (_bossBar != null)
         {
             _bossBar.AnchorLeft = 0f; _bossBar.AnchorRight = 1f;
             _bossBar.OffsetLeft = m + 40; _bossBar.OffsetRight = -(m + 40);
-            _bossBar.OffsetTop = top + 156;
+            _bossBar.OffsetTop = top + 174;
         }
-        if (_banner != null) _banner.OffsetTop = top + 174;
+        if (_banner != null) _banner.OffsetTop = top + 194;
     }
 
     private void RebuildTurretButtons()
@@ -320,7 +344,22 @@ public sealed partial class Hud : CanvasLayer
     public void Refresh()
     {
         var w = Root.World;
-        _integrity.Value = w.PlanetIntegrityMax > 0 ? w.PlanetIntegrity / w.PlanetIntegrityMax : 0;
+        float hpFraction = w.PlanetIntegrityMax > 0 ? w.PlanetIntegrity / w.PlanetIntegrityMax : 0;
+        _integrity.Value = hpFraction;
+        var hpCol = hpFraction > 0.5f ? new Color(0.30f, 0.85f, 0.55f)
+                  : hpFraction > 0.25f ? new Color(0.95f, 0.75f, 0.30f)
+                  : new Color(0.95f, 0.35f, 0.35f);
+        _integrity.AddThemeStyleboxOverride("fill", Filled(hpCol, 5));
+
+        // commander XP bar
+        float xpFloor = w.RunXpFloor, xpCeil = w.RunXpCeil;
+        _xpBar.Value = xpCeil > xpFloor ? Mathf.Clamp((w.RunXp - xpFloor) / (xpCeil - xpFloor), 0f, 1f) : 0f;
+        _xpBar.Visible = w.IsSurvival;
+
+        // live DPS (smoothed)
+        float elapsed = Mathf.Max(1f, w.PhaseTimer);
+        float dps = w.Stats.TotalDamage / elapsed;
+        _dpsSmooth = Mathf.Lerp(_dpsSmooth, dps, 0.1f);
 
         bool ended = w.Phase is SimPhase.Won or SimPhase.Lost;
         bool draft = w.HasPendingDraft && !ended;
@@ -340,10 +379,12 @@ public sealed partial class Hud : CanvasLayer
         else if (w.IsEndless) phaseStr = $"WAVE {w.WaveIndex + 1}  ·  ENDLESS";
         else phaseStr = $"WAVE {Mathf.Min(w.WaveIndex + 1, w.WaveCount)}/{w.WaveCount}";
 
+        string lvl = w.IsSurvival ? $"LV {w.RunLevel}" : "";
+        string l1 = $"◈ {Mathf.CeilToInt(w.PlanetIntegrity)}    ⬡ {w.Credits}    {phaseStr}    {lvl}";
         string l2 = fighting
-            ? $"enemies {w.EnemiesAlive}   ·   RD {Mathf.FloorToInt(w.ResearchDataEarned)}   ·   XP {Mathf.FloorToInt(w.XpEarned)}"
-            : $"RD {Mathf.FloorToInt(w.ResearchDataEarned)}   ·   XP {Mathf.FloorToInt(w.XpEarned)}   ·   Cores {w.CoresEarned}";
-        _status.Text = $"◈ {Mathf.CeilToInt(w.PlanetIntegrity)}/{Mathf.CeilToInt(w.PlanetIntegrityMax)}     ⬡ {w.Credits}     {phaseStr}\n{l2}";
+            ? $"enemies {w.EnemiesAlive}    ⚔ {Mathf.RoundToInt(_dpsSmooth)} dps    RD {Mathf.FloorToInt(w.ResearchDataEarned)}"
+            : $"RD {Mathf.FloorToInt(w.ResearchDataEarned)}    XP {Mathf.FloorToInt(w.XpEarned)}    Cores {w.CoresEarned}";
+        _status.Text = l1 + "\n" + l2;
 
         _buildPanel.Visible = BuildOpen;
         _wavePanel.Visible = fighting && !BuildOpen && !draft;
@@ -392,6 +433,8 @@ public sealed partial class Hud : CanvasLayer
     private int _draftShownHash = -1;
     private void RefreshDraft(SimWorld w)
     {
+        _draftHeader.Text = w.IsSurvival ? $"COMMANDER  ·  LEVEL {w.RunLevel}" : "CHOOSE AN UPGRADE";
+
         int hash = 17;
         foreach (int i in w.DraftOptionIndices) hash = hash * 31 + i;
         hash = hash * 31 + w.RunCards.Count;
@@ -405,21 +448,50 @@ public sealed partial class Hud : CanvasLayer
             var col = card.Rarity switch
             {
                 "epic" => new Color(1f, 0.55f, 0.9f),
-                "rare" => new Color(0.5f, 0.8f, 1f),
-                _ => new Color(0.85f, 0.85f, 0.85f),
+                "rare" => new Color(0.45f, 0.8f, 1f),
+                _ => new Color(0.72f, 0.78f, 0.85f),
             };
-            var btn = new Button
+            int i2 = idx;
+            var btn = new Button { CustomMinimumSize = new Vector2(0, 78), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            btn.AddThemeStyleboxOverride("normal", CardBox(col, 0.14f));
+            btn.AddThemeStyleboxOverride("hover", CardBox(col, 0.26f));
+            btn.AddThemeStyleboxOverride("pressed", CardBox(col, 0.34f));
+            btn.AddThemeStyleboxOverride("focus", CardBox(col, 0.26f));
+            btn.Pressed += () => { Root.RequestPickCard(i2); _draftShownHash = -1; };
+
+            var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+            row.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            row.OffsetLeft = 14; row.OffsetRight = -14;
+            row.AddThemeConstantOverride("separation", 10);
+            btn.AddChild(row);
+            var txt = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+            row.AddChild(txt);
+            var nm = new Label { Text = card.Name, MouseFilter = Control.MouseFilterEnum.Ignore };
+            nm.AddThemeFontSizeOverride("font_size", 18);
+            nm.AddThemeColorOverride("font_color", col.Lightened(0.25f));
+            txt.AddChild(nm);
+            var tx = new Label { Text = card.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.78f) };
+            tx.AddThemeFontSizeOverride("font_size", 13);
+            txt.AddChild(tx);
+            if (card.Rarity != "common")
             {
-                Text = $"{card.Name}\n{card.Text}",
-                CustomMinimumSize = new Vector2(0, 82),
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                Modulate = col,
-            };
-            btn.AddThemeFontSizeOverride("font_size", 15);
-            btn.Pressed += () => { Root.RequestPickCard(idx); _draftShownHash = -1; };
+                var rare = new Label { Text = card.Rarity.ToUpperInvariant(), MouseFilter = Control.MouseFilterEnum.Ignore, VerticalAlignment = VerticalAlignment.Center };
+                rare.AddThemeFontSizeOverride("font_size", 11);
+                rare.AddThemeColorOverride("font_color", col);
+                row.AddChild(rare);
+            }
             _draftCards.AddChild(btn);
         }
     }
+
+    private static StyleBoxFlat CardBox(Color accent, float bgA) => new()
+    {
+        BgColor = new Color(accent, bgA * 0.5f + 0.04f),
+        BorderColor = new Color(accent, 0.55f + bgA),
+        BorderWidthLeft = 4, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+        CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+        ContentMarginLeft = 4, ContentMarginRight = 4, ContentMarginTop = 4, ContentMarginBottom = 4,
+    };
 
     private void RefreshSlotPanel(SimWorld w)
     {
