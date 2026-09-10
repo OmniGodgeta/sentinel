@@ -66,6 +66,8 @@ public sealed partial class AppRoot : Node
         foreach (var w in m.Waves)
             foreach (var g in w.Groups)
                 ids.Add(g.Enemy);
+        foreach (var id in m.Roster.Keys) ids.Add(id);
+        if (m.Boss.Length > 0) ids.Add(m.Boss);
         foreach (var id in new List<string>(ids))
             if (Cfg.HasEnemy(id) && Cfg.Enemy(id).SpawnEnemy is { Length: > 0 } brood)
                 ids.Add(brood);
