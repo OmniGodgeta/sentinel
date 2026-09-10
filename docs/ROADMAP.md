@@ -98,5 +98,11 @@ Deliverable back from the pass: the numbers above + a list of every value change
   `data/survival.json`.
 - `MEMORY.md` / `~/.claude/.../memory/sentinel-game.md` on the original dev
   machine has the fullest running history; this file is the in-repo summary.
+- **`~/Work/pdtd-reference/`** (outside this repo) — the decrypted config of
+  *Planet Defense: Space TD*, the game Beyond is modelled on. `NUMBERS.md` there
+  is the distilled reference: 11 weapons' base stats, enemy roster, the
+  time-windowed wave format, per-level hp/atk multiplier curve, planet shield
+  curve, 208 upgrade cards, global battle constants. Use it to calibrate ratios,
+  not to copy tables/strings.
 - Asset API keys (Sketchfab / Poly Pizza) in `~/.config/sentinel/asset-api-keys.env`,
   unused by any tooling yet. Freesound key not created.
