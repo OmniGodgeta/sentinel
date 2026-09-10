@@ -30,3 +30,7 @@ Level backdrops (assets/game/bg/m0*.jpg, endless.jpg, weekly.jpg)
   hole image (bg/m08.jpg) is CC BY 4.0, EHT Collaboration.
   Sourced via images.nasa.gov and Wikimedia Commons.
   (The menu backdrop is drawn procedurally — no image.)
+
+Fonts (assets/fonts/)
+  Orbitron by Matt McInerney, Exo 2 by Natanael Gama — Google Fonts.
+  SIL Open Font License 1.1.

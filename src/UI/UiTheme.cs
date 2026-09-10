@@ -12,6 +12,12 @@ public static class UiTheme
     private static Theme? _theme;
     public static Theme Instance => _theme ??= Build();
 
+    private static Font? _display, _body;
+    /// <summary>Orbitron — the futuristic display face for titles / big buttons.</summary>
+    public static Font Display => _display ??= GD.Load<Font>("res://assets/fonts/Orbitron.ttf");
+    /// <summary>Exo 2 — the body face (everything else).</summary>
+    public static Font Body => _body ??= GD.Load<Font>("res://assets/fonts/Exo2.ttf");
+
     /// <summary>Icon teal — primary accent (the "BEYOND" wordmark colour).</summary>
     public static readonly Color Accent = new(0.26f, 0.82f, 0.87f);
     /// <summary>Icon magenta — secondary accent (the ship's glow / right nebula).</summary>
@@ -25,7 +31,7 @@ public static class UiTheme
 
     private static Theme Build()
     {
-        var t = new Theme { DefaultFontSize = 20 };
+        var t = new Theme { DefaultFontSize = 20, DefaultFont = Body };
 
         var panel = Flat(Panel, new Color(Accent, 0.14f), 12, 1);
         t.SetStylebox("panel", "PanelContainer", panel);

@@ -13,8 +13,10 @@ public sealed partial class GlowButton : BaseButton
     public int FontSize = 30;
     public bool Alt;                 // magenta accent instead of teal
     public bool Primary;             // filled CTA (the PLAY button)
+    public Font? LabelFont;          // set before add_child; defaults to Orbitron
 
     private Label _label = null!;
+    public void SetFont(Font f) { LabelFont = f; if (_label != null) _label.AddThemeFontOverride("font", f); }
     private float _hover, _press, _t;
     private float _seed;
 
@@ -35,6 +37,7 @@ public sealed partial class GlowButton : BaseButton
         _label.SetAnchorsPreset(LayoutPreset.FullRect);
         _label.AddThemeFontSizeOverride("font_size", FontSize);
         _label.AddThemeColorOverride("font_color", Primary ? new Color(0.02f, 0.05f, 0.08f) : new Color(0.92f, 0.98f, 1f));
+        _label.AddThemeFontOverride("font", LabelFont ?? UiTheme.Display);
         AddChild(_label);
 
         MouseEntered += () => _hoverTarget = 1f;

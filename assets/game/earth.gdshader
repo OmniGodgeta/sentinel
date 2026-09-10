@@ -2,9 +2,9 @@ shader_type canvas_item;
 // Renders a rotating, lit Earth from an equirectangular day map + cloud map,
 // onto a square sprite. Everything outside the disc is transparent.
 
-uniform sampler2D day_tex : source_color, filter_linear_mipmap;
-uniform sampler2D cloud_tex : filter_linear_mipmap;
-uniform sampler2D night_tex : source_color, filter_linear_mipmap;
+uniform sampler2D day_tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D cloud_tex : filter_linear_mipmap, repeat_enable;
+uniform sampler2D night_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform float spin = 0.015;
 uniform vec2 light_dir = vec2(0.55, -0.35);
 uniform float atmosphere = 0.9;
@@ -18,12 +18,21 @@ void fragment() {
 		float z = sqrt(max(0.0, 1.0 - r2));
 		vec3 n = vec3(p.x, -p.y, z);
 
-		float u = atan(n.x, n.z) / (2.0 * PI) + 0.5 + TIME * spin;
+		// keep the spin offset in [0,1) so texture coords never lose precision
+		// after many rotations (this was the "texture breaks after a rotation" bug)
+		float rot = fract(TIME * spin);
+		float crot = fract(TIME * spin * 1.55);
+		float baseU = atan(n.x, n.z) / (2.0 * PI) + 0.5;
+		float u = baseU + rot;
 		float v = acos(clamp(n.y, -1.0, 1.0)) / PI;
 
-		vec3 land = texture(day_tex, vec2(u, v)).rgb;
-		vec3 night = texture(night_tex, vec2(u, v)).rgb;
-		float ca = texture(cloud_tex, vec2(u + TIME * spin * 0.55, v)).a;
+		// explicit LOD (rises toward the rim + the atan wrap seam) — auto-mip would
+		// pick the tiniest mip at the seam and smear a band across the back
+		float seam = abs(fract(baseU + 0.5) - 0.5);          // 0 at the seam
+		float lod = mix(0.0, 3.5, pow(1.0 - z, 1.4)) + smoothstep(0.06, 0.0, seam) * 2.0;
+		vec3 land = textureLod(day_tex, vec2(u, v), lod).rgb;
+		vec3 night = textureLod(night_tex, vec2(u, v), lod).rgb;
+		float ca = textureLod(cloud_tex, vec2(baseU + crot, v), lod).a;
 
 		vec3 L = normalize(vec3(light_dir, 0.85));
 		float ndl = dot(L, normalize(n));
