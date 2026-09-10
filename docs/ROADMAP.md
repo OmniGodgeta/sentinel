@@ -5,8 +5,8 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **end of the v0.9→v0.11 session, 2026-09-10.** Update this file when
-you finish or start anything.
+Last updated: **v0.13.0, 2026-09-10.** Update this file when you finish or start
+anything.
 
 ---
 
@@ -131,6 +131,27 @@ Starting point was v0.8.0 (wave-based, greybox-ish, all 5 progression layers bui
 - `CLAUDE.md` + this file created as the agent entry points; `README.md` and
   `deviations.md` refreshed to current.
 
+### v0.12.0 — balance pass 1 (PDTD calibration)
+Config-only recalibration of `enemies/turrets/survival/balance/hero.json` against
+`~/Work/pdtd-reference/` — enemies tanky-not-deadly, armour mostly zeroed, gentler
+spawn, faster planet regen. `SimWorld.StepTick` early-returns on terminal phase
+(1×≡4× now airtight). Full diff in `docs/balance-pass-1.md`. **Still not the
+on-device pass.**
+
+### v0.13.0 — PDTD-style menu / audio / cards / HUD
+- **Splash screen** (`src/UI/SplashScreen.cs`) — key art + wordmark + Earth +
+  "tap to begin", fades to the hub. Once per launch.
+- **Music**: menu = one looping theme (`main_theme.ogg`); battle = 13 EVE tracks
+  (`eve_NN.ogg`), one per stage via `MissionDef.Music`. LP tracks removed.
+  `MusicPlayer` → `PlayMenu()` / `PlayStage(key, seed)`.
+- **In-fight level-up cards**: kill XP → a per-run "commander level"
+  (`SurvivalDirector.GainRunXp` / `RunLevel` / `XpForRunLevel`); each level pops
+  an upgrade card from `data/cards.json`. Replaces the per-minute draft timer.
+- **HUD**: coloured integrity bar + XP bar + live DPS; draft cards restyled;
+  `TopReserve` 138→172.
+- Side-effect: cards front-load → bot now clears m01–m03 big and nearly holds
+  m04/m06. Determinism unchanged.
+
 ---
 
 ## 2. Architecture map
@@ -197,7 +218,9 @@ assets/music/       Linkin Park — personal build only, remove before public re
 | Menu key-art backdrop + rotating Earth + GlowButtons | done |
 | Per-level backdrops | done |
 | In-app updater | done |
-| Art / sound | Kenney CC0 + shader Earth + NASA backdrops. No AI-sprite pipeline. |
+| Splash screen + hub menu flow | done (v0.13.0) |
+| Per-stage battle music + in-fight level-up cards | done (v0.13.0) |
+| Art / sound | Kenney CC0 + shader Earth + NASA backdrops. Music = commercial (personal build). No AI-sprite pipeline. |
 | **Campaign** | **arc 1 only (8 missions).** Spec wants 6 arcs × 8 = 48. |
 | Shop tabs Command Deck / Field Supplies / Archive | **not built** |
 | Hold-to-inspect, "Simulate", cloud save | **not built** |
