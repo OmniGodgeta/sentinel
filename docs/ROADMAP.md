@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.13.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.15.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -151,6 +151,29 @@ on-device pass.**
   `TopReserve` 138→172.
 - Side-effect: cards front-load → bot now clears m01–m03 big and nearly holds
   m04/m06. Determinism unchanged.
+
+### v0.14.0 — hero controls + fire rate + battery
+- **Free flight** — orbit-band clamp gone (`SimWorld.ClampHeroPos` = planet
+  surface → arena edge). **Virtual joystick** (`src/UI/VirtualJoystick.cs`) on the
+  left of the play field. **Tap an enemy** → `SimCommand.HeroFocus`: the ship
+  locks it, point-defense retargets, fires a volley; reticle + lead line drawn.
+- Volley **auto-fires** whenever it's off cooldown and something's in range.
+  `hero.json` volley_cooldown 15→6 (code floor 11→2.5), PD dps 20→34, range→210,
+  missile dmg 62→50, hull→480.
+- **Planet battery** salvo 1→3 (fires the 3 nearest, all bearings), interval
+  1.4→1.0; `battery_*` now in `data/balance.json`.
+- SimTest `ClockRun` now runs to a fixed **tick** target (was a speed-scaled
+  frame count — 1×≡4× broke once m05 outlasted the old bound; real fix, airtight
+  again). Difficulty bumped to match the stronger hero: `survival.json`
+  scale_ramp→1.15, scale_level_factor→0.10, eps_ramp→2.2.
+
+### v0.15.0 — home screen
+- **SplashScreen** rebuilt — "Beyond" chrome wordmark + Earth + Start button, no
+  auto-advance.
+- **MenuScreen** rebuilt as a PDTD-style hub — top rank/currency bar + gear,
+  centre Earth, current-stage label + big **BATTLE** button, WEEKLY, a 6-icon
+  section row (Star Map / Endless / Research / Protocols / Shop / Codex).
+  **No energy/stamina gate** (design rule — PDTD's ⚡ cost is deliberately absent).
 
 ---
 
