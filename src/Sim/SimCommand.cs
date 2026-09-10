@@ -17,6 +17,7 @@ public enum CommandType
     ForkTurret,
     PickCard,
     StartWave,
+    HeroWeapon,      // IntA >= 0 : fire that ship weapon now; IntA < 0 : toggle auto-fire
 }
 
 /// <summary>
@@ -46,5 +47,7 @@ public struct SimCommand
     public static SimCommand Upgrade(int slot) => new() { Type = CommandType.UpgradeTurret, IntA = slot };
     public static SimCommand Fork(int slot, int fork) => new() { Type = CommandType.ForkTurret, IntA = slot, IntB = fork };
     public static SimCommand Card(int cardIndex) => new() { Type = CommandType.PickCard, IntA = cardIndex };
+    public static SimCommand FireHeroWeapon(int weaponIndex) => new() { Type = CommandType.HeroWeapon, IntA = weaponIndex };
+    public static SimCommand ToggleAutoFire() => new() { Type = CommandType.HeroWeapon, IntA = -1 };
     public static SimCommand Wave() => new() { Type = CommandType.StartWave };
 }

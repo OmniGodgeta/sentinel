@@ -163,6 +163,8 @@ public sealed partial class SimWorld
     {
         ref var h = ref Hero;
         if (!h.Alive) return;
+        amount = HeroShieldSoak(amount);
+        if (amount <= 0f) return;
         h.Hull -= amount;
         Events.Push(SimEventKind.HeroHit, h.Pos, amount);
         if (h.Hull <= 0f)

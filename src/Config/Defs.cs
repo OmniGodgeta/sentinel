@@ -82,6 +82,47 @@ public sealed record HeroDef
     public float MissileSplashRadius { get; init; } = 46f;
     public int AbilitySlots { get; init; } = 3;
     public float RespawnSeconds { get; init; } = 15f;
+    /// <summary>Damage per second the hull takes while an enemy is touching it.</summary>
+    public float CollisionDps { get; init; } = 26f;
+    /// <summary>Damage per second the hull deals to an enemy it is ramming.</summary>
+    public float RamDps { get; init; } = 70f;
+}
+
+/// <summary>One of the ship's own weapon systems (data/hero_weapons.json). Each
+/// levels up from the in-fight upgrade cards; the hull auto-fires whatever is
+/// unlocked, or the player fires it by hand from the weapon buttons.</summary>
+public sealed record HeroWeaponDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Kind { get; init; } = "";        // laser | missiles | ion | yamato | plasma | shield
+    public string Accent { get; init; } = "#4fd6de";
+    public string Text { get; init; } = "";
+    public int MaxLevel { get; init; } = 10;
+    public bool AlwaysOn { get; init; }             // plasma field — no cooldown, always damaging
+    public float Cooldown { get; init; } = 6f;
+    public float CooldownPerLevel { get; init; }
+    public float MinCooldown { get; init; } = 1f;
+    public float Damage { get; init; }
+    public float DamagePerLevel { get; init; }
+    public int Count { get; init; } = 1;            // beams / missiles / chain jumps
+    public float CountPerLevel { get; init; }       // added as floor(perLevel * (level-1))
+    public float Range { get; init; } = 600f;
+    public float ArcDeg { get; init; } = 360f;
+    public float Radius { get; init; }
+    public float RadiusPerLevel { get; init; }
+    public float Splash { get; init; }
+    public float Speed { get; init; } = 330f;
+    public float Duration { get; init; }
+    public float DurationPerLevel { get; init; }
+    public float Absorb { get; init; }              // shield: fraction of incoming damage soaked
+    public bool ShieldPierce { get; init; }
+    public bool ArmorPierce { get; init; }
+}
+
+public sealed record HeroWeaponsDef
+{
+    public System.Collections.Generic.List<HeroWeaponDef> Weapons { get; init; } = new();
 }
 
 public sealed record TurretFork

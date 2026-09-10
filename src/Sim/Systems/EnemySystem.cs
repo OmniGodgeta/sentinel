@@ -44,6 +44,19 @@ public sealed partial class SimWorld
             }
 
             e.DistToCenter = e.Pos.Length();
+
+            // hull collision — the ship rams the enemy and takes contact damage back
+            if (Hero.Alive)
+            {
+                float hitR = e.Radius + 24f;
+                if (e.Pos.DistanceSquaredTo(Hero.Pos) <= hitR * hitR)
+                {
+                    HeroTakeDamage(Cfg.Hero.CollisionDps * dt);
+                    DamageEnemy(i, Cfg.Hero.RamDps * dt, DamageSource.Hero);
+                    if (!e.Alive) continue;
+                }
+            }
+
             if (e.DistToCenter <= arrival)
             {
                 DamagePlanet(e.ContactDamage, leaked: true);

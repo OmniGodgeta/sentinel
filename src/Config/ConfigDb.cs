@@ -20,6 +20,8 @@ public sealed class ConfigDb
 
     public BalanceDef Balance { get; private set; } = new();
     public HeroDef Hero { get; private set; } = new();
+    private readonly List<HeroWeaponDef> _heroWeapons = new();
+    public IReadOnlyList<HeroWeaponDef> HeroWeapons => _heroWeapons;
     public ArcDef Arc { get; private set; } = new();
     public List<AscensionTierDef> Ascension { get; private set; } = new();
     public ShopDef Shop { get; private set; } = new();
@@ -54,6 +56,7 @@ public sealed class ConfigDb
         var db = new ConfigDb();
         db.Balance = ReadOne<BalanceDef>("res://data/balance.json") ?? new BalanceDef();
         db.Hero = ReadOne<HeroDef>("res://data/hero.json") ?? new HeroDef();
+        db._heroWeapons.AddRange((ReadOne<HeroWeaponsDef>("res://data/hero_weapons.json") ?? new HeroWeaponsDef()).Weapons);
         db.Arc = ReadOne<ArcDef>("res://data/arc_01.json") ?? new ArcDef();
         db.Ascension = ReadList<AscensionTierDef>("res://data/ascension.json");
         db.Shop = ReadOne<ShopDef>("res://data/shop.json") ?? new ShopDef();

@@ -8,5 +8,8 @@
   "missile_damage": 50,
   "missile_speed": 340,
   "missile_splash_radius": 48,
-  "ability_slots": 3
+  "ability_slots": 3,
+  "respawn_seconds": 6,
+  "collision_dps": 15,
+  "ram_dps": 110
 }

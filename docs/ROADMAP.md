@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.16.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.17.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -189,6 +189,30 @@ on-device pass.**
   stack; app version shown bottom-centre; the currency chip is a button that
   opens a **WALLET** popup (Commendations / Research Data / Exotic Alloy /
   Sentinel Cores).
+
+### v0.17.0 — ship weapon systems + weapon cards
+- **Six ship weapons** (`data/hero_weapons.json` + `HeroWeaponDef`): Laser Volley,
+  Missile Barrage, Ion Cannon, Yamato Cannon, Plasma Field, Shields Boost. Each has
+  a per-run level (0 = locked); the hull auto-fires everything unlocked. New sim
+  subsystem `src/Sim/Systems/HeroWeapons.cs` (`StepHeroWeapons`, `FireHeroWeapon`,
+  `HeroShieldSoak`); command `SimCommand.FireHeroWeapon` / `ToggleAutoFire`.
+- **Upgrade cards replaced.** The commander level-up draft no longer draws from
+  `data/cards.json` — it offers the 6 weapon cards (repeatable, each pick = +1
+  level). `CardDraft.cs` reworked; `data/cards.json` + `Cfg.Cards` are dead config,
+  kept for reference. The draft is a **centred popup** with the card art
+  (`assets/game/cards/*.jpg`, owner-supplied — see CREDITS).
+- **Manual fire + AUTO toggle.** HUD gets a weapon-button row (per unlocked weapon,
+  with cooldown) and an `AUTO`/`MANUAL` toggle in the top control row.
+- **Hull collision.** The ship now takes contact damage (`hero.json` `collision_dps`)
+  and rams enemies for `ram_dps`; `HeroTakeDamage` had no callers before, so the
+  hero was previously invulnerable. On death it respawns (`respawn_seconds` 6) with
+  its weapon levels intact.
+- **New ship art** — `SimRenderer.DrawShip`, a procedural dark swept-wing
+  interceptor with teal engine glow. Shop hull skins no longer change the look
+  (noted for a later pass).
+- Weapon numbers are a first-guess calibration; the scripted SimTest bot (no
+  evasion, no manual fire) now wins m01–03 + m06. 1×≡4× determinism holds. Real
+  tuning is still the on-device balance pass.
 
 ---
 

@@ -238,6 +238,17 @@ public sealed partial class GameRoot : Node2D
                 case SimEventKind.PlanetHit:
                     if (ev.A > 8f) sfx?.Play("planet_hit", -9f, 0.1f, 0.08);
                     break;
+                case SimEventKind.HeroWeaponFired:
+                    switch (ev.I)
+                    {
+                        case 0: sfx?.Play("turret_shot_b", -10f, 0.16f, 0.02); break;      // laser
+                        case 2: sfx?.Play("sentinel_shot", -8f, 0.1f); break;              // ion
+                        case 3: sfx?.Play("explosion_big", 0f, 0f); Input.VibrateHandheld(90); break; // yamato
+                    }
+                    break;
+                case SimEventKind.HeroShieldPop:
+                    sfx?.Play("shield", -6f, 0.05f);
+                    break;
                 case SimEventKind.NovaPulse:
                     sfx?.Play("explosion_big", -3f, 0.05f);
                     break;
@@ -363,6 +374,9 @@ public sealed partial class GameRoot : Node2D
         // by hand to apply the pick and let _Process lift the pause next frame
         if (DraftPause) _world.StepTick();
     }
+
+    public void RequestFireWeapon(int weaponIndex) => _world.Enqueue(SimCommand.FireHeroWeapon(weaponIndex));
+    public void RequestToggleAutoFire() => _world.Enqueue(SimCommand.ToggleAutoFire());
 
     public void RequestLaunchWave()
     {

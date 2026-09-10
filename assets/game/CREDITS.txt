@@ -31,6 +31,10 @@ Level backdrops (assets/game/bg/m0*.jpg, endless.jpg, weekly.jpg)
   Sourced via images.nasa.gov and Wikimedia Commons.
   (The menu backdrop is drawn procedurally — no image.)
 
+Upgrade-card art (assets/game/cards/*.jpg)
+  Supplied by the project owner (AI-generated key art for the six ship-weapon
+  upgrade cards). Personal build.
+
 Fonts (assets/fonts/)
   Orbitron by Matt McInerney, Exo 2 by Natanael Gama — Google Fonts.
   SIL Open Font License 1.1.

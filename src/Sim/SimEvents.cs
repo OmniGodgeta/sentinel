@@ -18,6 +18,8 @@ public enum SimEventKind : byte
     PlanetHit,
     HeroHit,
     HeroDown,
+    HeroWeaponFired,  // Pos = ship, PosB = aim, A = radius/len, I = weapon index
+    HeroShieldPop,    // Pos = ship, A = shield pool
     EnemySpawned,
     WaveCleared,
     MissionWon,

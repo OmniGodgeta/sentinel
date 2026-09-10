@@ -50,10 +50,14 @@ public sealed partial class Hud : CanvasLayer
     private readonly bool[] _configured = new bool[8];
     private Label _reticlePrompt = null!;
     private VirtualJoystick _joystick = null!;
+    private HBoxContainer _weaponRow = null!;
+    private Button _autoBtn = null!;
 
+    private ColorRect _draftDim = null!;
     private PanelContainer _draftPanel = null!;
-    private VBoxContainer _draftCards = null!;
+    private HBoxContainer _draftCards = null!;
     private Label _draftHeader = null!;
+    private readonly System.Collections.Generic.Dictionary<string, Texture2D> _cardTex = new();
 
     private PanelContainer _endCard = null!;
     private Label _endText = null!;
@@ -122,6 +126,11 @@ public sealed partial class Hud : CanvasLayer
         _buildToggle.AddThemeFontSizeOverride("font_size", 22);
         _buildToggle.TooltipText = "Build / upgrade turrets";
         ctl.AddChild(_buildToggle);
+        _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(74, 56), ToggleMode = true, ButtonPressed = true };
+        _autoBtn.AddThemeFontSizeOverride("font_size", 15);
+        _autoBtn.TooltipText = "Ship weapons auto-fire — tap to fire them by hand instead";
+        _autoBtn.Pressed += () => Root.RequestToggleAutoFire();
+        ctl.AddChild(_autoBtn);
 
         // boss bar
         _bossBar = new ProgressBar
@@ -157,10 +166,13 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
-        _wavePanel.OffsetTop = -176;   // just the ability bar + hint
+        _wavePanel.OffsetTop = -244;   // weapon row + ability bar + hint
         AddChild(_wavePanel);
         var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         _wavePanel.AddChild(wv);
+        _weaponRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        _weaponRow.AddThemeConstantOverride("separation", 6);
+        wv.AddChild(_weaponRow);
         var abRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         abRow.AddThemeConstantOverride("separation", 10);
         wv.AddChild(abRow);
@@ -195,19 +207,28 @@ public sealed partial class Hud : CanvasLayer
         _reticlePrompt.AddThemeFontSizeOverride("font_size", 26);
         AddChild(_reticlePrompt);
 
-        // ---- card draft ----
-        _draftPanel = MakeBottomPanel();
-        _draftPanel.Visible = false;
+        // ---- weapon upgrade draft (centred popup with card art) ----
+        _draftDim = new ColorRect { Color = new Color(0.01f, 0.02f, 0.04f, 0.72f), Visible = false };
+        _draftDim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        _draftDim.MouseFilter = Control.MouseFilterEnum.Stop;   // eat taps behind the popup
+        AddChild(_draftDim);
+
+        _draftPanel = new PanelContainer
+        {
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetLeft = -470, OffsetRight = 470, OffsetTop = -300, OffsetBottom = 300, Visible = false,
+        };
         AddChild(_draftPanel);
         var dv = new VBoxContainer();
-        dv.AddThemeConstantOverride("separation", 6);
+        dv.AddThemeConstantOverride("separation", 12);
         _draftPanel.AddChild(dv);
-        _draftHeader = new Label { Text = "COMMANDER PROMOTION", HorizontalAlignment = HorizontalAlignment.Center };
-        _draftHeader.AddThemeFontSizeOverride("font_size", 20);
+        _draftHeader = new Label { Text = "WEAPONS UPGRADE", HorizontalAlignment = HorizontalAlignment.Center };
+        _draftHeader.AddThemeFontOverride("font", UiTheme.Display);
+        _draftHeader.AddThemeFontSizeOverride("font_size", 22);
         _draftHeader.AddThemeColorOverride("font_color", UiTheme.Accent);
         dv.AddChild(_draftHeader);
-        _draftCards = new VBoxContainer();
-        _draftCards.AddThemeConstantOverride("separation", 8);
+        _draftCards = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        _draftCards.AddThemeConstantOverride("separation", 14);
         dv.AddChild(_draftCards);
 
         // ---- end card ----
@@ -400,9 +421,14 @@ public sealed partial class Hud : CanvasLayer
         _wavePanel.Visible = fighting && !BuildOpen && !draft;
         _endCard.Visible = ended;
         _draftPanel.Visible = draft;
+        _draftDim.Visible = draft;
         _buildToggle.Visible = fighting && !draft;
+        _autoBtn.Visible = fighting && !draft && w.HeroWeaponCount > 0;
+        if (_autoBtn.ButtonPressed != w.HeroAutoFire) _autoBtn.ButtonPressed = w.HeroAutoFire;
+        _autoBtn.Text = w.HeroAutoFire ? "AUTO" : "MANUAL";
         _joystick.Visible = fighting && !BuildOpen && !draft;
         if (draft) RefreshDraft(w);
+        if (fighting && !BuildOpen && !draft) RefreshWeaponRow(w);
 
         if (w.TryGetBoss(out _, out float hpFrac, out _))
         { _bossBar.Visible = true; _bossBar.Value = hpFrac; }
@@ -441,10 +467,23 @@ public sealed partial class Hud : CanvasLayer
         }
     }
 
+    private Texture2D? CardTexture(string id)
+    {
+        if (_cardTex.TryGetValue(id, out var t)) return t;
+        t = GD.Load<Texture2D>($"res://assets/game/cards/{id}.jpg");
+        _cardTex[id] = t;
+        return t;
+    }
+
+    private static Color HexColor(string hex, Color fallback)
+    {
+        try { return new Color(hex); } catch { return fallback; }
+    }
+
     private int _draftShownHash = -1;
     private void RefreshDraft(SimWorld w)
     {
-        _draftHeader.Text = w.IsSurvival ? $"COMMANDER  ·  LEVEL {w.RunLevel}" : "CHOOSE AN UPGRADE";
+        _draftHeader.Text = $"WEAPONS UPGRADE   ·   COMMANDER LEVEL {w.RunLevel}";
 
         int hash = 17;
         foreach (int i in w.DraftOptionIndices) hash = hash * 31 + i;
@@ -455,44 +494,101 @@ public sealed partial class Hud : CanvasLayer
         foreach (Node c in _draftCards.GetChildren()) c.QueueFree();
         foreach (int idx in w.DraftOptionIndices)
         {
-            var card = Root.World.Cfg.Cards[idx];
-            var col = card.Rarity switch
-            {
-                "epic" => new Color(1f, 0.55f, 0.9f),
-                "rare" => new Color(0.45f, 0.8f, 1f),
-                _ => new Color(0.72f, 0.78f, 0.85f),
-            };
+            var def = w.Cfg.HeroWeapons[idx];
+            int lvl = w.HeroWeaponLevel(idx);
+            var col = HexColor(def.Accent, UiTheme.Accent);
             int i2 = idx;
-            var btn = new Button { CustomMinimumSize = new Vector2(0, 78), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-            btn.AddThemeStyleboxOverride("normal", CardBox(col, 0.14f));
-            btn.AddThemeStyleboxOverride("hover", CardBox(col, 0.26f));
-            btn.AddThemeStyleboxOverride("pressed", CardBox(col, 0.34f));
-            btn.AddThemeStyleboxOverride("focus", CardBox(col, 0.26f));
+
+            var btn = new Button { CustomMinimumSize = new Vector2(196, 440), SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+            btn.AddThemeStyleboxOverride("normal", CardBox(col, 0.12f));
+            btn.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
+            btn.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));
+            btn.AddThemeStyleboxOverride("focus", CardBox(col, 0.30f));
             btn.Pressed += () => { Root.RequestPickCard(i2); _draftShownHash = -1; };
 
-            var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-            row.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-            row.OffsetLeft = 14; row.OffsetRight = -14;
-            row.AddThemeConstantOverride("separation", 10);
-            btn.AddChild(row);
-            var txt = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
-            row.AddChild(txt);
-            var nm = new Label { Text = card.Name, MouseFilter = Control.MouseFilterEnum.Ignore };
-            nm.AddThemeFontSizeOverride("font_size", 18);
-            nm.AddThemeColorOverride("font_color", col.Lightened(0.25f));
-            txt.AddChild(nm);
-            var tx = new Label { Text = card.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.78f) };
-            tx.AddThemeFontSizeOverride("font_size", 13);
-            txt.AddChild(tx);
-            if (card.Rarity != "common")
+            var v = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+            v.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            v.OffsetLeft = 6; v.OffsetRight = -6; v.OffsetTop = 6; v.OffsetBottom = -6;
+            v.AddThemeConstantOverride("separation", 6);
+            btn.AddChild(v);
+
+            var art = new TextureRect
             {
-                var rare = new Label { Text = card.Rarity.ToUpperInvariant(), MouseFilter = Control.MouseFilterEnum.Ignore, VerticalAlignment = VerticalAlignment.Center };
-                rare.AddThemeFontSizeOverride("font_size", 11);
-                rare.AddThemeColorOverride("font_color", col);
-                row.AddChild(rare);
-            }
-            _draftCards.AddChild(btn);
+                Texture = CardTexture(def.Id),
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                CustomMinimumSize = new Vector2(0, 330),
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            };
+            v.AddChild(art);
+
+            var nm = new Label { Text = def.Name.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
+            nm.AddThemeFontOverride("font", UiTheme.Display);
+            nm.AddThemeFontSizeOverride("font_size", 16);
+            nm.AddThemeColorOverride("font_color", col.Lightened(0.3f));
+            v.AddChild(nm);
+
+            var lv = new Label
+            {
+                Text = lvl == 0 ? "UNLOCK  ·  NEW SYSTEM" : $"LEVEL {lvl}  →  {lvl + 1}",
+                HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore,
+            };
+            lv.AddThemeFontSizeOverride("font_size", 13);
+            lv.AddThemeColorOverride("font_color", lvl == 0 ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.8f));
+            v.AddChild(lv);
         }
+    }
+
+    private void RefreshWeaponRow(SimWorld w)
+    {
+        int n = w.HeroWeaponCount;
+        // (re)build the buttons only when the set of unlocked weapons changes
+        int sig = 0;
+        for (int i = 0; i < n; i++) sig = sig * 7 + (w.HeroWeaponLevel(i) > 0 ? 1 : 0);
+        if (sig != _weaponRowSig)
+        {
+            _weaponRowSig = sig;
+            foreach (Node c in _weaponRow.GetChildren()) c.QueueFree();
+            _weaponBtns.Clear();
+            for (int i = 0; i < n; i++)
+            {
+                if (w.HeroWeaponLevel(i) <= 0) continue;
+                var def = w.Cfg.HeroWeapons[i];
+                var col = HexColor(def.Accent, UiTheme.Accent);
+                int i2 = i;
+                var b = new Button { CustomMinimumSize = new Vector2(96, 52) };
+                b.AddThemeFontSizeOverride("font_size", 12);
+                b.AddThemeStyleboxOverride("normal", CardBox(col, 0.16f));
+                b.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
+                b.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));
+                b.AddThemeColorOverride("font_color", col.Lightened(0.35f));
+                b.TooltipText = def.Name;
+                if (def.AlwaysOn) b.Disabled = true;   // Plasma Field — passive
+                else b.Pressed += () => Root.RequestFireWeapon(i2);
+                _weaponRow.AddChild(b);
+                _weaponBtns.Add((i, b));
+            }
+        }
+
+        foreach (var (i, b) in _weaponBtns)
+        {
+            var def = w.Cfg.HeroWeapons[i];
+            int lvl = w.HeroWeaponLevel(i);
+            float cd = w.HeroWeaponCooldownLeft(i);
+            string tag = ShortName(def.Name);
+            if (def.AlwaysOn) b.Text = $"{tag}\nLv{lvl} · ON";
+            else if (cd > 0.05f) b.Text = $"{tag}\n{cd:0.0}s";
+            else b.Text = $"{tag}\nLv{lvl}";
+            b.Modulate = (cd > 0.05f && !def.AlwaysOn) ? new Color(1, 1, 1, 0.45f) : Colors.White;
+        }
+    }
+
+    private int _weaponRowSig = -1;
+    private readonly System.Collections.Generic.List<(int idx, Button btn)> _weaponBtns = new();
+    private static string ShortName(string n)
+    {
+        int sp = n.IndexOf(' ');
+        return sp > 0 ? n[..sp].ToUpperInvariant() : n.ToUpperInvariant();
     }
 
     private static StyleBoxFlat CardBox(Color accent, float bgA) => new()

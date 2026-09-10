@@ -397,9 +397,70 @@ public sealed partial class SimRenderer : Node2D
 
         // face the direction of travel, else point outward
         Vector2 vel = h.Pos - _lastHeroPos; _lastHeroPos = h.Pos;
-        float rot = vel.LengthSquared() > 0.5f ? vel.Angle() + Mathf.Pi / 2f : h.Pos.Angle() + Mathf.Pi / 2f + Mathf.Pi;
-        DrawCircle(h.Pos, 34f, new Color(0.55f, 0.9f, 1f, 0.12f));
-        Blit(Art.Hull(HullId), h.Pos, rot, 52f, new Color(0.92f, 0.98f, 1f));
+        float heading = vel.LengthSquared() > 0.5f ? vel.Angle() : h.Pos.Angle() + Mathf.Pi;
+        float speedFrac = Mathf.Clamp(vel.Length() / 6f, 0f, 1f);
+        float gt = World.GameTime;
+
+        // --- Plasma Field aura (always-on once unlocked) ---
+        float pr = World.PlasmaFieldRadius;
+        if (pr > 0f)
+        {
+            var pc = new Color(0.82f, 0.24f, 0.95f);
+            DrawCircle(h.Pos, pr, new Color(pc, 0.05f));
+            DrawArc(h.Pos, pr, 0, Mathf.Tau, 44, new Color(pc, 0.28f + 0.08f * Mathf.Sin(gt * 5f)), 2.5f);
+            for (int s = 0; s < 10; s++)
+            {
+                float a = gt * 1.7f + s * Mathf.Tau / 10f;
+                DrawCircle(h.Pos + Vector2.FromAngle(a) * pr * (0.7f + 0.25f * Mathf.Sin(gt * 3f + s)), 2.6f, new Color(pc, 0.5f));
+            }
+        }
+
+        DrawCircle(h.Pos, 30f, new Color(0.35f, 0.75f, 1f, 0.10f));
+        DrawShip(h.Pos, heading, 1f, speedFrac, gt);
+
+        // --- Shields Boost hex barrier ---
+        if (World.HeroShield > 0f && World.HeroShieldLeft > 0f)
+        {
+            float sr = 40f;
+            var sc = new Color(0.30f, 0.72f, 1f);
+            for (int ring = 0; ring < 2; ring++)
+            {
+                float rr = sr + ring * 5f;
+                var pts = new Vector2[7];
+                for (int k = 0; k < 7; k++)
+                    pts[k] = h.Pos + Vector2.FromAngle(gt * 0.6f + k * Mathf.Tau / 6f) * rr;
+                DrawPolyline(pts, new Color(sc, 0.5f - ring * 0.2f), 2.5f - ring, true);
+            }
+            DrawCircle(h.Pos, sr, new Color(sc, 0.07f));
+        }
+
+        // --- Laser Volley cone ---
+        if (World.FxLaserLeft > 0f)
+        {
+            float k = World.FxLaserLeft / 0.14f;
+            var lc = new Color(0.95f, 0.22f, 0.20f);
+            int beams = Mathf.Max(2, World.FxLaserBeams);
+            float spread = Mathf.DegToRad(38f);
+            float baseA = World.FxLaserAim.Angle();
+            for (int bnum = 0; bnum < beams; bnum++)
+            {
+                float a = baseA + Mathf.Lerp(-spread, spread, beams == 1 ? 0.5f : bnum / (float)(beams - 1));
+                var dir = Vector2.FromAngle(a);
+                DrawLine(h.Pos + dir * 14f, h.Pos + dir * 560f, new Color(lc, 0.28f * k), 5f);
+                DrawLine(h.Pos + dir * 14f, h.Pos + dir * 560f, new Color(1f, 0.8f, 0.75f, 0.8f * k), 2f);
+            }
+        }
+
+        // --- Yamato Cannon blast ---
+        if (World.FxYamatoLeft > 0f)
+        {
+            float k = World.FxYamatoLeft / 0.5f;
+            var yc = new Color(1f, 0.80f, 0.15f);
+            DrawLine(h.Pos, World.FxYamatoPos, new Color(yc, 0.5f * k), 10f * k + 3f);
+            DrawLine(h.Pos, World.FxYamatoPos, new Color(1f, 1f, 0.9f, 0.9f * k), 4f * k + 1f);
+            DrawArc(World.FxYamatoPos, World.FxYamatoRadius * (1.2f - k), 0, Mathf.Tau, 48, new Color(yc, k), 5f * k + 1f);
+            DrawCircle(World.FxYamatoPos, World.FxYamatoRadius * (1.1f - k) * 0.5f, new Color(yc, 0.15f * k));
+        }
 
         DrawArc(h.Pos, World.Cfg.Hero.PointDefenseRange, 0, Mathf.Tau, 40, new Color(0.55f, 0.9f, 1f, 0.045f), 1.2f);
 
@@ -429,9 +490,63 @@ public sealed partial class SimRenderer : Node2D
             }
 
         float hf = h.MaxHull > 0 ? h.Hull / h.MaxHull : 1f;
-        var bp = h.Pos + new Vector2(-22, -32);
+        var bp = h.Pos + new Vector2(-22, -34);
         DrawRect(new Rect2(bp, new Vector2(44, 4)), new Color(0, 0, 0, 0.6f));
         DrawRect(new Rect2(bp, new Vector2(44 * hf, 4)), new Color(0.5f, 0.85f, 1f));
+    }
+
+    /// <summary>The player's ship — a dark swept-wing interceptor with teal engine
+    /// glow, drawn from polygons so it matches the upgrade-card art. Nose points
+    /// along <paramref name="ang"/> (local +X).</summary>
+    private void DrawShip(Vector2 c, float ang, float scale, float thrust, float gt)
+    {
+        Vector2 P(float x, float y) => c + new Vector2(x, y).Rotated(ang) * scale;
+
+        var hull = new Color(0.10f, 0.13f, 0.19f);
+        var hullLit = new Color(0.20f, 0.26f, 0.36f);
+        var edge = new Color(0.42f, 0.80f, 1f);
+        var glow = new Color(0.35f, 0.85f, 1f);
+
+        // engine trail
+        if (thrust > 0.05f)
+        {
+            float tl = 26f + thrust * 34f;
+            DrawLine(P(-16, -4), P(-16 - tl, -4), new Color(glow, 0.30f * thrust), 4f);
+            DrawLine(P(-16, 4), P(-16 - tl, 4), new Color(glow, 0.30f * thrust), 4f);
+            DrawLine(P(-16, 0), P(-16 - tl * 1.3f, 0), new Color(1f, 1f, 1f, 0.22f * thrust), 2f);
+        }
+
+        // swept wings (drawn first, under the fuselage)
+        Vector2[] wingR = { P(2, 5), P(-6, 22), P(-18, 24), P(-14, 7) };
+        Vector2[] wingL = { P(2, -5), P(-6, -22), P(-18, -24), P(-14, -7) };
+        DrawColoredPolygon(wingR, hull);
+        DrawColoredPolygon(wingL, hull);
+        DrawPolyline(new[] { wingR[1], wingR[2] }, edge, 2f);
+        DrawPolyline(new[] { wingL[1], wingL[2] }, edge, 2f);
+
+        // tail fins
+        DrawColoredPolygon(new[] { P(-12, 3), P(-24, 10), P(-20, 2) }, hullLit);
+        DrawColoredPolygon(new[] { P(-12, -3), P(-24, -10), P(-20, -2) }, hullLit);
+
+        // fuselage
+        Vector2[] body = { P(28, 0), P(8, -6), P(-12, -8), P(-19, 0), P(-12, 8), P(8, 6) };
+        DrawColoredPolygon(body, hull);
+        DrawColoredPolygon(new[] { P(28, 0), P(8, -6), P(-4, 0), P(8, 6) }, hullLit);
+        DrawPolyline(new[] { body[0], body[1], body[2], body[3], body[4], body[5], body[0] }, edge, 1.6f);
+
+        // cockpit + spine light
+        DrawColoredPolygon(new[] { P(16, 0), P(4, -3), P(-2, 0), P(4, 3) }, new Color(0.6f, 0.95f, 1f, 0.9f));
+        DrawLine(P(-2, 0), P(-16, 0), new Color(edge, 0.5f), 1.2f);
+
+        // engine glow
+        float pulse = 0.75f + 0.25f * Mathf.Sin(gt * 18f);
+        DrawCircle(P(-17, -4), 3.4f * pulse, glow);
+        DrawCircle(P(-17, 4), 3.4f * pulse, glow);
+        DrawCircle(P(-17, -4), 1.6f, Colors.White);
+        DrawCircle(P(-17, 4), 1.6f, Colors.White);
+        // wingtip accent lights
+        DrawCircle(wingR[1], 1.8f, new Color(1f, 0.4f, 0.4f));
+        DrawCircle(wingL[1], 1.8f, new Color(0.4f, 1f, 0.5f));
     }
 
     private void DrawAbilityZones()

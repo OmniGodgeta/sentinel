@@ -270,6 +270,7 @@ public sealed partial class SimWorld
         _survBossSpawned = false;
         _runXp = 0f;
         _runLevel = 1;
+        ResetHeroWeapons();
     }
 
     public void Enqueue(in SimCommand cmd) => _commands.Enqueue(cmd);
@@ -298,6 +299,7 @@ public sealed partial class SimWorld
                 else StepSpawns();
                 StepEnemies();
                 StepHero();
+                StepHeroWeapons(SimClock.TickDelta);
                 StepPlanetBattery();
                 StepOrbitalSentinels();
                 StepTurrets();
@@ -344,6 +346,10 @@ public sealed partial class SimWorld
                 break;
             case CommandType.PickCard:
                 if (CanEdit) PickCard(c.IntA);
+                break;
+            case CommandType.HeroWeapon:
+                if (c.IntA < 0) _heroAutoFire = !_heroAutoFire;
+                else if (Phase == SimPhase.Wave) FireHeroWeapon(c.IntA);
                 break;
             case CommandType.StartWave:
                 if (Phase == SimPhase.Build && WaveIndex < WaveCount)
@@ -540,6 +546,7 @@ public sealed partial class SimWorld
             _survBossSpawned = false;
         _runXp = 0f;
         _runLevel = 1;
+            ResetHeroWeapons();
             Phase = SimPhase.Wave;
             PhaseTimer = 0f;
             return;

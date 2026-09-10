@@ -1,0 +1,37 @@
+{
+  "weapons": [
+    { "id": "laser_volley", "name": "Laser Volley", "kind": "laser", "accent": "#e8352f",
+      "max_level": 10, "cooldown": 2.2, "cooldown_per_level": -0.15, "min_cooldown": 0.6,
+      "damage": 18, "damage_per_level": 10, "count": 3, "count_per_level": 0.4,
+      "range": 580, "arc_deg": 46,
+      "text": "A cone of searing laser beams that pierce enemies — high sustained damage." },
+
+    { "id": "missile_barrage", "name": "Missile Barrage", "kind": "missiles", "accent": "#f0821e",
+      "max_level": 10, "cooldown": 13, "cooldown_per_level": -0.8, "min_cooldown": 4.5,
+      "damage": 48, "damage_per_level": 20, "count": 6, "count_per_level": 0.8,
+      "splash": 66, "speed": 330,
+      "text": "Saturation missile salvo. Unleash hell — leave nothing standing." },
+
+    { "id": "ion_cannon", "name": "Ion Cannon", "kind": "ion", "accent": "#2ea6f2",
+      "max_level": 10, "cooldown": 7.5, "cooldown_per_level": -0.4, "min_cooldown": 3,
+      "damage": 80, "damage_per_level": 38, "count": 3, "count_per_level": 0.4,
+      "range": 9999, "shield_pierce": true,
+      "text": "An ion beam that chains between targets and tears down shields." },
+
+    { "id": "yamato_cannon", "name": "Yamato Cannon", "kind": "yamato", "accent": "#f5c518",
+      "max_level": 8, "cooldown": 20, "cooldown_per_level": -1.1, "min_cooldown": 10,
+      "damage": 420, "damage_per_level": 220, "radius": 140, "radius_per_level": 16,
+      "shield_pierce": true, "armor_pierce": true,
+      "text": "A devastating energy blast that pierces all armour and shields." },
+
+    { "id": "plasma_field", "name": "Plasma Field", "kind": "plasma", "accent": "#d13cf0",
+      "max_level": 10, "always_on": true, "damage": 26, "damage_per_level": 14,
+      "radius": 116, "radius_per_level": 12,
+      "text": "A searing plasma aura that melts anything near the hull." },
+
+    { "id": "shields_boost", "name": "Shields Boost", "kind": "shield", "accent": "#3ca0f5",
+      "max_level": 10, "cooldown": 16, "cooldown_per_level": -0.6, "min_cooldown": 7,
+      "damage": 220, "damage_per_level": 110, "duration": 7, "duration_per_level": 0.5, "absorb": 0.55,
+      "text": "Projects a hex energy barrier that absorbs incoming damage." }
+  ]
+}
