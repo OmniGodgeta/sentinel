@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.17.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.18.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -213,6 +213,24 @@ on-device pass.**
 - Weapon numbers are a first-guess calibration; the scripted SimTest bot (no
   evasion, no manual fire) now wins m01–03 + m06. 1×≡4× determinism holds. Real
   tuning is still the on-device balance pass.
+
+### v0.18.0 — no default abilities · armoured ability buttons · battlecruiser
+- **No abilities equipped by default.** `Progression.BaseAbilities` is now empty
+  and `SaveGame.Loadout` starts empty — the planet's missile battery and the
+  ship's own weapons are the whole starting kit. Battle abilities are recovered
+  from Commander level-up cards (`data/levelcards.json` — three new `pro_barrage`
+  / `pro_aegis` / `pro_overdrive` cards added so the old starters are still
+  obtainable), then equipped in the Protocols screen. `AppRoot.ResolveLoadout`
+  no longer force-fills base abilities; an empty loadout is valid.
+- **Ability buttons restyled** — `src/UI/AbilityButton.cs` rebuilt in the
+  upgrade-card look: chamfered dark-metal frame, role-coloured accent + corner
+  brackets, drawn glyph, top-down cooldown wipe + seconds readout, ready pulse,
+  amber armed-flash. Drawn in-engine (no image files).
+- **New ship** — `SimRenderer.DrawShip` redrawn as a heavy capital cruiser
+  (Terran-battlecruiser spirit): long armoured hull, forward prow gun, raised
+  bridge, side sponsons, three-nozzle engine bank, running lights — in Beyond's
+  teal/magenta palette.
+- 1×≡4× determinism holds (SimTest unchanged — it passes its own fixed loadout).
 
 ---
 

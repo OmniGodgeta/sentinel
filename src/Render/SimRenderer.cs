@@ -415,7 +415,7 @@ public sealed partial class SimRenderer : Node2D
             }
         }
 
-        DrawCircle(h.Pos, 30f, new Color(0.35f, 0.75f, 1f, 0.10f));
+        DrawCircle(h.Pos, 44f, new Color(0.35f, 0.75f, 1f, 0.09f));
         DrawShip(h.Pos, heading, 1f, speedFrac, gt);
 
         // --- Shields Boost hex barrier ---
@@ -495,58 +495,88 @@ public sealed partial class SimRenderer : Node2D
         DrawRect(new Rect2(bp, new Vector2(44 * hf, 4)), new Color(0.5f, 0.85f, 1f));
     }
 
-    /// <summary>The player's ship — a dark swept-wing interceptor with teal engine
-    /// glow, drawn from polygons so it matches the upgrade-card art. Nose points
-    /// along <paramref name="ang"/> (local +X).</summary>
+    /// <summary>The player's ship — a heavy capital cruiser in the spirit of a
+    /// Terran battlecruiser: long armoured hull, forward prow gun, a raised bridge,
+    /// side sponsons and a bank of engine nozzles. Beyond's teal/magenta palette,
+    /// drawn from polygons. Nose points along <paramref name="ang"/> (local +X).</summary>
     private void DrawShip(Vector2 c, float ang, float scale, float thrust, float gt)
     {
         Vector2 P(float x, float y) => c + new Vector2(x, y).Rotated(ang) * scale;
 
-        var hull = new Color(0.10f, 0.13f, 0.19f);
-        var hullLit = new Color(0.20f, 0.26f, 0.36f);
-        var edge = new Color(0.42f, 0.80f, 1f);
-        var glow = new Color(0.35f, 0.85f, 1f);
+        var hull     = new Color(0.12f, 0.14f, 0.19f);
+        var hullDark = new Color(0.08f, 0.09f, 0.13f);
+        var hullLit  = new Color(0.19f, 0.24f, 0.33f);
+        var edge     = new Color(0.32f, 0.74f, 0.98f);
+        var mag      = new Color(0.86f, 0.30f, 0.62f);
+        var glow     = new Color(0.40f, 0.86f, 1f);
 
-        // engine trail
-        if (thrust > 0.05f)
+        // ---- engine trail + nozzle wash ----
+        if (thrust > 0.04f)
         {
-            float tl = 26f + thrust * 34f;
-            DrawLine(P(-16, -4), P(-16 - tl, -4), new Color(glow, 0.30f * thrust), 4f);
-            DrawLine(P(-16, 4), P(-16 - tl, 4), new Color(glow, 0.30f * thrust), 4f);
-            DrawLine(P(-16, 0), P(-16 - tl * 1.3f, 0), new Color(1f, 1f, 1f, 0.22f * thrust), 2f);
+            float tl = 30f + thrust * 46f;
+            for (int e = -1; e <= 1; e++)
+            {
+                DrawLine(P(-26, e * 8f), P(-26 - tl, e * 8f), new Color(glow, 0.26f * thrust), 4.5f);
+                DrawLine(P(-26, e * 8f), P(-26 - tl * 1.25f, e * 8f), new Color(1f, 1f, 1f, 0.18f * thrust), 2f);
+            }
         }
 
-        // swept wings (drawn first, under the fuselage)
-        Vector2[] wingR = { P(2, 5), P(-6, 22), P(-18, 24), P(-14, 7) };
-        Vector2[] wingL = { P(2, -5), P(-6, -22), P(-18, -24), P(-14, -7) };
-        DrawColoredPolygon(wingR, hull);
-        DrawColoredPolygon(wingL, hull);
-        DrawPolyline(new[] { wingR[1], wingR[2] }, edge, 2f);
-        DrawPolyline(new[] { wingL[1], wingL[2] }, edge, 2f);
+        // ---- side sponsons (under the hull) ----
+        foreach (int s in new[] { -1, 1 })
+        {
+            Vector2[] pod = { P(4, s * 11f), P(-10, s * 15f), P(-20, s * 14f), P(-16, s * 10f), P(-2, s * 9f) };
+            DrawColoredPolygon(pod, hullDark);
+            DrawPolyline(new[] { pod[1], pod[2], pod[3] }, new Color(edge, 0.5f), 1.4f);
+            DrawCircle(P(-6, s * 13f), 2.2f, new Color(edge, 0.9f));   // point-defense turret
+        }
 
-        // tail fins
-        DrawColoredPolygon(new[] { P(-12, 3), P(-24, 10), P(-20, 2) }, hullLit);
-        DrawColoredPolygon(new[] { P(-12, -3), P(-24, -10), P(-20, -2) }, hullLit);
+        // ---- rear engine block ----
+        DrawColoredPolygon(new[] { P(-18, -13f), P(-30, -11f), P(-30, 11f), P(-18, 13f) }, hullDark);
 
-        // fuselage
-        Vector2[] body = { P(28, 0), P(8, -6), P(-12, -8), P(-19, 0), P(-12, 8), P(8, 6) };
+        // ---- main hull (long tapered slab) ----
+        Vector2[] body =
+        {
+            P(34, -3f), P(26, -10f), P(-6, -12f), P(-22, -11f),
+            P(-26, 0f),
+            P(-22, 11f), P(-6, 12f), P(26, 10f), P(34, 3f),
+        };
         DrawColoredPolygon(body, hull);
-        DrawColoredPolygon(new[] { P(28, 0), P(8, -6), P(-4, 0), P(8, 6) }, hullLit);
-        DrawPolyline(new[] { body[0], body[1], body[2], body[3], body[4], body[5], body[0] }, edge, 1.6f);
+        // lit top-quarter panel
+        DrawColoredPolygon(new[] { P(30, -2f), P(24, -8f), P(-4, -9f), P(-18, -8f), P(-16, -1f), P(4, -2f) }, hullLit);
+        DrawPolyline(new[]
+        {
+            body[0], body[1], body[2], body[3], body[4], body[5], body[6], body[7], body[8], body[0],
+        }, new Color(edge, 0.85f), 1.8f);
+        // hull plating seams
+        DrawLine(P(20, -9f), P(20, 9f), new Color(edge, 0.22f), 1f);
+        DrawLine(P(4, -11f), P(4, 11f), new Color(edge, 0.22f), 1f);
+        DrawLine(P(-12, -11f), P(-12, 11f), new Color(edge, 0.22f), 1f);
+        // magenta racing stripe
+        DrawLine(P(30, -5.5f), P(-20, -8.5f), new Color(mag, 0.55f), 1.6f);
 
-        // cockpit + spine light
-        DrawColoredPolygon(new[] { P(16, 0), P(4, -3), P(-2, 0), P(4, 3) }, new Color(0.6f, 0.95f, 1f, 0.9f));
-        DrawLine(P(-2, 0), P(-16, 0), new Color(edge, 0.5f), 1.2f);
+        // ---- armoured prow + forward (Yamato) gun ----
+        DrawColoredPolygon(new[] { P(34, -3f), P(43, 0f), P(34, 3f) }, hullDark);
+        DrawLine(P(38, 0f), P(50, 0f), new Color(0.85f, 0.78f, 0.35f), 3.5f);   // main gun barrel
+        DrawCircle(P(38, 0f), 2.4f, new Color(1f, 0.9f, 0.5f, 0.8f));
 
-        // engine glow
-        float pulse = 0.75f + 0.25f * Mathf.Sin(gt * 18f);
-        DrawCircle(P(-17, -4), 3.4f * pulse, glow);
-        DrawCircle(P(-17, 4), 3.4f * pulse, glow);
-        DrawCircle(P(-17, -4), 1.6f, Colors.White);
-        DrawCircle(P(-17, 4), 1.6f, Colors.White);
-        // wingtip accent lights
-        DrawCircle(wingR[1], 1.8f, new Color(1f, 0.4f, 0.4f));
-        DrawCircle(wingL[1], 1.8f, new Color(0.4f, 1f, 0.5f));
+        // ---- raised bridge / command tower (forward-mid) ----
+        Vector2[] bridge = { P(16, -5f), P(22, -4f), P(21, 4f), P(14, 5f) };
+        DrawColoredPolygon(bridge, hullLit);
+        DrawPolyline(new[] { bridge[0], bridge[1], bridge[2], bridge[3], bridge[0] }, edge, 1.4f);
+        DrawColoredPolygon(new[] { P(20, -2.5f), P(23, 0f), P(20, 2.5f) }, new Color(0.7f, 0.95f, 1f, 0.9f));  // bridge glass
+
+        // ---- engine nozzles ----
+        float pulse = 0.72f + 0.28f * Mathf.Sin(gt * 16f);
+        foreach (int e in new[] { -1, 0, 1 })
+        {
+            DrawCircle(P(-27, e * 8f), 4.4f * (0.7f + 0.3f * pulse), new Color(glow, 0.85f));
+            DrawCircle(P(-27, e * 8f), 2.0f, Colors.White);
+        }
+
+        // ---- running lights ----
+        float blink = Mathf.Sin(gt * 3f) > 0f ? 1f : 0.25f;
+        DrawCircle(P(-2, -12f), 1.7f, new Color(1f, 0.35f, 0.35f, blink));
+        DrawCircle(P(-2, 12f), 1.7f, new Color(0.35f, 1f, 0.45f, blink));
     }
 
     private void DrawAbilityZones()

@@ -118,7 +118,7 @@ public sealed partial class AppRoot : Node
         Save.Loadout.RemoveAll(a => !Prog.IsAbilityUnlocked(a));
         foreach (var a in Progression.BaseAbilities)
             if (Save.Loadout.Count < slots && !Save.Loadout.Contains(a)) Save.Loadout.Add(a);
-        if (Save.Loadout.Count == 0) Save.Loadout.Add(Progression.BaseAbilities[0]);
+        // an empty loadout is fine now — the ship + planet battery are the base kit
         var loadout = Save.Loadout.GetRange(0, System.Math.Min(slots, Save.Loadout.Count)).ToArray();
         var eff = new float[loadout.Length];
         var cd = new float[loadout.Length];

@@ -44,7 +44,11 @@ public sealed class Progression
     public int Hero => HeroLevel(_save.Xp);
 
     public static readonly string[] BaseTurrets = { "autocannon", "flak" };
-    public static readonly string[] BaseAbilities = { "kinetic_barrage", "aegis_barrier", "overdrive" };
+    /// <summary>Nothing is equipped at the start any more — the planet's missile
+    /// battery and the ship's own weapons are the whole default kit. Battle
+    /// abilities are recovered from Commander level-up cards, then equipped in
+    /// the Protocols screen.</summary>
+    public static readonly string[] BaseAbilities = System.Array.Empty<string>();
 
     /// <summary>Equipped ability slots: 3 base, +1 at hero 8, +1 at hero 20, + level-card bonuses.</summary>
     public int AbilitySlots

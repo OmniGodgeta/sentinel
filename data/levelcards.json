@@ -32,6 +32,12 @@
   { "id": "ars_rate", "name": "Turret Autoloaders", "cat": "Arsenal", "repeatable": true, "max_picks": 5,
     "text": "All turret fire rate +15%.", "effects": { "turret_fire_rate": 0.15 } },
 
+  { "id": "pro_barrage", "name": "Protocol: Kinetic Barrage", "cat": "Protocol", "unlock_ability": "kinetic_barrage",
+    "text": "Bring the Kinetic Barrage online — a wedge of orbital fire on a bearing." },
+  { "id": "pro_aegis", "name": "Protocol: Aegis Barrier", "cat": "Protocol", "unlock_ability": "aegis_barrier",
+    "text": "Bring the Aegis Barrier online — a temporary shield over the planet." },
+  { "id": "pro_overdrive", "name": "Protocol: Overdrive", "cat": "Protocol", "unlock_ability": "overdrive",
+    "text": "Bring Overdrive online — the ship's guns cycle far faster for a spell." },
   { "id": "pro_lance", "name": "Protocol: Orbital Lance", "cat": "Protocol", "unlock_ability": "orbital_lance",
     "text": "Recover the Orbital Lance protocol — a sustained boss-killing beam." },
   { "id": "pro_nova", "name": "Protocol: Nova Pulse", "cat": "Protocol", "unlock_ability": "nova_pulse",

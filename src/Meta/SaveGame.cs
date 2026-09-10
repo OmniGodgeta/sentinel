@@ -49,7 +49,8 @@ public sealed class SaveGame
     }
 
     // equipped ability loadout (ids) — the ACTIVE preset. Length tracks hero-level slot count.
-    public List<string> Loadout { get; set; } = new() { "kinetic_barrage", "aegis_barrier", "overdrive" };
+    // Starts empty: abilities are recovered from Commander level-ups, then equipped in Protocols.
+    public List<string> Loadout { get; set; } = new();
 
     // three saved loadout presets (design-spec §14) so a balance pass isn't re-equipping
     // four abilities before every one of fifty test runs. Slot ActivePreset mirrors Loadout.
