@@ -6,7 +6,8 @@ namespace Sentinel.Game;
 /// <summary>
 /// Dev-only: instances the real game, scripts a short demo, and writes a few
 /// screenshots to user:// so the greybox can be eyeballed without a device.
-///   xvfb-run -a godot scenes/Shots.tscn --rendering-driver opengl3
+///   godot scenes/Shots.tscn
+/// Currently pointed at reproducing the level-up weapon-card draft.
 /// </summary>
 public sealed partial class ShotRunner : Node2D
 {
@@ -14,59 +15,89 @@ public sealed partial class ShotRunner : Node2D
     private double _t;
     private int _shot;
 
-    [Export] public string Mission = "res://data/missions/m01.json";
+    [Export] public string Mission = "res://data/missions/endless.json";
 
     public override void _Ready()
     {
         var win = GetWindow();
         win.Mode = Window.ModeEnum.Windowed;
-        win.Size = new Vector2I(540, 960);
+        win.Size = new Vector2I(560, 1000);
         _game = new GameRoot { MissionPath = Mission };
         AddChild(_game);
+
+        GD.Print("=== card textures ===");
+        foreach (var d in _game.World.Cfg.HeroWeapons)
+        {
+            var path = $"res://assets/game/cards/{d.Id}.jpg";
+            try
+            {
+                var tex = GD.Load<Texture2D>(path);
+                GD.Print($"  {d.Id}: {(tex == null ? "NULL" : tex.GetType().Name + " " + tex.GetSize())}");
+            }
+            catch (System.Exception ex) { GD.Print($"  {d.Id}: THREW {ex.GetType().Name}: {ex.Message}"); }
+        }
+        GD.Print($"HeroWeapons.Count = {_game.World.Cfg.HeroWeapons.Count}");
     }
 
-    private bool _grabbed0, _grabbed1, _grabbed2, _grabbed3;
-    private double _volleyT, _heroT;
+    private bool _launched, _grabWave, _grabDraft, _picked;
 
     public override void _Process(double delta)
     {
         _t += delta;
         var w = _game.World;
 
-        // keep buying turrets and abilities running whenever we can
         if (w.Phase == SimPhase.Build)
         {
             for (int s = 0; s < w.TurretView.Length; s++)
                 if (!w.TurretView[s].Built)
                     w.Enqueue(SimCommand.Build(s, s % 3 == 0 ? "flak" : "autocannon"));
-
-            if (!_grabbed0 && _t > 1.0) { Grab("build"); _grabbed0 = true; }
-            if (_t > 1.4) { w.Enqueue(SimCommand.Wave()); _game.SetSpeed(4); }
+            if (!_launched && _t > 1.0) { w.Enqueue(SimCommand.Wave()); _launched = true; }
+            return;
         }
-        else if (w.Phase == SimPhase.Wave)
+
+        if (w.Phase == SimPhase.Wave)
         {
-            _volleyT += delta; _heroT += delta;
-            if (_volleyT > 0.3 && w.HeroView.Alive && w.HeroView.VolleyCooldownLeft <= 0f)
-            { w.Enqueue(SimCommand.Volley(NearestThreatDir() * 300f)); _volleyT = 0; }
+            // fly the ship at the nearest threat so the new hull shows in the shot
+            if (((int)(_t * 4)) % 2 == 0) w.Enqueue(SimCommand.HeroMove(NearestThreatDir()));
 
-            var ab = w.AbilityView;
-            for (int i = 0; i < ab.Length; i++)
-                if (ab[i].DefIndex >= 0 && ab[i].CooldownLeft <= 0f)
-                    w.Enqueue(SimCommand.Cast(i, NearestThreatDir() * 400f));
+            if (!_grabWave && _t > 4.0)
+            {
+                Grab("wave_ship");
+                _grabWave = true;
+            }
 
-            if (_heroT > 0.5) { w.Enqueue(SimCommand.HeroTarget(NearestThreatDir() * 280f)); _heroT = 0; }
+            // farm XP to force a level-up draft
+            if (!_game.DraftPause && !w.HasPendingDraft && _t > 4.5)
+                w.GainRunXp(400f);
 
-            if (!_grabbed1 && w.WaveIndex == 4) { Grab("early"); _grabbed1 = true; }
-            if (!_grabbed2 && w.WaveIndex == 12) { Grab("mid"); _grabbed2 = true; }
-            if (!_grabbed3 && w.TryGetBoss(out _, out _, out _)) { Grab("boss"); _grabbed3 = true; }
+            if (w.HasPendingDraft && !_grabDraft && _t > 5.0)
+            {
+                GD.Print($"=== DRAFT: pending, options = [{string.Join(",", w.DraftOptionIndices)}]  runLevel={w.RunLevel}");
+                foreach (int idx in w.DraftOptionIndices)
+                    GD.Print($"   option {idx} -> {(idx >= 0 && idx < w.Cfg.HeroWeapons.Count ? w.Cfg.HeroWeapons[idx].Id : "OUT OF RANGE")}");
+                CallDeferred(nameof(GrabDraft));
+                _grabDraft = true;
+            }
         }
 
-        if (w.Phase is SimPhase.Won or SimPhase.Lost)
+        if (_t > 22) { GD.Print("=== timeout, quitting"); GetTree().Quit(); }
+    }
+
+    private void GrabDraft()
+    {
+        // let the HUD build the popup for a couple of frames first
+        GetTree().CreateTimer(0.6).Timeout += () =>
         {
-            Grab("end");
-            GetTree().Quit();
-        }
-        if (_t > 90) GetTree().Quit();
+            Grab("draft");
+            var w = _game.World;
+            if (w.HasPendingDraft && w.DraftOptionIndices.Count > 0)
+            {
+                int pick = w.DraftOptionIndices[0];
+                GD.Print($"=== picking option {pick}");
+                _game.RequestPickCard(pick);
+            }
+            GetTree().CreateTimer(1.0).Timeout += () => { Grab("after_pick"); GetTree().Quit(); };
+        };
     }
 
     private Vector2 NearestThreatDir()

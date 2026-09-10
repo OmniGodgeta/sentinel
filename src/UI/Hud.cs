@@ -215,8 +215,8 @@ public sealed partial class Hud : CanvasLayer
 
         _draftPanel = new PanelContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = -470, OffsetRight = 470, OffsetTop = -300, OffsetBottom = 300, Visible = false,
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetLeft = 14, OffsetRight = -14, OffsetTop = -258, OffsetBottom = 258, Visible = false,
         };
         AddChild(_draftPanel);
         var dv = new VBoxContainer();
@@ -499,7 +499,13 @@ public sealed partial class Hud : CanvasLayer
             var col = HexColor(def.Accent, UiTheme.Accent);
             int i2 = idx;
 
-            var btn = new Button { CustomMinimumSize = new Vector2(196, 440), SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+            var btn = new Button
+            {
+                CustomMinimumSize = new Vector2(140, 440),
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                ClipContents = true,
+            };
             btn.AddThemeStyleboxOverride("normal", CardBox(col, 0.12f));
             btn.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
             btn.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));
@@ -517,8 +523,10 @@ public sealed partial class Hud : CanvasLayer
                 Texture = CardTexture(def.Id),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                CustomMinimumSize = new Vector2(0, 330),
+                CustomMinimumSize = new Vector2(0, 300),
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
+                ClipContents = true,
             };
             v.AddChild(art);
 
@@ -536,6 +544,8 @@ public sealed partial class Hud : CanvasLayer
             lv.AddThemeFontSizeOverride("font_size", 13);
             lv.AddThemeColorOverride("font_color", lvl == 0 ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.8f));
             v.AddChild(lv);
+
+            _draftCards.AddChild(btn);
         }
     }
 

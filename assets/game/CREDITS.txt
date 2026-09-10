@@ -20,6 +20,9 @@ The earth.gdshader (equirectangular -> lit sphere) is original to this project.
 Sound effects (assets/audio/)
   Kenney (kenney.nl) — "Sci-Fi Sounds", "Impact Sounds", "Interface Sounds",
   "Digital Audio". Licensed CC0 1.0 Universal (public domain).
+  explosion / explosion_b / explosion_big / missile_launch / battery_launch /
+  planet_hit are synthesised for this project (layered filtered noise + sub-bass
+  via ffmpeg) — original content, no third-party samples.
 
 Planet skins (assets/game/planets/)
   Kenney (kenney.nl) — "Planets". CC0 1.0 Universal.

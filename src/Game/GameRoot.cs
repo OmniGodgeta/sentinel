@@ -18,7 +18,7 @@ public readonly record struct MissionOutcome(
 public sealed partial class GameRoot : Node2D
 {
     [Export] public string MissionPath = "res://data/missions/m01.json";
-    [Export] public string[] EquippedAbilities = { "kinetic_barrage", "aegis_barrier", "overdrive" };
+    [Export] public string[] EquippedAbilities = System.Array.Empty<string>();
     public float[] AbilityEffect = System.Array.Empty<float>();
     public float[] AbilityCd = System.Array.Empty<float>();
     public Meta.ModifierSet Mods = new();
