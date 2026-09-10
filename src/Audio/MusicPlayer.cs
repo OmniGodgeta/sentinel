@@ -54,7 +54,15 @@ public sealed partial class MusicPlayer : Node
             string n = f.EndsWith(".import") ? f[..^7] : f;
             if (!(n.EndsWith(".ogg") || n.EndsWith(".mp3") || n.EndsWith(".wav"))) continue;
             var s = GD.Load<AudioStream>(dir + n);
-            if (s != null && !into.Exists(x => x == s)) into.Add(s);
+            if (s == null || into.Exists(x => x == s)) continue;
+            // playlist tracks must not self-loop or Finished never fires to advance
+            switch (s)
+            {
+                case AudioStreamMP3 mp3: mp3.Loop = false; break;
+                case AudioStreamOggVorbis ogg: ogg.Loop = false; break;
+                case AudioStreamWav wav: wav.LoopMode = AudioStreamWav.LoopModeEnum.Disabled; break;
+            }
+            into.Add(s);
         }
     }
 

@@ -188,6 +188,19 @@ public sealed record MissionDef
     public ulong Seed { get; init; } = 1;
     public int StartingCreditsOverride { get; init; } = -1;
     public bool Endless { get; init; }
+
+    /// <summary>Survival mission: one continuous escalating hold, no discrete waves.
+    /// The spawn director ramps over <see cref="Duration"/> seconds.</summary>
+    public bool Survival { get; init; }
+    /// <summary>Seconds to hold. 0 = open-ended (endless / weekly).</summary>
+    public float Duration { get; init; } = 300f;
+    /// <summary>Difficulty scale index — higher = stronger/tougher/faster enemies and a steeper spawn ramp.</summary>
+    public int Level { get; init; } = 1;
+    /// <summary>Survival spawn roster: enemy id -> fraction of the run (0..1) before it may appear.</summary>
+    public Dictionary<string, float> Roster { get; init; } = new();
+    /// <summary>Optional boss id, spawned once near the end of a survival hold.</summary>
+    public string Boss { get; init; } = "";
+
     /// <summary>Enemies the procedural endless generator may use (needs their defs
     /// resolved up front). Ignored for normal missions.</summary>
     public List<string> EndlessRoster { get; init; } = new();

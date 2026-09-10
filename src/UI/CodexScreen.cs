@@ -55,7 +55,7 @@ public sealed partial class CodexScreen : CanvasLayer
         {
             if (hiddenInCat == 0) return;
             var s = new Label { Text = $"   {hiddenInCat} more — undiscovered", Modulate = new Color(1, 1, 1, 0.35f) };
-            s.AddThemeFontSizeOverride("font_size", 12);
+            s.AddThemeFontSizeOverride("font_size", 15);
             list.AddChild(s);
             hiddenInCat = 0;
         }
@@ -67,7 +67,7 @@ public sealed partial class CodexScreen : CanvasLayer
                 FlushHidden();
                 cat = e.Category;
                 var h = new Label { Text = "— " + cat.ToUpperInvariant() + " —", Modulate = new Color(1, 1, 1, 0.6f) };
-                h.AddThemeFontSizeOverride("font_size", 13);
+                h.AddThemeFontSizeOverride("font_size", 16);
                 list.AddChild(h);
             }
 
@@ -81,7 +81,7 @@ public sealed partial class CodexScreen : CanvasLayer
             nm.AddThemeFontSizeOverride("font_size", 16);
             col.AddChild(nm);
             var tx = new Label { Text = e.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.75f) };
-            tx.AddThemeFontSizeOverride("font_size", 13);
+            tx.AddThemeFontSizeOverride("font_size", 16);
             col.AddChild(tx);
             list.AddChild(panel);
         }

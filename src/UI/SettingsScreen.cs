@@ -100,7 +100,7 @@ public sealed partial class SettingsScreen : CanvasLayer
     private static Label Lbl(string t)
     {
         var l = new Label { Text = t.ToUpperInvariant(), Modulate = new Color(1, 1, 1, 0.6f) };
-        l.AddThemeFontSizeOverride("font_size", 13);
+        l.AddThemeFontSizeOverride("font_size", 16);
         return l;
     }
 }

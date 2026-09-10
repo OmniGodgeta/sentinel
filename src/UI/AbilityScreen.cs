@@ -91,7 +91,7 @@ public sealed partial class AbilityScreen : CanvasLayer
                 CustomMinimumSize = new Vector2(128, 52),
                 Disabled = !isEquipped && s.Loadout.Count >= slots,
             };
-            eq.AddThemeFontSizeOverride("font_size", 14);
+            eq.AddThemeFontSizeOverride("font_size", 16);
             eq.Pressed += () => ToggleEquip(id, slots);
             top.AddChild(eq);
 
@@ -103,7 +103,7 @@ public sealed partial class AbilityScreen : CanvasLayer
                 CustomMinimumSize = new Vector2(0, 52),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
-            lvlBtn.AddThemeFontSizeOverride("font_size", 14);
+            lvlBtn.AddThemeFontSizeOverride("font_size", 16);
             lvlBtn.Pressed += () => { if (p.LevelAbility(id)) Rebuild(); };
             col.AddChild(lvlBtn);
 
@@ -115,7 +115,7 @@ public sealed partial class AbilityScreen : CanvasLayer
                 var br = new HBoxContainer();
                 col.AddChild(br);
                 var lbl = new Label { Text = $"  L{ms}:", VerticalAlignment = VerticalAlignment.Center };
-                lbl.AddThemeFontSizeOverride("font_size", 13);
+                lbl.AddThemeFontSizeOverride("font_size", 16);
                 br.AddChild(lbl);
                 foreach (var opt in new[] { "Potency", "Tempo" })
                 {
@@ -127,7 +127,7 @@ public sealed partial class AbilityScreen : CanvasLayer
                         CustomMinimumSize = new Vector2(230, 48),
                         SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                     };
-                    ob.AddThemeFontSizeOverride("font_size", 13);
+                    ob.AddThemeFontSizeOverride("font_size", 16);
                     ob.Pressed += () => { p.SetAbilityBranch(id, ms, o); Rebuild(); };
                     br.AddChild(ob);
                 }

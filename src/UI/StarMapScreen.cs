@@ -76,7 +76,7 @@ public sealed partial class StarMapScreen : CanvasLayer
         _ascRow.AddChild(minus);
         string nm = s.AscensionTier == 0 ? "off" : App.Cfg.Ascension.Find(a => a.Tier == s.AscensionTier)?.Name ?? "";
         var lbl = new Label { Text = $"  Ascension {s.AscensionTier}/{max} · {nm}  " };
-        lbl.AddThemeFontSizeOverride("font_size", 14);
+        lbl.AddThemeFontSizeOverride("font_size", 16);
         _ascRow.AddChild(lbl);
         var plus = new Button { Text = "+", CustomMinimumSize = new Vector2(64, 56) };
         plus.AddThemeFontSizeOverride("font_size", 24);

@@ -12,6 +12,7 @@ public sealed partial class MenuScreen : CanvasLayer
     {
         Layer = 5;
         AddChild(new MenuBackground { PlanetY = 0.20f });
+        AddChild(new Sentinel.Meta.UpdateChecker());
 
         var s = App.Save;
         App.RefreshProgression();
@@ -54,7 +55,7 @@ public sealed partial class MenuScreen : CanvasLayer
 
         var wk = Sentinel.Meta.WeeklyChallenge.Current();
         string wkText = $"★   WEEKLY   ·   {wk.Title}";
-        if (s.WeeklyId == wk.Id && s.WeeklyBest > 0) wkText += $"      best · wave {s.WeeklyBest}";
+        if (s.WeeklyId == wk.Id && s.WeeklyBest > 0) wkText += $"      best · {Mmss(s.WeeklyBest)}";
         var weekly = new Button { Text = wkText, CustomMinimumSize = new Vector2(0, 84), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         weekly.AddThemeFontSizeOverride("font_size", 20);
         weekly.AddThemeColorOverride("font_color", UiTheme.Accent2);
@@ -74,11 +75,13 @@ public sealed partial class MenuScreen : CanvasLayer
 
         if (s.EndlessBest > 0)
         {
-            var eb = new Label { Text = $"Endless best · wave {s.EndlessBest}", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.4f) };
-            eb.AddThemeFontSizeOverride("font_size", 13);
+            var eb = new Label { Text = $"Endless best · survived {Mmss(s.EndlessBest)}", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.4f) };
+            eb.AddThemeFontSizeOverride("font_size", 14);
             stack.AddChild(eb);
         }
     }
+
+    private static string Mmss(int secs) => $"{secs / 60}:{secs % 60:00}";
 
     private static Button Nav(string text, System.Action onPress)
     {

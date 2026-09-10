@@ -65,7 +65,7 @@ public sealed class ModifierSet
     public float ExoticAlloyGainMult = 1f;
     public int   StartCreditsAdd = 0;
     public float WaveIncomeMult = 1f;
-    public int   CardDraftOptions = 2;           // reserved (card draft is a later phase)
+    public int   CardDraftOptions = 4;           // options shown per in-run draft (2..4)
     public int   CardDraftRerolls = 0;
     public float LossRewardFrac = 1f;            // fraction of rewards kept on a loss (already 1 by default here)
 

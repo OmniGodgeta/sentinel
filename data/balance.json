@@ -8,7 +8,7 @@
   "despawn_radius": 900,
   "turret_slots": 12,
   "build_phase_seconds": 20,
-  "starting_credits": 320,
+  "starting_credits": 460,
   "credits_per_wave": 130,
   "research_data_per_wave": 8,
   "research_data_mission_clear": 60,

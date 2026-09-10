@@ -16,11 +16,16 @@ public sealed partial class Hud : CanvasLayer
     public GameRoot Root = null!;
 
     private Control _topBox = null!;
+    private Control _ctlRow = null!;
     private Label _status = null!;
     private ProgressBar _integrity = null!;
     private Button[] _speed = new Button[4];
     private Button _pause = null!;
     private Button _menuOpen = null!;
+    private Button _buildToggle = null!;
+
+    /// <summary>Build/upgrade panel is showing over the play field (real-time management).</summary>
+    public bool BuildOpen { get; private set; }
     private PanelContainer _pauseMenu = null!;
     private readonly System.Collections.Generic.List<PanelContainer> _panels = new();
 
@@ -58,37 +63,42 @@ public sealed partial class Hud : CanvasLayer
         _topBox = top;
         AddChild(top);
         _status = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _status.AddThemeFontSizeOverride("font_size", 18);
+        _status.AddThemeFontSizeOverride("font_size", 21);
         top.AddChild(_status);
-        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 14) };
+        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 18) };
         top.AddChild(_integrity);
 
-        // speed + pause + leave row
+        // speed + pause + leave + build row
         var ctl = new HBoxContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -210, OffsetTop = 82, OffsetRight = 210,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -256, OffsetTop = 96, OffsetRight = 256,
             Alignment = BoxContainer.AlignmentMode.Center,
         };
-        ctl.AddThemeConstantOverride("separation", 6);
+        _ctlRow = ctl;
+        ctl.AddThemeConstantOverride("separation", 7);
         AddChild(ctl);
-        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(58, 48) };
-        _menuOpen.AddThemeFontSizeOverride("font_size", 20);
+        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(64, 56) };
+        _menuOpen.AddThemeFontSizeOverride("font_size", 22);
         _menuOpen.Pressed += () => { if (!Root.IsPaused) { Root.TogglePause(); _pause.Text = "▶"; } };
         ctl.AddChild(_menuOpen);
-        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(58, 48) };
-        _pause.AddThemeFontSizeOverride("font_size", 18);
+        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(64, 56) };
+        _pause.AddThemeFontSizeOverride("font_size", 20);
         _pause.Pressed += () => { Root.TogglePause(); _pause.Text = Root.IsPaused ? "▶" : "❚❚"; };
         ctl.AddChild(_pause);
         for (int i = 0; i < 4; i++)
         {
             int mult = i + 1;
-            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(64, 48), ToggleMode = true };
-            btn.AddThemeFontSizeOverride("font_size", 17);
+            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(72, 56), ToggleMode = true };
+            btn.AddThemeFontSizeOverride("font_size", 19);
             btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); };
             ctl.AddChild(btn);
             _speed[i] = btn;
         }
         UpdateSpeedButtons(1);
+        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(64, 56), ToggleMode = true };
+        _buildToggle.AddThemeFontSizeOverride("font_size", 22);
+        _buildToggle.TooltipText = "Build / upgrade turrets";
+        ctl.AddChild(_buildToggle);
 
         // boss bar
         _bossBar = new ProgressBar
@@ -105,10 +115,10 @@ public sealed partial class Hud : CanvasLayer
         var bv = new VBoxContainer();
         _buildPanel.AddChild(bv);
         _wavePreview = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.85f, 0.5f) };
-        _wavePreview.AddThemeFontSizeOverride("font_size", 15);
+        _wavePreview.AddThemeFontSizeOverride("font_size", 17);
         bv.AddChild(_wavePreview);
         _slotLabel = new Label { Text = "① tap an empty slot around the planet", HorizontalAlignment = HorizontalAlignment.Center };
-        _slotLabel.AddThemeFontSizeOverride("font_size", 15);
+        _slotLabel.AddThemeFontSizeOverride("font_size", 17);
         bv.AddChild(_slotLabel);
         _turretRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         _turretRow.AddThemeConstantOverride("separation", 8);
@@ -116,8 +126,8 @@ public sealed partial class Hud : CanvasLayer
         _upgradeRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         _upgradeRow.AddThemeConstantOverride("separation", 8);
         bv.AddChild(_upgradeRow);
-        _launch = new Button { Text = "▶   LAUNCH WAVE", CustomMinimumSize = new Vector2(0, 56) };
-        _launch.AddThemeFontSizeOverride("font_size", 20);
+        _launch = new Button { Text = "▶   BEGIN DEFENSE", CustomMinimumSize = new Vector2(0, 62) };
+        _launch.AddThemeFontSizeOverride("font_size", 22);
         _launch.AddThemeColorOverride("font_color", new Color(0.6f, 1f, 0.7f));
         _launch.Pressed += () => Root.RequestLaunchWave();
         bv.AddChild(_launch);
@@ -139,8 +149,8 @@ public sealed partial class Hud : CanvasLayer
             abRow.AddChild(btn);
             _abilityBtns[i] = btn;
         }
-        var hint = new Label { Text = "drag: move ship    ·    tap play area: missile volley", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
-        hint.AddThemeFontSizeOverride("font_size", 13);
+        var hint = new Label { Text = "drag: move ship   ·   tap: missile volley   ·   ⚒ : build", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
+        hint.AddThemeFontSizeOverride("font_size", 14);
         wv.AddChild(hint);
 
         // big centred targeting prompt (over the play area)
@@ -159,8 +169,8 @@ public sealed partial class Hud : CanvasLayer
         AddChild(_draftPanel);
         var dv = new VBoxContainer();
         _draftPanel.AddChild(dv);
-        var dh = new Label { Text = "CHOOSE A CARD", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.9f, 0.5f) };
-        dh.AddThemeFontSizeOverride("font_size", 17);
+        var dh = new Label { Text = "CHOOSE AN UPGRADE", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.9f, 0.5f) };
+        dh.AddThemeFontSizeOverride("font_size", 19);
         dv.AddChild(dh);
         _draftCards = new VBoxContainer();
         _draftCards.AddThemeConstantOverride("separation", 8);
@@ -173,7 +183,7 @@ public sealed partial class Hud : CanvasLayer
         var ev = new VBoxContainer();
         _endCard.AddChild(ev);
         _endText = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _endText.AddThemeFontSizeOverride("font_size", 16);
+        _endText.AddThemeFontSizeOverride("font_size", 18);
         ev.AddChild(_endText);
         var endBtns = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         endBtns.AddThemeConstantOverride("separation", 12);
@@ -235,17 +245,22 @@ public sealed partial class Hud : CanvasLayer
         return p;
     }
 
-    /// <summary>Keep the HUD inside the centred portrait column on wide windows.</summary>
+    /// <summary>Keep the HUD inside the centred portrait column on wide windows,
+    /// and clear of the display's top safe area (notch / punch-hole).</summary>
     public void SetDesignWidth(float designW, Vector2 vp)
     {
         float m = Mathf.Max(0f, (vp.X - designW) * 0.5f);
-        if (_topBox != null) { _topBox.OffsetLeft = m + 10; _topBox.OffsetRight = -(m + 10); }
+        float top = Root?.SafeTopInset ?? 0f;
+        if (_topBox != null) { _topBox.OffsetLeft = m + 10; _topBox.OffsetRight = -(m + 10); _topBox.OffsetTop = top + 8; }
+        if (_ctlRow != null) _ctlRow.OffsetTop = top + 96;
         foreach (var p in _panels) { p.OffsetLeft = m + 8; p.OffsetRight = -(m + 8); }
         if (_bossBar != null)
         {
             _bossBar.AnchorLeft = 0f; _bossBar.AnchorRight = 1f;
             _bossBar.OffsetLeft = m + 40; _bossBar.OffsetRight = -(m + 40);
+            _bossBar.OffsetTop = top + 156;
         }
+        if (_banner != null) _banner.OffsetTop = top + 174;
     }
 
     private void RebuildTurretButtons()
@@ -256,8 +271,8 @@ public sealed partial class Hud : CanvasLayer
         {
             if (unlocked.Count > 0 && !unlocked.Contains(id)) continue;
             var def = Root.World.Cfg.Turret(id);
-            var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(112, 66) };
-            btn.AddThemeFontSizeOverride("font_size", 13);
+            var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(124, 76) };
+            btn.AddThemeFontSizeOverride("font_size", 15);
             btn.Pressed += () => { if (_selectedSlot >= 0) Root.RequestBuild(_selectedSlot, id); };
             _turretRow.AddChild(btn);
         }
@@ -292,7 +307,7 @@ public sealed partial class Hud : CanvasLayer
 
     public override void _Process(double delta)
     {
-        _pauseMenu.Visible = Root.IsPaused;
+        _pauseMenu.Visible = Root.IsPaused && !Root.DraftPause;
 
         if (_bannerTime > 0f)
         {
@@ -307,37 +322,51 @@ public sealed partial class Hud : CanvasLayer
         var w = Root.World;
         _integrity.Value = w.PlanetIntegrityMax > 0 ? w.PlanetIntegrity / w.PlanetIntegrityMax : 0;
 
-        string l2 = w.Phase == SimPhase.Wave
-            ? $"enemies {w.EnemiesAlive}   ·   incoming {w.SpawnsRemaining}   ·   RD {Mathf.FloorToInt(w.ResearchDataEarned)}"
-            : $"RD {Mathf.FloorToInt(w.ResearchDataEarned)}   ·   XP {Mathf.FloorToInt(w.XpEarned)}   ·   Cores {w.CoresEarned}";
-        string waveStr = w.IsEndless ? $"WAVE {w.WaveIndex + 1}  ·  ENDLESS"
-                                     : $"WAVE {Mathf.Min(w.WaveIndex + 1, w.WaveCount)}/{w.WaveCount}";
-        _status.Text = $"◈ {Mathf.CeilToInt(w.PlanetIntegrity)}/{Mathf.CeilToInt(w.PlanetIntegrityMax)}     ⬡ {w.Credits}     {waveStr}\n{l2}";
-
-        bool draft = w.Phase == SimPhase.Build && w.HasPendingDraft;
-        bool build = w.Phase == SimPhase.Build && !draft;
-        bool wave = w.Phase == SimPhase.Wave;
         bool ended = w.Phase is SimPhase.Won or SimPhase.Lost;
-        _buildPanel.Visible = build;
-        _wavePanel.Visible = wave;
+        bool draft = w.HasPendingDraft && !ended;
+        bool prep = w.Phase == SimPhase.Build && !draft;
+        bool fighting = w.Phase == SimPhase.Wave && !ended;
+        BuildOpen = !ended && !draft && (prep || (fighting && _buildToggle.ButtonPressed));
+
+        string phaseStr;
+        if (w.IsSurvival && fighting)
+        {
+            float shown = w.Mission.Duration > 0f ? w.SurvivalTimeLeft : w.PhaseTimer;
+            phaseStr = $"⧗ {Mathf.FloorToInt(shown / 60f)}:{Mathf.PosMod(Mathf.FloorToInt(shown), 60):00}"
+                       + (w.Mission.Duration > 0f ? "  HOLD" : "  ENDLESS");
+        }
+        else if (prep) phaseStr = w.IsSurvival ? "PREP" : "BUILD";
+        else if (w.IsEndless) phaseStr = $"WAVE {w.WaveIndex + 1}  ·  ENDLESS";
+        else phaseStr = $"WAVE {Mathf.Min(w.WaveIndex + 1, w.WaveCount)}/{w.WaveCount}";
+
+        string l2 = fighting
+            ? $"enemies {w.EnemiesAlive}   ·   RD {Mathf.FloorToInt(w.ResearchDataEarned)}   ·   XP {Mathf.FloorToInt(w.XpEarned)}"
+            : $"RD {Mathf.FloorToInt(w.ResearchDataEarned)}   ·   XP {Mathf.FloorToInt(w.XpEarned)}   ·   Cores {w.CoresEarned}";
+        _status.Text = $"◈ {Mathf.CeilToInt(w.PlanetIntegrity)}/{Mathf.CeilToInt(w.PlanetIntegrityMax)}     ⬡ {w.Credits}     {phaseStr}\n{l2}";
+
+        _buildPanel.Visible = BuildOpen;
+        _wavePanel.Visible = fighting && !BuildOpen && !draft;
         _endCard.Visible = ended;
         _draftPanel.Visible = draft;
+        _buildToggle.Visible = fighting && !draft;
         if (draft) RefreshDraft(w);
 
         if (w.TryGetBoss(out _, out float hpFrac, out _))
         { _bossBar.Visible = true; _bossBar.Value = hpFrac; }
         else _bossBar.Visible = false;
 
-        if (build)
+        if (BuildOpen)
         {
-            bool noMore = !w.IsEndless && w.WaveIndex >= w.WaveCount;
-            _launch.Disabled = noMore;
-            _launch.Text = noMore ? "— last wave cleared —" : $"▶  LAUNCH WAVE {w.WaveIndex + 1}";
-            _wavePreview.Text = noMore ? "" : "NEXT: " + w.NextWavePreview();
+            _launch.Visible = prep;
+            _launch.Disabled = false;
+            _launch.Text = w.IsSurvival ? "▶   BEGIN DEFENSE" : $"▶  LAUNCH WAVE {w.WaveIndex + 1}";
+            _wavePreview.Text = w.IsSurvival
+                ? (prep ? "Place your turrets — the hold begins when you're ready." : "")
+                : "NEXT: " + w.NextWavePreview();
             RefreshSlotPanel(w);
         }
 
-        if (wave)
+        if (fighting && !BuildOpen && !draft)
         {
             var abil = w.AbilityView;
             int armed = Root.PendingReticleSlot;
@@ -381,11 +410,11 @@ public sealed partial class Hud : CanvasLayer
             var btn = new Button
             {
                 Text = $"{card.Name}\n{card.Text}",
-                CustomMinimumSize = new Vector2(0, 70),
+                CustomMinimumSize = new Vector2(0, 82),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 Modulate = col,
             };
-            btn.AddThemeFontSizeOverride("font_size", 13);
+            btn.AddThemeFontSizeOverride("font_size", 15);
             btn.Pressed += () => { Root.RequestPickCard(idx); _draftShownHash = -1; };
             _draftCards.AddChild(btn);
         }
@@ -406,8 +435,8 @@ public sealed partial class Hud : CanvasLayer
         if (t.Level < 3)
         {
             int cost = w.TurretUpgradeCost(s);
-            var up = new Button { Text = $"Upgrade → L{t.Level + 1}\n${cost}", CustomMinimumSize = new Vector2(152, 60) };
-            up.AddThemeFontSizeOverride("font_size", 14);
+            var up = new Button { Text = $"Upgrade → L{t.Level + 1}\n${cost}", CustomMinimumSize = new Vector2(164, 66) };
+            up.AddThemeFontSizeOverride("font_size", 16);
             up.Disabled = cost < 0 || w.Credits < cost;
             up.Pressed += () => Root.RequestUpgrade(s);
             _upgradeRow.AddChild(up);
@@ -417,8 +446,8 @@ public sealed partial class Hud : CanvasLayer
             for (int f = 0; f < def.Forks.Count; f++)
             {
                 int fi = f;
-                var fb = new Button { Text = def.Forks[f].Name, CustomMinimumSize = new Vector2(152, 60) };
-                fb.AddThemeFontSizeOverride("font_size", 14);
+                var fb = new Button { Text = def.Forks[f].Name, CustomMinimumSize = new Vector2(164, 66) };
+                fb.AddThemeFontSizeOverride("font_size", 16);
                 fb.Pressed += () => Root.RequestFork(s, fi);
                 _upgradeRow.AddChild(fb);
             }
@@ -433,9 +462,18 @@ public sealed partial class Hud : CanvasLayer
         var s = w.Stats;
         float tot = Mathf.Max(1f, s.TotalDamage);
         var sb = new StringBuilder();
-        sb.Append(w.IsEndless ? $"Reached wave {w.WavesCleared + 1}.\n"
-                 : w.Phase == SimPhase.Won ? $"Cleared all {w.WaveCount} waves.\n"
-                 : $"Held {w.WavesCleared}/{w.WaveCount} waves.\n");
+        if (w.IsSurvival)
+        {
+            int secs = Mathf.FloorToInt(w.PhaseTimer);
+            string t = $"{secs / 60}:{secs % 60:00}";
+            sb.Append(w.Phase == SimPhase.Won
+                ? $"Planet held. Survived the full {Mathf.FloorToInt(w.Mission.Duration) / 60}:00.\n"
+                : $"Planet lost at {t}.\n");
+        }
+        else
+            sb.Append(w.IsEndless ? $"Reached wave {w.WavesCleared + 1}.\n"
+                     : w.Phase == SimPhase.Won ? $"Cleared all {w.WaveCount} waves.\n"
+                     : $"Held {w.WavesCleared}/{w.WaveCount} waves.\n");
         sb.Append($"Research Data {Mathf.FloorToInt(w.ResearchDataEarned)}   XP {Mathf.FloorToInt(w.XpEarned)}   Cores {w.CoresEarned}\n");
         sb.Append($"Kills {s.EnemiesKilled}   ·   Leaked {s.EnemiesLeaked}\n");
         sb.Append($"Damage — turrets {Pct(s.DamageByTurrets, tot)}  hero {Pct(s.DamageByHero, tot)}  abilities {Pct(s.DamageByAbilities, tot)}");

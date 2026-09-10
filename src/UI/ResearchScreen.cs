@@ -94,7 +94,7 @@ public sealed partial class ResearchScreen : CanvasLayer
         {
             bool tierOpen = p.TierOpen(_branch, tier);
             var th = new Label { Text = tierOpen ? $"— TIER {tier} —" : $"— TIER {tier} (locked · Cmdr {Progression.TierCommanderGate(tier)}, 3 in tier {tier - 1}) —" };
-            th.AddThemeFontSizeOverride("font_size", 13);
+            th.AddThemeFontSizeOverride("font_size", 16);
             th.Modulate = tierOpen ? new Color(1, 1, 1, 0.7f) : new Color(1, 1, 1, 0.3f);
             _list.AddChild(th);
 
@@ -125,7 +125,7 @@ public sealed partial class ResearchScreen : CanvasLayer
         row.AddChild(name);
 
         var desc = new Label { Text = node.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.6f) };
-        desc.AddThemeFontSizeOverride("font_size", 12);
+        desc.AddThemeFontSizeOverride("font_size", 15);
         row.AddChild(desc);
 
         var actionRow = new HBoxContainer();
@@ -147,7 +147,7 @@ public sealed partial class ResearchScreen : CanvasLayer
         if (!can && reason is not ("maxed" or "active"))
         {
             var r = new Label { Text = "  " + reason, Modulate = new Color(1f, 0.6f, 0.5f), VerticalAlignment = VerticalAlignment.Center };
-            r.AddThemeFontSizeOverride("font_size", 12);
+            r.AddThemeFontSizeOverride("font_size", 15);
             actionRow.AddChild(r);
         }
         return panel;
@@ -156,7 +156,7 @@ public sealed partial class ResearchScreen : CanvasLayer
     private static Label Note(string t)
     {
         var l = new Label { Text = t, HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.6f) };
-        l.AddThemeFontSizeOverride("font_size", 12);
+        l.AddThemeFontSizeOverride("font_size", 15);
         return l;
     }
 

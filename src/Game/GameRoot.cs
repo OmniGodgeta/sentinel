@@ -35,9 +35,16 @@ public sealed partial class GameRoot : Node2D
     public float WorldScale { get; private set; } = 0.44f;
     public Vector2 WorldOrigin { get; private set; } = new(270, 360);
 
-    // screen-space reserved strips (top status, bottom control panel)
-    public const float TopReserve = 138f;
+    // screen-space reserved strips (top status, bottom control panel).
+    // TopReserve grows by the display's safe-area inset (notch / punch-hole) so the
+    // status + speed row never sits under the camera cutout.
+    public float TopReserve { get; private set; } = 138f;
     public const float BottomReserve = 306f;
+    public float SafeTopInset { get; private set; }
+
+    /// <summary>True while the sim is frozen only because a card draft is waiting —
+    /// distinct from a user-requested pause.</summary>
+    public bool DraftPause { get; private set; }
 
     private ConfigDb _cfg = null!;
     private SimWorld _world = null!;
@@ -93,6 +100,13 @@ public sealed partial class GameRoot : Node2D
     private void FitViewport()
     {
         Vector2 vp = GetViewport().GetVisibleRect().Size;
+
+        // safe-area inset (Android notch / status bar) mapped into viewport units
+        var safe = DisplayServer.GetDisplaySafeArea();
+        var win = DisplayServer.WindowGetSize();
+        float vScale = win.Y > 0 ? vp.Y / win.Y : 1f;
+        SafeTopInset = Mathf.Clamp(safe.Position.Y * vScale, 0f, 240f);
+        TopReserve = 138f + SafeTopInset;
         // the game is a portrait column; on a wide window it's centred and letterboxed
         float designW = Mathf.Min(vp.X, vp.Y * 0.62f);
         float availH = Mathf.Max(200f, vp.Y - TopReserve - BottomReserve);
@@ -118,6 +132,11 @@ public sealed partial class GameRoot : Node2D
         if (Input.IsActionJustPressed("speed_4")) { SetSpeed(4); _hud.SyncSpeed(4); }
         if (Input.IsActionJustPressed("ui_cancel")) TogglePause();
 
+        // freeze the sim while a card draft is waiting; resume the instant it's picked
+        bool wantDraft = _world.HasPendingDraft && _world.Phase == SimPhase.Wave;
+        if (wantDraft && !DraftPause) { DraftPause = true; _clock.Paused = true; }
+        else if (!wantDraft && DraftPause) { DraftPause = false; _clock.Paused = false; }
+
         _clock.Advance((float)delta, _world.StepTick);
 
         // auto-cancel an armed aimed-ability after a few seconds of no target tap
@@ -139,10 +158,13 @@ public sealed partial class GameRoot : Node2D
         {
             _outcomeReported = true;
             _clock.Paused = true;
+            // for survival, report seconds-survived / hold-length instead of wave counts
+            int progress = _world.IsSurvival ? Mathf.FloorToInt(_world.PhaseTimer) : _world.WavesCleared;
+            int total = _world.IsSurvival ? Mathf.FloorToInt(_world.Mission.Duration) : _world.WaveCount;
             MissionEnded?.Invoke(new MissionOutcome(
                 _world.Mission.Id,
                 _world.Phase == SimPhase.Won,
-                _world.WavesCleared, _world.WaveCount,
+                progress, total,
                 _world.ResearchDataEarned, _world.XpEarned, _world.CoresEarned,
                 _world.PlanetIntegrityMax > 0 ? _world.PlanetIntegrity / _world.PlanetIntegrityMax : 0f,
                 _world.HeroView.Alive));
@@ -263,6 +285,12 @@ public sealed partial class GameRoot : Node2D
                 _pendingReticleSlot = -1;
                 _hud.ClearReticlePrompt();
             }
+            else if (_hud.BuildOpen)
+            {
+                // real-time base management (survival): a tap picks the nearest slot
+                int slot = NearestSlot(w, 110f);
+                if (slot >= 0) _hud.SelectSlot(slot);
+            }
             else
             {
                 _world.Enqueue(SimCommand.Volley(w));
@@ -363,5 +391,6 @@ public sealed partial class GameRoot : Node2D
         _hud.SyncSpeed(StartSpeed);
         _pendingReticleSlot = -1;
         _outcomeReported = false;
+        DraftPause = false;
     }
 }

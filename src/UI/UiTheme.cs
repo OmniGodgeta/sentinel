@@ -21,11 +21,11 @@ public static class UiTheme
     public static readonly Color Deep = new(0.015f, 0.02f, 0.04f);
 
     // Minimum comfortable touch target on a phone.
-    public const int TapMin = 56;
+    public const int TapMin = 62;
 
     private static Theme Build()
     {
-        var t = new Theme { DefaultFontSize = 18 };
+        var t = new Theme { DefaultFontSize = 20 };
 
         var panel = Flat(Panel, new Color(Accent, 0.14f), 12, 1);
         t.SetStylebox("panel", "PanelContainer", panel);
@@ -42,13 +42,13 @@ public static class UiTheme
         t.SetColor("font_pressed_color", "Button", new Color(1f, 0.85f, 0.93f));
         t.SetColor("font_disabled_color", "Button", new Color(1, 1, 1, 0.3f));
         t.SetConstant("h_separation", "Button", 8);
-        t.SetFontSize("font_size", "Button", 19);
+        t.SetFontSize("font_size", "Button", 21);
 
         // CheckButton — the toggle pill; give it real height too
         foreach (var (n, sb) in new[] { ("normal", normal), ("hover", hover), ("pressed", pressed), ("disabled", disabled) })
             t.SetStylebox(n, "CheckButton", sb);
         t.SetColor("font_color", "CheckButton", Ink);
-        t.SetFontSize("font_size", "CheckButton", 18);
+        t.SetFontSize("font_size", "CheckButton", 20);
 
         t.SetColor("font_color", "Label", new Color(Ink, 0.92f));
 

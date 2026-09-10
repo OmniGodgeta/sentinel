@@ -1,18 +1,34 @@
 {
   "id": "endless",
   "name": "The Long Watch",
-  "intro": "One planet. No last wave. See how deep you can hold.",
+  "intro": "One planet. No timer. See how deep you can hold.",
   "seed": 77000,
+  "survival": true,
   "endless": true,
+  "duration": 0,
+  "level": 4,
+  "roster": {
+    "skiff": 0.0,
+    "hauler": 0.03,
+    "interceptor": 0.06,
+    "aegis_cruiser": 0.1,
+    "bombard": 0.13,
+    "carrier": 0.18,
+    "phase_runner": 0.2,
+    "leech": 0.22,
+    "warden": 0.28,
+    "siege_crawler": 0.3
+  },
   "endless_roster": [
-    "skiff", "hauler", "interceptor", "aegis_cruiser", "bombard",
-    "carrier", "phase_runner", "leech", "warden", "siege_crawler"
-  ],
-  "waves": [
-    { "groups": [ { "enemy": "skiff", "count": 8, "interval": 0.6, "arc_center_deg": -1 } ] },
-    { "groups": [ { "enemy": "skiff", "count": 12, "interval": 0.5, "arc_center_deg": -1 },
-                  { "enemy": "hauler", "count": 1, "interval": 1, "start_delay": 2, "arc_center_deg": -1 } ] },
-    { "groups": [ { "enemy": "skiff", "count": 16, "interval": 0.45, "arc_center_deg": -1 },
-                  { "enemy": "interceptor", "count": 3, "interval": 1, "start_delay": 3, "arc_center_deg": -1 } ] }
+    "skiff",
+    "hauler",
+    "interceptor",
+    "aegis_cruiser",
+    "bombard",
+    "carrier",
+    "phase_runner",
+    "leech",
+    "warden",
+    "siege_crawler"
   ]
 }

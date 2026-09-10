@@ -61,8 +61,30 @@ public sealed partial class SimWorld
     public int WaveIndex { get; private set; }          // 0-based index of current/next wave
     private bool _endless;
     public bool IsEndless => _endless;
-    public int WaveCount => _endless ? int.MaxValue : Mission.Waves.Count;
-    public float EndlessScale => _endless ? 1f + WaveIndex * 0.05f : 1f;
+    public bool IsSurvival => Mission.Survival;
+    public int WaveCount => _endless || Mission.Survival ? int.MaxValue : Mission.Waves.Count;
+
+    /// <summary>Enemy stat multiplier at the current moment: scales with mission level
+    /// and, in survival, with elapsed time so late enemies are tougher.</summary>
+    public float DifficultyScale
+    {
+        get
+        {
+            if (Mission.Survival)
+            {
+                float dur = Mission.Duration > 0f ? Mission.Duration : 300f;
+                float ramp = Mission.Duration > 0f
+                    ? Mathf.Pow(Mathf.Clamp(PhaseTimer / dur, 0f, 1f), 1.3f)
+                    : Mathf.Min(3f, PhaseTimer / 200f);
+                return (1f + Mission.Level * 0.075f) * (1f + 0.7f * ramp);
+            }
+            return _endless ? 1f + WaveIndex * 0.05f : 1f;
+        }
+    }
+    /// <summary>Seconds left in a timed survival hold (0 once the timer is up / for endless).</summary>
+    public float SurvivalTimeLeft =>
+        Mission.Survival && Mission.Duration > 0f ? Mathf.Max(0f, Mission.Duration - PhaseTimer) : 0f;
+
     public float PhaseTimer { get; private set; }       // build: seconds left; wave: seconds elapsed
     public float PlanetIntegrity { get; private set; }
     public float PlanetIntegrityMax { get; private set; }
@@ -164,7 +186,10 @@ public sealed partial class SimWorld
         foreach (var wave in mission.Waves)
             foreach (var g in wave.Groups) Resolve(g.Enemy);
         foreach (var id in mission.EndlessRoster) Resolve(id);
+        foreach (var id in mission.Roster.Keys) Resolve(id);
+        if (mission.Boss.Length > 0) Resolve(mission.Boss);
         _missionEnemyDefs = used.ToArray();
+        BuildSurvivalRoster();
 
         // reset pools
         Array.Clear(Enemies, 0, Enemies.Length);
@@ -235,6 +260,10 @@ public sealed partial class SimWorld
         _spawnCursor = 0;
         _aliveThisWave = 0;
         _toSpawnThisWave = 0;
+
+        _survRewardMark = 0;
+        _survSpawnAccum = 0f;
+        _survBossSpawned = false;
     }
 
     public void Enqueue(in SimCommand cmd) => _commands.Enqueue(cmd);
@@ -255,7 +284,8 @@ public sealed partial class SimWorld
 
             case SimPhase.Wave:
                 PhaseTimer += SimClock.TickDelta;
-                StepSpawns();
+                if (Mission.Survival) StepSurvivalDirector();
+                else StepSpawns();
                 StepEnemies();
                 StepHero();
                 StepPlanetBattery();
@@ -289,7 +319,7 @@ public sealed partial class SimWorld
                     Turrets[c.IntA].Angle = c.FloatA;
                 break;
             case CommandType.SellTurret:
-                if (InSlot(c.IntA) && Turrets[c.IntA].Built && Phase == SimPhase.Build)
+                if (InSlot(c.IntA) && Turrets[c.IntA].Built && CanEdit)
                 {
                     Credits += TurretRefund(c.IntA);
                     Turrets[c.IntA].Built = false;
@@ -303,7 +333,7 @@ public sealed partial class SimWorld
                 TryForkTurret(c.IntA, c.IntB);
                 break;
             case CommandType.PickCard:
-                if (Phase == SimPhase.Build) PickCard(c.IntA);
+                if (CanEdit) PickCard(c.IntA);
                 break;
             case CommandType.StartWave:
                 if (Phase == SimPhase.Build && WaveIndex < WaveCount)
@@ -323,9 +353,13 @@ public sealed partial class SimWorld
 
     private bool InSlot(int s) => s >= 0 && s < Turrets.Length;
 
+    /// <summary>Turrets and cards can be edited in the build phase, and — in survival —
+    /// at any time during the hold (real-time base management).</summary>
+    private bool CanEdit => Phase == SimPhase.Build || (Mission.Survival && Phase == SimPhase.Wave);
+
     private void TryBuildTurret(int slot, string? id)
     {
-        if (Phase != SimPhase.Build || !InSlot(slot) || id == null) return;
+        if (!CanEdit || !InSlot(slot) || id == null) return;
         if (Turrets[slot].Built) return;
         if (!_turretDefIndex.TryGetValue(id, out int di)) return;
         if (Mods.UnlockedTurrets.Count > 0 && !Mods.UnlockedTurrets.Contains(id)) return;
@@ -366,7 +400,7 @@ public sealed partial class SimWorld
 
     private void TryUpgradeTurret(int slot)
     {
-        if (Phase != SimPhase.Build || !InSlot(slot) || !Turrets[slot].Built) return;
+        if (!CanEdit || !InSlot(slot) || !Turrets[slot].Built) return;
         int cost = TurretUpgradeCost(slot);
         if (cost < 0 || Credits < cost) return;
         Credits -= cost;
@@ -375,7 +409,7 @@ public sealed partial class SimWorld
 
     private void TryForkTurret(int slot, int forkIndex)
     {
-        if (Phase != SimPhase.Build || !InSlot(slot) || !Turrets[slot].Built) return;
+        if (!CanEdit || !InSlot(slot) || !Turrets[slot].Built) return;
         if (Turrets[slot].Level < 3 || Turrets[slot].Fork >= 0) return;
         var def = TurretDefs[Turrets[slot].DefIndex];
         if (forkIndex < 0 || forkIndex >= def.Forks.Count) return;
@@ -477,6 +511,20 @@ public sealed partial class SimWorld
 
     private void BeginWave()
     {
+        if (Mission.Survival)
+        {
+            _pending.Clear();
+            _spawnCursor = 0;
+            _toSpawnThisWave = 0;
+            _aliveThisWave = 0;
+            _survRewardMark = 0;
+            _survSpawnAccum = 0f;
+            _survBossSpawned = false;
+            Phase = SimPhase.Wave;
+            PhaseTimer = 0f;
+            return;
+        }
+
         var wave = GetWave(WaveIndex);
         _pending.Clear();
         foreach (var g in wave.Groups)
@@ -519,6 +567,8 @@ public sealed partial class SimWorld
             Events.Push(SimEventKind.MissionLost, Vector2.Zero);
             return;
         }
+
+        if (Mission.Survival) { CheckSurvivalEnd(); return; }
 
         bool doneSpawning = _spawnCursor >= _pending.Count;
         if (doneSpawning && _aliveThisWave <= 0)
@@ -579,7 +629,7 @@ public sealed partial class SimWorld
         else return -1;
 
         var def = _missionEnemyDefs[missionEnemyDefIndex];
-        float sc = EndlessScale * _ascHpMult;       // 1.0 for a normal mission at tier 0
+        float sc = DifficultyScale * _ascHpMult;       // 1.0 for a normal mission at tier 0
         ref var e = ref Enemies[idx];
         uint nextGen = e.Gen + 1;
         e = default;
@@ -589,12 +639,12 @@ public sealed partial class SimWorld
         e.Pos = pos;
         e.Hp = def.MaxHp * sc;
         e.MaxHp = def.MaxHp * sc;
-        e.Shield = (def.ShieldHp + (def.ShieldHp > 0f ? _ascShieldAdd : 0f)) * EndlessScale;
+        e.Shield = (def.ShieldHp + (def.ShieldHp > 0f ? _ascShieldAdd : 0f)) * DifficultyScale;
         e.MaxShield = e.Shield;
         e.Armor = def.Armor + _ascArmorAdd;
         e.Radius = def.Radius;
-        e.ContactDamage = def.ContactDamage * Mathf.Sqrt(EndlessScale);
-        e.Bounty = Mathf.RoundToInt(def.Bounty * Mathf.Sqrt(EndlessScale));
+        e.ContactDamage = def.ContactDamage * Mathf.Sqrt(DifficultyScale);
+        e.Bounty = Mathf.RoundToInt(def.Bounty * Mathf.Sqrt(DifficultyScale));
         e.DistToCenter = pos.Length();
         e.BaseSpeed = def.Speed * _ascSpeedMult;
         e.SlowFactor = 1f;

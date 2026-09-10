@@ -83,7 +83,7 @@ public sealed class Progression
 
     /// <summary>Deterministic 3-card offer for the current pick, from the mission-agnostic
     /// pool, seeded by how many cards have been picked so it's stable while shown.</summary>
-    public System.Collections.Generic.List<LevelCardDef> LevelCardOffer(int count = 3)
+    public System.Collections.Generic.List<LevelCardDef> LevelCardOffer(int count = 4)
     {
         var pool = new System.Collections.Generic.List<LevelCardDef>();
         foreach (var c in _cfg.LevelCards) if (CardAvailable(c)) pool.Add(c);
