@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.18.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.19.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -231,6 +231,24 @@ on-device pass.**
   bridge, side sponsons, three-nozzle engine bank, running lights — in Beyond's
   teal/magenta palette.
 - 1×≡4× determinism holds (SimTest unchanged — it passes its own fixed loadout).
+
+### v0.19.0 — weapon-card popup crash fix + punchier SFX
+- **FIX** (reported by the user — empty popup + freeze/crash on level-up):
+  `Hud.RefreshDraft` built each weapon-card `Button` and its children but never
+  called `_draftCards.AddChild(btn)`. The popup showed only the header, the panel
+  collapsed to content size, and the run froze (`DraftPause` waiting on a pick
+  that couldn't be made). Added the missing `AddChild`; made the popup
+  full-width-minus-margin with flexible card widths; tightened the height.
+  Reproduced + verified with `scenes/Shots.tscn` (`ShotRunner` now farms XP to
+  force a draft and screenshots it — handy repro harness).
+- `GameRoot.EquippedAbilities` default is now empty too (was still the old 3 —
+  only mattered for direct-scene / ShotRunner use; `AppRoot` already passed the
+  resolved loadout).
+- **SFX**: `explosion` / `explosion_b` / `explosion_big` / `missile_launch` /
+  `battery_launch` / `planet_hit` replaced with deeper synthesised hits (layered
+  filtered brown/pink noise + sub-bass sine + envelopes, ffmpeg — see
+  `gen_sfx.sh` in scratch / CREDITS). Original content. Any of them can be
+  overridden by dropping a same-named `.ogg` into `assets/audio/`.
 
 ---
 
