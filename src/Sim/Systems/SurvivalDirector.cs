@@ -129,8 +129,9 @@ public sealed partial class SimWorld
         // enemies-per-second target: gentle open, eased so the first ~90s stay
         // light, then climbs and keeps going in endless
         float rampCurve = Mission.Duration > 0f ? SurvEscalation(ramp, S.EpsRampCurve) : ramp;
-        float eps = (S.EpsBase + S.EpsRamp * rampCurve) * lvl * Mathf.Max(0.3f, surge)
-                    * Mathf.Max(0.25f, _ascCountMult);
+        float md = Mathf.Max(0.2f, Mission.Difficulty);
+        float eps = (S.EpsBase + S.EpsRamp * rampCurve * md) * lvl * Mathf.Max(0.3f, surge)
+                    * Mathf.Max(0.25f, _ascCountMult) * Mathf.Lerp(1f, md, 0.6f);
         _survSpawnAccum += eps * SimClock.TickDelta;
 
         // concurrency soft-cap so a stall doesn't turn into a slideshow
@@ -199,6 +200,10 @@ public sealed partial class SimWorld
         if (PlanetIntegrity > 0f && PlanetIntegrity < PlanetIntegrityMax)
             PlanetIntegrity = Mathf.Min(PlanetIntegrityMax,
                 PlanetIntegrity + PlanetIntegrityMax * Cfg.Survival.SelfRepairFracPerSec * SimClock.TickDelta);
+
+        // the planet shield recharges slowly (faster than integrity)
+        if (PlanetShieldMax > 0f && PlanetShield < PlanetShieldMax && PlanetIntegrity > 0f)
+            RechargePlanetShield(PlanetShieldMax * 0.012f * SimClock.TickDelta);
 
         // per-minute payout (behaves like a "wave cleared" for rewards + cores + draft)
         int minutes = Mathf.FloorToInt(PhaseTimer / 60f);

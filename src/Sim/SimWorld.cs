@@ -78,7 +78,8 @@ public sealed partial class SimWorld
                 float ramp = Mission.Duration > 0f
                     ? SurvEscalation(Mathf.Clamp(PhaseTimer / dur, 0f, 1f), S.ScaleRampCurve)
                     : Mathf.Min(3f, PhaseTimer / Mathf.Max(30f, S.EndlessRampSeconds));
-                return (1f + Mission.Level * S.ScaleLevelFactor) * (1f + S.ScaleRamp * ramp);
+                float md = Mathf.Max(0.2f, Mission.Difficulty);
+                return (1f + Mission.Level * S.ScaleLevelFactor) * (1f + S.ScaleRamp * ramp * md) * Mathf.Lerp(1f, md, 0.6f);
             }
             return _endless ? 1f + WaveIndex * 0.05f : 1f;
         }
@@ -91,6 +92,9 @@ public sealed partial class SimWorld
     public float PlanetIntegrity { get; private set; }
     public float PlanetIntegrityMax { get; private set; }
     public float PlanetShield { get; private set; }
+    public float PlanetShieldMax { get; private set; }
+    /// <summary>Planet shield HP granted by meta level n (0 = none). ~12 levels.</summary>
+    public static float PlanetShieldStrength(int lvl) => lvl <= 0 ? 0f : 320f * lvl + 55f * lvl * lvl;
     public int Credits { get; private set; }
     public int WavesCleared { get; private set; }
     public float ResearchDataEarned { get; private set; }
@@ -245,7 +249,8 @@ public sealed partial class SimWorld
 
         PlanetIntegrityMax = B.PlanetIntegrity * Mathf.Max(0.2f, Mods.PlanetIntegrityMult);
         PlanetIntegrity = PlanetIntegrityMax;
-        PlanetShield = Mods.PlanetStartShield;
+        PlanetShieldMax = Mods.PlanetStartShield + PlanetShieldStrength(Mods.PlanetShieldLevel);
+        PlanetShield = PlanetShieldMax;
         Credits = B.StartingCredits + Mods.StartCreditsAdd;
         WaveIndex = 0;
         WavesCleared = 0;
@@ -631,24 +636,35 @@ public sealed partial class SimWorld
         }
     }
 
+    /// <summary>The run's rewards before the win doubling (for the end-of-mission card).</summary>
+    public float BaseRdEarned { get; private set; }
+    public float BaseXpEarned { get; private set; }
+    public int BaseCoresEarned { get; private set; }
+
     private void AccrueRewards(bool missionClear)
     {
+        // Sentinel Core / Exotic Alloy gain multipliers
+        CoresEarned = Mathf.RoundToInt(CoresEarned * Mods.SentinelCoreGainMult);
+        AlloyEarned = Mathf.RoundToInt(AlloyEarned * Mods.ExoticAlloyGainMult);
+
+        BaseRdEarned = ResearchDataEarned;
+        BaseXpEarned = XpEarned;
+        BaseCoresEarned = CoresEarned;
+
         if (missionClear)
         {
+            // hold-complete bonus, then double everything and toss in extras
             ResearchDataEarned += B.ResearchDataMissionClear * Mods.ResearchDataGainMult * _ascRewardMult;
             XpEarned += B.XpMissionClear * Mods.XpGainMult * _ascRewardMult;
             CoresEarned += 2 + AscensionTier / 2;
             AlloyEarned += Mathf.RoundToInt(5 * _ascRewardMult);
+
+            ResearchDataEarned *= 2f;
+            XpEarned *= 2f;
+            CoresEarned *= 2;
+            AlloyEarned += 3;
         }
-        // Sentinel Core gain multiplier + Exotic Alloy gain multiplier applied here at the end
-        CoresEarned = Mathf.RoundToInt(CoresEarned * Mods.SentinelCoreGainMult);
-        AlloyEarned = Mathf.RoundToInt(AlloyEarned * Mods.ExoticAlloyGainMult);
-        // on a loss, keep only LossRewardFrac of the run's rewards
-        if (!missionClear && Mods.LossRewardFrac < 1f)
-        {
-            ResearchDataEarned *= Mods.LossRewardFrac;
-            XpEarned *= Mods.LossRewardFrac;
-        }
+        // a loss still pays the full run total — progress every sitting
     }
 
     // ---- pool helpers ----
@@ -872,6 +888,8 @@ public sealed partial class SimWorld
         if (!e.Alive || e.MaxShield <= 0f) return;
         e.Shield = Mathf.Min(e.MaxShield, e.Shield + amount);
     }
+
+    internal void RechargePlanetShield(float amount) => PlanetShield = Mathf.Min(PlanetShieldMax, PlanetShield + amount);
 
     internal void DamagePlanet(float amount, bool leaked = false)
     {

@@ -6,6 +6,7 @@
   "survival": true,
   "duration": 300,
   "level": 7,
+  "difficulty": 1.08,
   "roster": {
     "skiff": 0.0,
     "hauler": 0.15,

@@ -34,6 +34,13 @@ public sealed class SaveGame
     public Dictionary<string, int> AbilityLevels { get; set; } = new();
     public Dictionary<string, string> AbilityBranches { get; set; } = new();
 
+    /// <summary>Persistent per-orbital-weapon meta level (bought on the Sentinels screen).</summary>
+    public Dictionary<string, int> OrbitalMeta { get; set; } = new();
+    /// <summary>Persistent Planet Shield level (bought outside battles).</summary>
+    public int PlanetShieldLevel { get; set; } = 0;
+    /// <summary>Commendations spent outside the cosmetic Shop (sentinels, planet shield).</summary>
+    public int CommendationsSpent { get; set; } = 0;
+
     // level-up upgrade cards picked (Planet-Defense-TD style meta progression)
     public List<string> LevelCards { get; set; } = new();
 

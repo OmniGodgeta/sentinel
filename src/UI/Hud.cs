@@ -59,10 +59,10 @@ public sealed partial class Hud : CanvasLayer
     private Label _draftHeader = null!;
     private readonly System.Collections.Generic.Dictionary<string, Texture2D> _cardTex = new();
 
+    private ColorRect _endDim = null!;
     private PanelContainer _endCard = null!;
-    private Label _endText = null!;
-    private Button _retryBtn = null!;
-    private Button _menuBtn = null!;
+    private VBoxContainer _endBody = null!;
+    private bool _endBuilt;
 
     private ProgressBar _bossBar = null!;
     private Label _banner = null!;
@@ -231,26 +231,21 @@ public sealed partial class Hud : CanvasLayer
         _draftCards.AddThemeConstantOverride("separation", 14);
         dv.AddChild(_draftCards);
 
-        // ---- end card ----
-        _endCard = MakeBottomPanel();
-        _endCard.Visible = false;
+        // ---- end / reward card (centred) ----
+        _endDim = new ColorRect { Color = new Color(0.01f, 0.02f, 0.04f, 0.8f), Visible = false };
+        _endDim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        _endDim.MouseFilter = Control.MouseFilterEnum.Stop;
+        AddChild(_endDim);
+
+        _endCard = new PanelContainer
+        {
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetLeft = 22, OffsetRight = -22, OffsetTop = -260, OffsetBottom = 260, Visible = false,
+        };
         AddChild(_endCard);
-        var ev = new VBoxContainer();
-        _endCard.AddChild(ev);
-        _endText = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _endText.AddThemeFontSizeOverride("font_size", 18);
-        ev.AddChild(_endText);
-        var endBtns = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        endBtns.AddThemeConstantOverride("separation", 12);
-        ev.AddChild(endBtns);
-        _retryBtn = new Button { Text = "Retry", CustomMinimumSize = new Vector2(160, 58) };
-        _retryBtn.AddThemeFontSizeOverride("font_size", 18);
-        _retryBtn.Pressed += () => Root.RestartMission();
-        endBtns.AddChild(_retryBtn);
-        _menuBtn = new Button { Text = "Menu", CustomMinimumSize = new Vector2(160, 58) };
-        _menuBtn.AddThemeFontSizeOverride("font_size", 18);
-        _menuBtn.Pressed += () => Root.GoToMenu();
-        endBtns.AddChild(_menuBtn);
+        _endBody = new VBoxContainer();
+        _endBody.AddThemeConstantOverride("separation", 12);
+        _endCard.AddChild(_endBody);
 
         // ---- banner ----
         _banner = new Label { AnchorRight = 1f, OffsetTop = 156, HorizontalAlignment = HorizontalAlignment.Center };
@@ -362,7 +357,7 @@ public sealed partial class Hud : CanvasLayer
 
     public override void _Process(double delta)
     {
-        _pauseMenu.Visible = Root.IsPaused && !Root.DraftPause;
+        _pauseMenu.Visible = Root.IsPaused && !Root.DraftPause && Root.World.Phase is not (SimPhase.Won or SimPhase.Lost);
 
         if (_bannerTime > 0f)
         {
@@ -420,6 +415,7 @@ public sealed partial class Hud : CanvasLayer
         _buildPanel.Visible = BuildOpen;
         _wavePanel.Visible = fighting && !BuildOpen && !draft;
         _endCard.Visible = ended;
+        _endDim.Visible = ended;
         _draftPanel.Visible = draft;
         _draftDim.Visible = draft;
         _buildToggle.Visible = fighting && !draft;
@@ -460,11 +456,85 @@ public sealed partial class Hud : CanvasLayer
             }
         }
 
-        if (ended)
+        if (!ended) _endBuilt = false;
+        else if (!_endBuilt) { _endBuilt = true; BuildEndCard(w); }
+    }
+
+    private void BuildEndCard(SimWorld w)
+    {
+        bool won = w.Phase == SimPhase.Won;
+        var accent = won ? new Color(0.35f, 0.9f, 0.55f) : new Color(0.95f, 0.42f, 0.4f);
+        _endCard.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            _endText.Text = BuildEndReport(w);
-            _menuBtn.Text = w.Phase == SimPhase.Won ? "Menu ▸" : "Menu";
+            BgColor = new Color(0.05f, 0.06f, 0.10f, 0.99f),
+            BorderColor = accent,
+            BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 14, CornerRadiusTopRight = 14, CornerRadiusBottomLeft = 14, CornerRadiusBottomRight = 14,
+            ContentMarginLeft = 22, ContentMarginRight = 22, ContentMarginTop = 20, ContentMarginBottom = 20,
+        });
+
+        foreach (Node c in _endBody.GetChildren()) c.QueueFree();
+
+        var h = new Label { Text = won ? "PLANET SECURED" : "PLANET LOST", HorizontalAlignment = HorizontalAlignment.Center };
+        h.AddThemeFontOverride("font", UiTheme.Display);
+        h.AddThemeFontSizeOverride("font_size", 26);
+        h.AddThemeColorOverride("font_color", accent);
+        _endBody.AddChild(h);
+
+        int secs = Mathf.FloorToInt(w.PhaseTimer);
+        string result = won
+            ? $"Held the full {Mathf.FloorToInt(w.Mission.Duration) / 60}:00."
+            : $"Fell at {secs / 60}:{secs % 60:00}.";
+        var sub = new Label { Text = result, HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.8f) };
+        sub.AddThemeFontSizeOverride("font_size", 15);
+        _endBody.AddChild(sub);
+
+        var rHdr = new Label { Text = won ? "REWARDS   ·   ×2 VICTORY BONUS" : "REWARDS", HorizontalAlignment = HorizontalAlignment.Center };
+        rHdr.AddThemeFontSizeOverride("font_size", 13);
+        rHdr.AddThemeColorOverride("font_color", won ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.55f));
+        _endBody.AddChild(rHdr);
+
+        void Reward(string label, string val, Color col)
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", 16);
+            var a = new Label { Text = label, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            a.AddThemeFontSizeOverride("font_size", 17);
+            var b = new Label { Text = val, HorizontalAlignment = HorizontalAlignment.Right };
+            b.AddThemeFontOverride("font", UiTheme.Display);
+            b.AddThemeFontSizeOverride("font_size", 20);
+            b.AddThemeColorOverride("font_color", col);
+            row.AddChild(a); row.AddChild(b);
+            _endBody.AddChild(row);
         }
+        Reward("✦  Experience", $"+{Mathf.FloorToInt(w.XpEarned)}", new Color(0.85f, 0.9f, 1f));
+        Reward("◇  Research Data", $"+{Mathf.FloorToInt(w.ResearchDataEarned)}", UiTheme.Accent);
+        Reward("✷  Sentinel Cores", $"+{w.CoresEarned}", new Color(0.72f, 0.86f, 1f));
+        if (w.AlloyEarned > 0) Reward("❖  Exotic Alloy", $"+{w.AlloyEarned}", new Color(0.95f, 0.78f, 0.42f));
+
+        var s = w.Stats;
+        float tot = Mathf.Max(1f, s.TotalDamage);
+        var dmg = new Label
+        {
+            Text = $"Kills {s.EnemiesKilled}   ·   turrets {Pct(s.DamageByTurrets, tot)}  ship {Pct(s.DamageByHero, tot)}  orbital {Pct(s.DamageByOrbital, tot)}  abilities {Pct(s.DamageByAbilities, tot)}",
+            HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.5f),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+        };
+        dmg.AddThemeFontSizeOverride("font_size", 12);
+        _endBody.AddChild(dmg);
+
+        var btns = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        btns.AddThemeConstantOverride("separation", 14);
+        _endBody.AddChild(btns);
+        var retry = new Button { Text = "↻  Retry", CustomMinimumSize = new Vector2(180, 62) };
+        retry.AddThemeFontSizeOverride("font_size", 18);
+        retry.Pressed += () => Root.RestartMission();
+        btns.AddChild(retry);
+        var menu = new Button { Text = won ? "Continue ▸" : "Menu", CustomMinimumSize = new Vector2(180, 62) };
+        menu.AddThemeFontSizeOverride("font_size", 18);
+        if (won) UiTheme.StylePrimary(menu);
+        menu.Pressed += () => Root.GoToMenu();
+        btns.AddChild(menu);
     }
 
     private Texture2D? CardTexture(string id)
@@ -667,29 +737,6 @@ public sealed partial class Hud : CanvasLayer
         var sell = new Button { Text = "Sell", CustomMinimumSize = new Vector2(92, 60) };
         sell.Pressed += () => Root.RequestSell(s);
         _upgradeRow.AddChild(sell);
-    }
-
-    private static string BuildEndReport(SimWorld w)
-    {
-        var s = w.Stats;
-        float tot = Mathf.Max(1f, s.TotalDamage);
-        var sb = new StringBuilder();
-        if (w.IsSurvival)
-        {
-            int secs = Mathf.FloorToInt(w.PhaseTimer);
-            string t = $"{secs / 60}:{secs % 60:00}";
-            sb.Append(w.Phase == SimPhase.Won
-                ? $"Planet held. Survived the full {Mathf.FloorToInt(w.Mission.Duration) / 60}:00.\n"
-                : $"Planet lost at {t}.\n");
-        }
-        else
-            sb.Append(w.IsEndless ? $"Reached wave {w.WavesCleared + 1}.\n"
-                     : w.Phase == SimPhase.Won ? $"Cleared all {w.WaveCount} waves.\n"
-                     : $"Held {w.WavesCleared}/{w.WaveCount} waves.\n");
-        sb.Append($"Research Data {Mathf.FloorToInt(w.ResearchDataEarned)}   XP {Mathf.FloorToInt(w.XpEarned)}   Cores {w.CoresEarned}\n");
-        sb.Append($"Kills {s.EnemiesKilled}   ·   Leaked {s.EnemiesLeaked}\n");
-        sb.Append($"Damage — turrets {Pct(s.DamageByTurrets, tot)}  ship {Pct(s.DamageByHero, tot)}  orbital {Pct(s.DamageByOrbital, tot)}  abilities {Pct(s.DamageByAbilities, tot)}");
-        return sb.ToString();
     }
 
     private static string Pct(float v, float tot) => $"{Mathf.RoundToInt(v / tot * 100f)}%";

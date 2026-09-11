@@ -110,6 +110,8 @@ public sealed partial class AppRoot : Node
     public void ShowCodex() => SwapTo(new CodexScreen { App = this });
     public void ShowSettings() => SwapTo(new SettingsScreen { App = this });
     public void ShowShop() => SwapTo(new ShopScreen { App = this });
+    public void ShowUpgrades() => SwapTo(new UpgradesScreen { App = this });
+    public void ShowSentinels() => SwapTo(new SentinelScreen { App = this });
 
     /// <summary>Resolve the equipped ability loadout to unlocked ids + their per-ability effect/cd multipliers.</summary>
     private (string[] loadout, float[] eff, float[] cd) ResolveLoadout()
@@ -208,6 +210,7 @@ public sealed partial class AppRoot : Node
         Save.ResearchData += o.ResearchData;
         Save.Xp += o.Xp;
         Save.SentinelCores += o.Cores;
+        Save.ExoticAlloy += o.Alloy;
 
         if (o.MissionId == "endless")
         {
@@ -230,7 +233,7 @@ public sealed partial class AppRoot : Node
             rec.Cleared = true;
             int stars = 1 + (o.PlanetIntegrityPct >= 0.75f ? 1 : 0) + (o.HeroSurvived ? 1 : 0);
             if (stars > rec.Stars) rec.Stars = stars;
-            if (firstClear) Save.ExoticAlloy += 5;
+            if (firstClear) Save.ExoticAlloy += 5;   // first-clear bonus on top
             if (ascensionTier > Save.MissionBestTier.GetValueOrDefault(o.MissionId, 0))
                 Save.MissionBestTier[o.MissionId] = ascensionTier;
         }

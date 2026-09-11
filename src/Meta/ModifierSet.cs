@@ -51,6 +51,9 @@ public sealed class ModifierSet
     public System.Collections.Generic.Dictionary<string, int> OrbitalMeta = new();
     public int OrbitalMetaLevel(string id) => OrbitalMeta.TryGetValue(id, out int v) ? v : 0;
 
+    // ---- planet shield: persistent, upgraded only outside battles ----
+    public int PlanetShieldLevel = 0;
+
     // ---- unlocks (base kit is small; level cards open the rest) ----
     public System.Collections.Generic.HashSet<string> UnlockedTurrets = new();
     public System.Collections.Generic.HashSet<string> UnlockedAbilities = new();

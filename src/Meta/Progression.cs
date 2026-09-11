@@ -277,6 +277,10 @@ public sealed class Progression
         foreach (var t in BaseTurrets) m.UnlockedTurrets.Add(t);
         foreach (var a in BaseAbilities) m.UnlockedAbilities.Add(a);
 
+        // persistent orbital-weapon meta levels (bought on the Sentinels screen)
+        foreach (var (id, lvl) in _save.OrbitalMeta) if (lvl > 0) m.OrbitalMeta[id] = lvl;
+        m.PlanetShieldLevel = _save.PlanetShieldLevel;
+
         // level-up cards
         foreach (var id in _save.LevelCards)
         {

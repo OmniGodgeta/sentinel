@@ -373,22 +373,31 @@ public sealed partial class SimRenderer : Node2D
         // active field effects
         foreach (ref readonly var fx in World.OrbitalEffects)
         {
-            if (fx.Kind == 1) // radiation line — a bright green lethal beam sweeping the field
+            if (fx.Kind == 1) // radiation line — PDTD Radiation Link: a fixed lethal corridor
             {
-                float bearing = fx.P0 + gt * 0.35f;
-                var d = Vector2.FromAngle(bearing);
+                var d = Vector2.FromAngle(fx.P0);
                 Vector2 a = d * World.B.PlanetRadius;
                 Vector2 b = d * World.B.DespawnRadius;
                 var gc = OrbitalCols[3];
-                DrawLine(a, b, new Color(gc, 0.22f), 34f);
-                DrawLine(a, b, new Color(gc, 0.7f), 10f);
-                DrawLine(a, b, new Color(0.92f, 1f, 0.82f, 0.95f), 3.5f);
-                // travelling energy nodes along the line
+                DrawLine(a, b, new Color(gc, 0.22f), 30f);
+                DrawLine(a, b, new Color(gc, 0.7f), 9f);
+                DrawLine(a, b, new Color(0.92f, 1f, 0.82f, 0.95f), 3f);
+                // travelling energy nodes along the corridor
                 for (int s = 0; s < 6; s++)
                 {
                     float ph = Mathf.PosMod(gt * 0.9f + s * 0.18f, 1f);
                     DrawCircle(a.Lerp(b, ph), 4f, new Color(0.9f, 1f, 0.8f, 0.8f));
                 }
+            }
+            else if (fx.Kind == 4) // beam laser — PDTD Beam sentinel: continuous locked-on burn
+            {
+                var lc = OrbitalCols[1];
+                DrawLine(fx.From, fx.Pos, new Color(lc, 0.35f), 8f);
+                DrawLine(fx.From, fx.Pos, new Color(lc, 0.8f), 3.5f);
+                DrawLine(fx.From, fx.Pos, new Color(1f, 0.95f, 0.9f, 0.9f), 1.4f);
+                float pulse = 0.6f + 0.4f * Mathf.Sin(gt * 20f);
+                DrawCircle(fx.Pos, 6f * pulse, new Color(lc, 0.8f));
+                DrawArc(fx.Pos, 10f, 0, Mathf.Tau, 20, new Color(lc, 0.5f), 2f);
             }
             else // shock orb (2) / radiation zone (3) — concentric radial shockwaves (PDTD SHOCK ORB look)
             {

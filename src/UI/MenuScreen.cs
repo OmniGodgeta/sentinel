@@ -62,58 +62,50 @@ public sealed partial class MenuScreen : CanvasLayer
         gear.Pressed += () => { Click(); App.ShowSettings(); };
         topBar.AddChild(gear);
 
-        // ---------- stage + BATTLE, tucked just under the planet ----------
-        var mid = new VBoxContainer
-        {
-            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.60f, AnchorBottom = 0.60f,
-            OffsetLeft = 40, OffsetRight = -40,
-            Alignment = BoxContainer.AlignmentMode.Begin,
-        };
-        mid.AddThemeConstantOverride("separation", 10);
-        mid.Theme = UiTheme.Instance;
-        AddChild(mid);
-
         var (mfile, mid2, mname, cleared) = NextMission();
-        var stageLbl = new Label { Text = cleared ? "★  ALL CLEARED  —  PICK A STAGE" : mname.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center };
+
+        // ---------- stage label, tucked just under the planet ----------
+        var stageLbl = new Label
+        {
+            Text = cleared ? "★  ALL CLEARED  —  PICK A STAGE" : mname.ToUpperInvariant(),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.60f, AnchorBottom = 0.60f,
+        };
         stageLbl.AddThemeFontOverride("font", UiTheme.Display);
-        stageLbl.AddThemeFontSizeOverride("font_size", 22);
+        stageLbl.AddThemeFontSizeOverride("font_size", 20);
         stageLbl.AddThemeConstantOverride("outline_size", 5);
         stageLbl.AddThemeColorOverride("font_outline_color", new Color(0.01f, 0.03f, 0.06f, 0.9f));
-        mid.AddChild(stageLbl);
+        AddChild(stageLbl);
 
-        var battleRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        mid.AddChild(battleRow);
-        var battle = new GlowButton { Text = cleared ? "STAR MAP" : "BATTLE", FontSize = 34, Primary = true, CustomMinimumSize = new Vector2(360, 92) };
-        battle.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-        battle.Pressed += () => { Confirm(); if (cleared) App.ShowLevels(); else App.StartMission(mfile, mid2); };
-        battleRow.AddChild(battle);
-
-        // ---------- lower stack: weekly + section icons ----------
-        var lower = new VBoxContainer
+        // ---------- PDTD-style bottom bar: Shop · Upgrades · BATTLE · Sentinels · Events ----------
+        var bar = new HBoxContainer
         {
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
-            OffsetLeft = 20, OffsetRight = -20, OffsetTop = -210, OffsetBottom = -46,
-            Alignment = BoxContainer.AlignmentMode.End,
+            OffsetLeft = 14, OffsetRight = -14, OffsetTop = -134, OffsetBottom = -30,
+            Alignment = BoxContainer.AlignmentMode.Center,
         };
-        lower.AddThemeConstantOverride("separation", 12);
-        lower.Theme = UiTheme.Instance;
-        AddChild(lower);
+        bar.AddThemeConstantOverride("separation", 8);
+        bar.Theme = UiTheme.Instance;
+        AddChild(bar);
+
+        bar.AddChild(NavBtn("✦\nSHOP", App.ShowShop, false));
+        bar.AddChild(NavBtn("⬡\nUPGRADES", App.ShowUpgrades, false));
+
+        var battle = new GlowButton
+        {
+            Text = cleared ? "STAR MAP" : "BATTLE", FontSize = 28, Primary = true,
+            CustomMinimumSize = new Vector2(170, 104),
+        };
+        battle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        battle.SizeFlagsStretchRatio = 1.5f;
+        battle.SetFont(UiTheme.Display);
+        battle.Pressed += () => { Confirm(); if (cleared) App.ShowLevels(); else App.StartMission(mfile, mid2); };
+        bar.AddChild(battle);
+
+        bar.AddChild(NavBtn("✷\nSENTINELS", App.ShowSentinels, true));
 
         var wk = Sentinel.Meta.WeeklyChallenge.Current();
-        string wkText = $"★  WEEKLY · {wk.Title}" + (s.WeeklyId == wk.Id && s.WeeklyBest > 0 ? $"   ·   best {Mmss(s.WeeklyBest)}" : "");
-        var weekly = new GlowButton { Text = wkText, FontSize = 18, Alt = true, CustomMinimumSize = new Vector2(0, 64) };
-        weekly.Pressed += () => { Click(); App.StartWeekly(); };
-        lower.AddChild(weekly);
-
-        var icons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        icons.AddThemeConstantOverride("separation", 10);
-        lower.AddChild(icons);
-        icons.AddChild(IconBtn("◈", "Star Map", App.ShowLevels, false));
-        icons.AddChild(IconBtn("∞", "Endless", () => App.StartMission("res://data/missions/endless.json", "endless"), false));
-        icons.AddChild(IconBtn("⬡", "Research", App.ShowResearch, false));
-        icons.AddChild(IconBtn("◆", "Protocols", App.ShowAbilities, true));
-        icons.AddChild(IconBtn("✦", "Shop", App.ShowShop, true));
-        icons.AddChild(IconBtn("☰", "Codex", App.ShowCodex, false));
+        bar.AddChild(NavBtn("★\nEVENTS", App.StartWeekly, true));
 
         // ---------- app version, bottom-centre ----------
         var ver = new Label
@@ -179,11 +171,10 @@ public sealed partial class MenuScreen : CanvasLayer
         return ("", "", "", true);
     }
 
-    private GlowButton IconBtn(string glyph, string tip, System.Action onPress, bool alt)
+    private GlowButton NavBtn(string label, System.Action onPress, bool alt)
     {
-        var b = new GlowButton { Text = glyph, FontSize = 34, Alt = alt, CustomMinimumSize = new Vector2(0, 80) };
+        var b = new GlowButton { Text = label, FontSize = 15, Alt = alt, CustomMinimumSize = new Vector2(0, 92) };
         b.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        b.TooltipText = tip;
         b.Pressed += () => { Click(); onPress(); };
         return b;
     }

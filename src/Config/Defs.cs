@@ -304,6 +304,9 @@ public sealed record MissionDef
     public float Duration { get; init; } = 300f;
     /// <summary>Difficulty scale index — higher = stronger/tougher/faster enemies and a steeper spawn ramp.</summary>
     public int Level { get; init; } = 1;
+    /// <summary>Overall difficulty multiplier for this mission (spawn rate + enemy stats).
+    /// Lets the early campaign ramp gently regardless of Level. 1 = default.</summary>
+    public float Difficulty { get; init; } = 1f;
     /// <summary>Survival spawn roster: enemy id -> fraction of the run (0..1) before it may appear.</summary>
     public Dictionary<string, float> Roster { get; init; } = new();
     /// <summary>Optional boss id, spawned once near the end of a survival hold.</summary>

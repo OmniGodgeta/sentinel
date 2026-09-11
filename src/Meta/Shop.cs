@@ -47,7 +47,7 @@ public sealed class Shop
 
     public int Spent()
     {
-        int s = 0;
+        int s = _save.CommendationsSpent;   // sentinel upgrades, planet shield, etc.
         foreach (var id in _save.ShopOwned)
             if (Item(id) is { } it) s += it.Cost;
         return s;

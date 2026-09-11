@@ -15,7 +15,7 @@ public sealed partial class ShotRunner : Node2D
     private double _t;
     private int _shot;
 
-    [Export] public string Mission = "res://data/missions/endless.json";
+    [Export] public string Mission = "res://data/missions/m01.json";
 
     public override void _Ready()
     {
@@ -39,7 +39,7 @@ public sealed partial class ShotRunner : Node2D
         GD.Print($"HeroWeapons.Count = {_game.World.Cfg.HeroWeapons.Count}");
     }
 
-    private bool _launched, _grabWave, _grabDraft, _picked, _xpDone;
+    private bool _launched, _grabWave, _grabDraft, _picked, _xpDone, _grabEnd;
 
     public override void _Process(double delta)
     {
@@ -67,7 +67,7 @@ public sealed partial class ShotRunner : Node2D
             }
 
             // one modest XP injection to force ~4 level-ups, then let it play
-            if (!_xpDone && _t > 4.5) { w.GainRunXp(700f); _xpDone = true; }
+            if (!_xpDone && _t > 4.5) { w.GainRunXp(500f); _xpDone = true; }
 
             if (w.HasPendingDraft && !_grabDraft && _t > 5.0)
             {
@@ -79,7 +79,12 @@ public sealed partial class ShotRunner : Node2D
             }
         }
 
-        if (_t > 30) { GD.Print("=== timeout, quitting"); GetTree().Quit(); }
+        if (w.Phase is SimPhase.Won or SimPhase.Lost && !_grabEnd)
+        {
+            _grabEnd = true;
+            GetTree().CreateTimer(1.2).Timeout += () => { Grab("reward"); GetTree().Quit(); };
+        }
+        if (_t > 130) { GD.Print("=== timeout, quitting"); GetTree().Quit(); }
     }
 
     private void GrabDraft()
@@ -97,7 +102,8 @@ public sealed partial class ShotRunner : Node2D
                 _game.RequestPickCard(pick);
             }
             _game.SetSpeed(2);
-            GetTree().CreateTimer(10.0).Timeout += () => { Grab("orbital_field"); GetTree().Quit(); };
+            GetTree().CreateTimer(10.0).Timeout += () => Grab("orbital_field");
+            _game.SetSpeed(4);
         };
     }
 

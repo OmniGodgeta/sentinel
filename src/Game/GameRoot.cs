@@ -8,7 +8,8 @@ namespace Sentinel.Game;
 
 public readonly record struct MissionOutcome(
     string MissionId, bool Won, int WavesCleared, int WaveCount,
-    double ResearchData, double Xp, int Cores, float PlanetIntegrityPct, bool HeroSurvived);
+    double ResearchData, double Xp, int Cores, float PlanetIntegrityPct, bool HeroSurvived,
+    int Alloy = 0);
 
 /// <summary>
 /// One mission: owns the config view, the sim, the clock, the renderer and the
@@ -192,7 +193,7 @@ public sealed partial class GameRoot : Node2D
                 progress, total,
                 _world.ResearchDataEarned, _world.XpEarned, _world.CoresEarned,
                 _world.PlanetIntegrityMax > 0 ? _world.PlanetIntegrity / _world.PlanetIntegrityMax : 0f,
-                _world.HeroView.Alive));
+                _world.HeroView.Alive, _world.AlloyEarned));
         }
     }
 

@@ -15,17 +15,20 @@ public sealed partial class SimWorld
 
     private const float OwOrbit = 2.45f;   // × SentinelOrbitRadius — a clear orbit ring in open space
 
-    // active timed field effects (radiation line / shock orb / radiation zone)
+    // active timed field effects (radiation line / shock orb / radiation zone / beam laser)
     public struct OwEffect
     {
-        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone
+        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone, 4 beam_laser
         public float DieAt;     // GameTime
         public float Tick;      // dps accumulator
         public float Dps;
         public float Radius;
         public float Stun;
-        public float P0;        // rad_line: bearing; shock_orb/rad_zone: seed angle
-        public Vector2 Pos;     // shock_orb / rad_zone current centre
+        public float P0;        // rad_line: fixed bearing; shock_orb/rad_zone: seed angle
+        public Vector2 Pos;     // shock_orb / rad_zone centre; beam_laser: current beam endpoint
+        public Vector2 From;    // beam_laser: the platform's current position (it keeps orbiting)
+        public EnemyHandle Target;   // beam_laser: locked target
+        public int WeaponIndex;      // beam_laser: which platform this beam is anchored to
     }
     private readonly System.Collections.Generic.List<OwEffect> _owEffects = new();
 
@@ -113,25 +116,17 @@ public sealed partial class SimWorld
                 if (n > 0) { _fxOwBeamLeft = 0.12f; _fxOwBeamKind = 0; _fxOwBeamFrom = from; _fxOwBeamTo = Enemies[picks[0]].Pos; }
                 break;
             }
-            case "laser":
+            case "beam_laser":
             {
+                // PDTD's Beam sentinel — locks on and burns continuously for the duration,
+                // instead of an instant zap
                 int t = ClosestEnemyTo(from, d.Range);
                 if (t < 0) break;
-                Vector2 to = Enemies[t].Pos;
-                Vector2 dir = (to - from).Normalized();
-                float len = from.DistanceTo(to) + 120f;
-                for (int e = 0; e < EnemyHighWater; e++)
+                _owEffects.Add(new OwEffect
                 {
-                    ref var en = ref Enemies[e];
-                    if (!en.Alive) continue;
-                    Vector2 rel = en.Pos - from;
-                    float along = rel.Dot(dir);
-                    if (along < 0f || along > len) continue;
-                    if ((rel - dir * along).Length() > 26f + en.Radius) continue;
-                    DamageEnemy(e, dmg, DamageSource.Orbital, shieldMult: d.ShieldPierce ? 0f : 1f);
-                    if (en.Alive && d.DotDps > 0f) { en.BurnLeft = Mathf.Max(en.BurnLeft, d.DotSeconds); en.BurnDps = Mathf.Max(en.BurnDps, d.DotDps + d.DamagePerLevel * 0.15f * (L - 1)); }
-                }
-                _fxOwBeamLeft = 0.16f; _fxOwBeamKind = 1; _fxOwBeamFrom = from; _fxOwBeamTo = from + dir * len;
+                    Kind = 4, DieAt = GameTime + dur, Dps = dmg, WeaponIndex = i,
+                    Target = HandleOf(t), From = from, Pos = Enemies[t].Pos,
+                });
                 break;
             }
             case "lightning":
@@ -161,8 +156,13 @@ public sealed partial class SimWorld
                 break;
             }
             case "rad_line":
-                _owEffects.Add(new OwEffect { Kind = 1, DieAt = GameTime + dur, Dps = dmg, P0 = Rng.NextFloat(0f, Mathf.Tau) });
+            {
+                // PDTD's Radiation Link — a fixed corridor toward the current threat, held for the duration
+                int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
+                float bearing = t >= 0 ? Enemies[t].Pos.Angle() : Rng.NextFloat(0f, Mathf.Tau);
+                _owEffects.Add(new OwEffect { Kind = 1, DieAt = GameTime + dur, Dps = dmg, P0 = bearing });
                 break;
+            }
             case "shock_orb":
                 _owEffects.Add(new OwEffect { Kind = 2, DieAt = GameTime + dur, Dps = dmg, Radius = radius, Stun = d.StunSeconds, P0 = Rng.NextFloat(0f, Mathf.Tau) });
                 break;
@@ -181,10 +181,9 @@ public sealed partial class SimWorld
         float interval = 0.25f;
         float t = GameTime;
 
-        if (fx.Kind == 1) // radiation line — a slowly rotating lethal beam across the field
+        if (fx.Kind == 1) // radiation line — PDTD's Radiation Link: a fixed corridor for the duration
         {
-            float bearing = fx.P0 + t * 0.35f;
-            Vector2 dir = Vector2.FromAngle(bearing);
+            Vector2 dir = Vector2.FromAngle(fx.P0);
             while (fx.Tick >= interval)
             {
                 fx.Tick -= interval;
@@ -194,8 +193,37 @@ public sealed partial class SimWorld
                     if (!en.Alive) continue;
                     float along = en.Pos.Dot(dir);
                     if (along < B.PlanetRadius || along > B.DespawnRadius) continue;
-                    if ((en.Pos - dir * along).Length() > 30f + en.Radius) continue;
+                    if ((en.Pos - dir * along).Length() > 26f + en.Radius) continue;
                     DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
+                }
+            }
+        }
+        else if (fx.Kind == 4) // beam laser — locked on, continuous, pierces shields + anything in the beam
+        {
+            fx.From = OrbitalPlatformPos(fx.WeaponIndex);
+            int ti = Resolve(in fx.Target, out int idx) ? idx : -1;
+            if (ti < 0) { ti = ClosestEnemyTo(fx.From, B.DespawnRadius); if (ti >= 0) fx.Target = HandleOf(ti); }
+            if (ti < 0) { fx.DieAt = GameTime; return; }   // no targets left — let it fizzle out
+            fx.Pos = Enemies[ti].Pos;
+
+            Vector2 dir = (fx.Pos - fx.From);
+            float len = dir.Length();
+            if (len > 1f)
+            {
+                dir /= len;
+                while (fx.Tick >= interval)
+                {
+                    fx.Tick -= interval;
+                    for (int e = 0; e < EnemyHighWater; e++)
+                    {
+                        ref var en = ref Enemies[e];
+                        if (!en.Alive) continue;
+                        Vector2 rel = en.Pos - fx.From;
+                        float along = rel.Dot(dir);
+                        if (along < 0f || along > len + 20f) continue;
+                        if ((rel - dir * along).Length() > 22f + en.Radius) continue;
+                        DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
+                    }
                 }
             }
         }

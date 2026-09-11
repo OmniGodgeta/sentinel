@@ -46,6 +46,9 @@ MISSIONS = [
       "carrier": 0.35, "phase_runner": 0.4, "leech": 0.4, "warden": 0.5, "siege_crawler": 0.5}),
 ]
 
+# gentle early-campaign ramp — L1 is a near-pushover, easing to full difficulty by ~L6
+DIFFICULTY = {1: 0.40, 2: 0.52, 3: 0.66, 4: 0.80, 5: 0.90, 6: 1.0, 7: 1.08, 8: 1.15}
+
 for mid, name, intro, seed, level, roster in MISSIONS:
     mission = {
         "id": mid,
@@ -55,6 +58,7 @@ for mid, name, intro, seed, level, roster in MISSIONS:
         "survival": True,
         "duration": DURATION,
         "level": level,
+        "difficulty": DIFFICULTY.get(level, 1.0),
         "roster": roster,
         "backdrop": mid,
         "music": f"eve_{level:02d}",
