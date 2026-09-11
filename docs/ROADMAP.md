@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.19.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.21.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -249,6 +249,37 @@ on-device pass.**
   filtered brown/pink noise + sub-bass sine + envelopes, ffmpeg — see
   `gen_sfx.sh` in scratch / CREDITS). Original content. Any of them can be
   overridden by dropping a same-named `.ogg` into `assets/audio/`.
+
+### v0.20.0 — mandatory update gate + gentler late difficulty
+- **SplashScreen** checks GitHub for a newer release on launch; if one exists,
+  Start is replaced by a blocking "UPDATE REQUIRED / DOWNLOAD UPDATE" panel with
+  no way past. Fail-open on any network error or same/older version.
+- **`SurvEscalation(frac, curve)`** (in SurvivalDirector.cs) shapes the survival
+  ramp so it peaks at ~70% of the timer then eases back (`late_ease_frac` /
+  `late_ease_amount` in survival.json) — the final stretch is no longer an
+  unwinnable wall. Overall magnitudes lowered too. Bot clears m01–m04 + m06.
+
+### v0.21.0 — planet orbital weapons (PDTD-style sentinels)
+- **Six orbital weapons** (`data/orbital_weapons.json` + `OrbitalWeaponDef` +
+  `src/Sim/Systems/OrbitalWeapons.cs`): Orbital Cannon / Laser / Lightning,
+  Radiation Line, Shock Orb, Radiation Zone — PDTD sentinel stats. Platforms
+  orbit the planet in open space (`OwOrbit` × `SentinelOrbitRadius`) and
+  auto-fire; the `AUTO` toggle gates them.
+- New enemy status fields `Enemy.StunLeft` / `BurnLeft` / `BurnDps` (stepped in
+  EnemySystem) for chain-stun and radiation/burn DoT.
+- **Merged card draft** — `CardDraft.cs` now draws from one shared pool of ship
+  weapons + orbital weapons, 4 per level-up. Orbital option indices are offset by
+  `SimWorld.OrbitalCardBase` (100). Popup tags each card SHIP / ORBITAL.
+- `DamageSource.Orbital` + `RunStats.DamageByOrbital`; end report shows
+  turrets / ship / orbital / abilities.
+- 7 new owner-supplied card images (`assets/game/cards/orbital_*.jpg`,
+  `planet_shield.jpg`).
+- Meta hook `ModifierSet.OrbitalMeta` (per-weapon persistent level) is read by
+  `ResetOrbitalWeapons` for a head-start — the out-of-battle purchase UI + Planet
+  Shield land in the next release.
+- Renderer: ringed sentinel stations, concentric radial shockwaves, sweeping
+  radiation beam — styled after the PDTD sentinels (their actual Unity art can't
+  be extracted/used; this matches the look procedurally).
 
 ---
 
