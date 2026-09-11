@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.21.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.22.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -280,6 +280,48 @@ on-device pass.**
 - Renderer: ringed sentinel stations, concentric radial shockwaves, sweeping
   radiation beam — styled after the PDTD sentinels (their actual Unity art can't
   be extracted/used; this matches the look procedurally).
+
+### v0.22.0 — much easier missions, PDTD-style menu, reward popup, Sentinels screen
+- **Difficulty** (top user complaint, twice — "still can't finish level 1"):
+  `MissionDef.Difficulty` per-mission multiplier, ramped 0.40 (m01) → 1.15 (m08)
+  in `gen_missions.py` (was every mission at full strength). `survival.json`
+  magnitudes cut hard again. Scripted bot now **wins all 8 missions** at
+  full/near-full integrity (was m01–04+m06); endless reaches wave 41 (was ~4–7)
+  — a large chunk of that second jump is the orbital-weapon combat rework below,
+  not just the difficulty knobs. This is now generous by design; the on-device
+  pass is still where it gets dialed back to a real challenge.
+- **Menu reorganised PDTD-style**: bottom bar is SHOP · UPGRADES · BATTLE (centre,
+  bigger) · SENTINELS · EVENTS. Removed the orphaned Endless icon and the
+  standalone Protocols button (`MenuScreen.NavBtn`, was `IconBtn`).
+  - **`UpgradesScreen`** (new): hub with Research Tree / Protocols (ability
+    equip — user chose "fold into Upgrades") / Planet Modules (disabled
+    placeholder) / Codex.
+  - **`SentinelScreen`** (new): permanent Commendations + Sentinel Cores
+    upgrades for the 6 orbital weapons, plus **Planet Shield** (RD-equivalent
+    early, + Exotic Alloy past level 4 — user chose "both/either"). Costs via
+    `Shop.Spent()` now includes `SaveGame.CommendationsSpent`.
+  - `ModifierSet.OrbitalMeta` / `PlanetShieldLevel` (fed from `Save.OrbitalMeta`
+    / `Save.PlanetShieldLevel` in `Progression.BuildModifiers`) set a run's
+    **starting** orbital levels / shield pool — in-fight cards build on top.
+  - **Planet Shield mechanics**: `SimWorld.PlanetShieldStrength(level)`, soaks
+    damage before integrity (existing `PlanetShield` pool), regenerates ~1.2%
+    of max/sec in `CheckSurvivalEnd`.
+- **Reward popup** replaces the old text end-card: centred `_endCard` (like the
+  draft popup) showing XP / RD / Cores / Alloy, a **"×2 VICTORY BONUS"** on a
+  win (`SimWorld.AccrueRewards` doubles + adds flat extras), and a loss now
+  keeps the **full** run reward (was `Mods.LossRewardFrac`-reduced — "progress
+  every sitting"). Fixed a bug where the pause menu rendered on top of the
+  end card (`Hud._pauseMenu.Visible` now excludes `Won`/`Lost`).
+- **Orbital weapon combat rework** (explicit ask — "sentinels barely attack"):
+  - **Orbital Laser** → `kind: "beam_laser"`, a new sustained `OwEffect` (kind 4)
+    that locks onto a target and burns continuously (shield-pierce, hits
+    anything in the beam path) for the duration — matches PDTD's **Beam**
+    sentinel instead of the old instant zap.
+  - **Radiation Line** → holds a **fixed** corridor toward the current threat
+    for its duration (was slowly rotating) — matches PDTD's **Radiation Link**.
+  - All 6 weapons' cooldowns lowered so they fire noticeably more often.
+- `SimTest` `ALL CHECKS OK`, 1×≡4× identical (endless run now much longer —
+  wave 41 — but the harness still completes in ~9s).
 
 ---
 
