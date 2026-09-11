@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.22.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.23.0, 2026-09-10.** Update this file when you finish or start
 anything.
 
 ---
@@ -322,6 +322,40 @@ on-device pass.**
   - All 6 weapons' cooldowns lowered so they fire noticeably more often.
 - `SimTest` `ALL CHECKS OK`, 1×≡4× identical (endless run now much longer —
   wave 41 — but the harness still completes in ~9s).
+
+### v0.23.0 — centered/animated menus, Profile screen, card-styled HUD, Radiation Link rework
+User played through L1–6 and sent screenshots; this is the direct feedback pass.
+- **`MenuBackground`**: `AnimatePlanet` (default on) — slow idle zoom + pan every
+  frame, everywhere. Every sub-screen (Sentinels/Upgrades/Shop/Settings/
+  Research/Protocols/Codex/Profile/level-up) now centres the Earth
+  (`PlanetY=0.5`, `PlanetScale=0.55`) instead of the old top-anchored
+  placement that overlapped the card list. Headers pushed down
+  (`OffsetTop` 16→34) on all of those screens too.
+- **`SentinelScreen`** cards show the real card-art thumbnail per weapon
+  (+ Planet Shield) — were colour-bar-only before.
+- **New `ProfileScreen`** ("COMMANDER") — rank ring, hero level, campaign/
+  endless/weekly/codex/currency/sentinel stats. The rank badge on the menu
+  top bar is now tappable (`AppRoot.ShowProfile`) — was inert before.
+- **HUD top control row** (☰ ❚❚ 1x-4x ⚒ AUTO) was never added to the
+  `UiTheme.Instance` list, so it rendered in Godot's plain default theme —
+  "barely visible" per the user. New `Hud.StyleTopButton` gives it the same
+  armoured card-frame look as the ability buttons / weapon cards.
+- **★ STAR MAP button** added under the stage label on the main menu (star
+  map was reachable only via ALL-CLEARED before).
+- **Radiation Line rebuilt** to match PDTD's Radiation Link per explicit ask
+  ("a line connected by 2 dots or mini space stations… other upgrades add
+  connections… other upgrades rotate it around the planet"): now 2–4 relay-
+  station nodes (`SimWorld.RadLineNode`, one formula shared by sim + renderer)
+  linked by damage beams, the whole chain slowly orbiting the planet. Node
+  count and rotation speed both scale with level. Renderer draws a small
+  beacon marker at each node. **Known gap**: PDTD's *literal* branching
+  upgrade-card choice (pick "rotate" vs "add connection" vs "damage" each
+  level) was not built — that needs a per-weapon skill-tree UI, a bigger
+  lift; instead the same flavors are baked into one linear level curve.
+- Reward multipliers (`reward_rd_mult`/`xp_mult`/`credits_mult` in
+  `survival.json`) bumped ~15–20% — user: cost-scaling curve is good, base
+  rewards should be "a little better."
+- `SimTest` `ALL CHECKS OK`, 1×≡4× identical.
 
 ---
 
