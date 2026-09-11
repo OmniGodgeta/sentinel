@@ -184,6 +184,7 @@ public sealed partial class SimRenderer : Node2D
         DrawAbilityZones();
         DrawTurrets();
         DrawSentinels();
+        DrawOrbitalWeapons();
         DrawFxLayer(back: true);
         DrawEnemies();
         DrawProjectiles();
@@ -301,6 +302,122 @@ public sealed partial class SimRenderer : Node2D
             float rot = s.Angle + Mathf.Pi;   // face along orbit
             DrawCircle(s.Pos, 14f, new Color(0.6f, 1f, 0.85f, 0.14f));
             Blit(Art.Ship, s.Pos, rot, 24f, new Color(0.7f, 1f, 0.9f));
+        }
+    }
+
+    private static readonly Color[] OrbitalCols =
+    {
+        new(0.96f, 0.55f, 0.15f),  // cannon
+        new(0.95f, 0.28f, 0.24f),  // laser
+        new(0.98f, 0.82f, 0.20f),  // lightning
+        new(0.55f, 0.92f, 0.25f),  // rad_line
+        new(0.98f, 0.80f, 0.22f),  // shock_orb
+        new(0.55f, 0.92f, 0.25f),  // rad_zone
+    };
+
+    private void DrawOrbitalWeapons()
+    {
+        float gt = World.GameTime;
+        int n = World.OrbitalWeaponCount;
+
+        // faint shared orbit ring the sentinels ride
+        if (n > 0 && World.OrbitalWeaponLevel(0) >= 0)
+        {
+            float any = 0f;
+            for (int i = 0; i < n; i++) if (World.OrbitalWeaponLevel(i) > 0) { any = World.OrbitalPlatformPos(i).Length(); break; }
+            if (any > 0f) DrawArc(Vector2.Zero, any, 0, Mathf.Tau, 72, new Color(0.5f, 0.7f, 1f, 0.05f), 1.5f);
+        }
+
+        // the orbiting weapon platforms — chunky ringed sentinel stations (PDTD look)
+        for (int i = 0; i < n; i++)
+        {
+            if (World.OrbitalWeaponLevel(i) <= 0) continue;
+            var c = OrbitalCols[i % OrbitalCols.Length];
+            var p = World.OrbitalPlatformPos(i);
+            float ang = p.Angle() + Mathf.Pi / 2f;
+            float lvl = World.OrbitalWeaponLevel(i);
+            float sc = 1.5f + Mathf.Min(0.9f, lvl * 0.06f);
+            Vector2 R(float x, float y) => p + new Vector2(x, y).Rotated(ang) * sc;
+
+            DrawCircle(p, 20f * sc, new Color(c, 0.10f));
+            DrawArc(p, 15f * sc, 0, Mathf.Tau, 22, new Color(c, 0.28f), 1.5f);   // station ring
+            // hull disc
+            DrawColoredPolygon(new[] { R(-11, -5), R(11, -5), R(14, 4), R(0, 10), R(-14, 4) }, new Color(0.09f, 0.11f, 0.16f));
+            DrawPolyline(new[] { R(-11, -5), R(11, -5), R(14, 4), R(0, 10), R(-14, 4), R(-11, -5) }, new Color(c, 0.9f), 1.8f);
+            // spires
+            DrawLine(R(-6, -5), R(-6, -14), new Color(c, 0.8f), 1.8f);
+            DrawLine(R(0, -6), R(0, -18), new Color(c, 0.95f), 2.2f);
+            DrawLine(R(6, -5), R(6, -14), new Color(c, 0.8f), 1.8f);
+            // core glow
+            DrawCircle(p, 3.6f * sc * (0.8f + 0.2f * Mathf.Sin(gt * 5f + i)), new Color(c, 0.95f));
+            DrawCircle(p, 1.8f, Colors.White);
+        }
+
+        // instant strike (cannon / laser) — beam + a radial impact shockwave at the mark
+        if (World.FxOrbitalBeamLeft > 0f)
+        {
+            bool laser = World.FxOrbitalBeamKind == 1;
+            var c = laser ? OrbitalCols[1] : OrbitalCols[0];
+            float span = laser ? 0.16f : 0.12f;
+            float k = Mathf.Clamp(World.FxOrbitalBeamLeft / span, 0f, 1f);
+            var from = World.FxOrbitalBeamFrom;
+            var to = World.FxOrbitalBeamTo;
+            DrawLine(from, to, new Color(c, 0.32f * k), laser ? 7f : 5f);
+            DrawLine(from, to, new Color(1f, 0.96f, 0.9f, 0.9f * k), laser ? 3f : 2f);
+            // impact rings expanding on the ground
+            float grow = (1f - k);
+            DrawArc(to, 8f + grow * 46f, 0, Mathf.Tau, 28, new Color(c, 0.7f * k), 3f);
+            DrawArc(to, 4f + grow * 26f, 0, Mathf.Tau, 22, new Color(1f, 0.95f, 0.9f, 0.6f * k), 2f);
+        }
+
+        // active field effects
+        foreach (ref readonly var fx in World.OrbitalEffects)
+        {
+            if (fx.Kind == 1) // radiation line — a bright green lethal beam sweeping the field
+            {
+                float bearing = fx.P0 + gt * 0.35f;
+                var d = Vector2.FromAngle(bearing);
+                Vector2 a = d * World.B.PlanetRadius;
+                Vector2 b = d * World.B.DespawnRadius;
+                var gc = OrbitalCols[3];
+                DrawLine(a, b, new Color(gc, 0.22f), 34f);
+                DrawLine(a, b, new Color(gc, 0.7f), 10f);
+                DrawLine(a, b, new Color(0.92f, 1f, 0.82f, 0.95f), 3.5f);
+                // travelling energy nodes along the line
+                for (int s = 0; s < 6; s++)
+                {
+                    float ph = Mathf.PosMod(gt * 0.9f + s * 0.18f, 1f);
+                    DrawCircle(a.Lerp(b, ph), 4f, new Color(0.9f, 1f, 0.8f, 0.8f));
+                }
+            }
+            else // shock orb (2) / radiation zone (3) — concentric radial shockwaves (PDTD SHOCK ORB look)
+            {
+                var col = fx.Kind == 2 ? OrbitalCols[4] : OrbitalCols[5];
+                DrawCircle(fx.Pos, fx.Radius, new Color(col, 0.07f));
+                for (int ring = 0; ring < 4; ring++)
+                {
+                    float ph = Mathf.PosMod(gt * (fx.Kind == 2 ? 1.6f : 0.9f) + ring * 0.25f, 1f);
+                    DrawArc(fx.Pos, fx.Radius * ph, 0, Mathf.Tau, 44, new Color(col, (1f - ph) * (fx.Kind == 2 ? 0.7f : 0.4f)), fx.Kind == 2 ? 3f : 2f);
+                }
+                DrawArc(fx.Pos, fx.Radius, 0, Mathf.Tau, 44, new Color(col, 0.45f), 2f);
+                if (fx.Kind == 2)
+                {
+                    DrawCircle(fx.Pos, 8f, new Color(col, 0.95f));
+                    DrawCircle(fx.Pos, 4f, Colors.White);
+                    for (int s = 0; s < 6; s++)
+                    {
+                        float aa = gt * 11f + s * Mathf.Tau / 6f;
+                        var e = fx.Pos + Vector2.FromAngle(aa) * fx.Radius * (0.6f + 0.35f * Mathf.Sin(gt * 7f + s));
+                        DrawLine(fx.Pos, e, new Color(col, 0.35f), 1.4f);
+                    }
+                }
+                else
+                    for (int s = 0; s < 12; s++)
+                    {
+                        float aa = s * Mathf.Tau / 12f + gt * 0.4f;
+                        DrawCircle(fx.Pos + Vector2.FromAngle(aa) * fx.Radius * (0.5f + 0.4f * Mathf.Sin(gt * 2f + s)), 2.4f, new Color(col, 0.55f));
+                    }
+            }
         }
     }
 

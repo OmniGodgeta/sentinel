@@ -494,9 +494,26 @@ public sealed partial class Hud : CanvasLayer
         foreach (Node c in _draftCards.GetChildren()) c.QueueFree();
         foreach (int idx in w.DraftOptionIndices)
         {
-            var def = w.Cfg.HeroWeapons[idx];
-            int lvl = w.HeroWeaponLevel(idx);
-            var col = HexColor(def.Accent, UiTheme.Accent);
+            bool orbital = w.IsOrbitalCard(idx);
+            int wi = w.CardWeaponIndex(idx);
+            string cardId, cardName, accent;
+            int lvl;
+            string subtitle;
+            if (orbital)
+            {
+                var o = w.Cfg.OrbitalWeapons[wi];
+                cardId = o.Id; cardName = o.Name; accent = o.Accent;
+                lvl = w.OrbitalWeaponLevel(wi);
+                subtitle = "ORBITAL WEAPON";
+            }
+            else
+            {
+                var hh = w.Cfg.HeroWeapons[wi];
+                cardId = hh.Id; cardName = hh.Name; accent = hh.Accent;
+                lvl = w.HeroWeaponLevel(wi);
+                subtitle = "SHIP WEAPON";
+            }
+            var col = HexColor(accent, UiTheme.Accent);
             int i2 = idx;
 
             var btn = new Button
@@ -520,21 +537,26 @@ public sealed partial class Hud : CanvasLayer
 
             var art = new TextureRect
             {
-                Texture = CardTexture(def.Id),
+                Texture = CardTexture(cardId),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                CustomMinimumSize = new Vector2(0, 300),
+                CustomMinimumSize = new Vector2(0, 292),
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ClipContents = true,
             };
             v.AddChild(art);
 
-            var nm = new Label { Text = def.Name.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
+            var nm = new Label { Text = cardName.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
             nm.AddThemeFontOverride("font", UiTheme.Display);
-            nm.AddThemeFontSizeOverride("font_size", 16);
+            nm.AddThemeFontSizeOverride("font_size", 15);
             nm.AddThemeColorOverride("font_color", col.Lightened(0.3f));
             v.AddChild(nm);
+
+            var tag = new Label { Text = subtitle, HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
+            tag.AddThemeFontSizeOverride("font_size", 10);
+            tag.AddThemeColorOverride("font_color", new Color(col, 0.7f));
+            v.AddChild(tag);
 
             var lv = new Label
             {
@@ -666,7 +688,7 @@ public sealed partial class Hud : CanvasLayer
                      : $"Held {w.WavesCleared}/{w.WaveCount} waves.\n");
         sb.Append($"Research Data {Mathf.FloorToInt(w.ResearchDataEarned)}   XP {Mathf.FloorToInt(w.XpEarned)}   Cores {w.CoresEarned}\n");
         sb.Append($"Kills {s.EnemiesKilled}   ·   Leaked {s.EnemiesLeaked}\n");
-        sb.Append($"Damage — turrets {Pct(s.DamageByTurrets, tot)}  hero {Pct(s.DamageByHero, tot)}  abilities {Pct(s.DamageByAbilities, tot)}");
+        sb.Append($"Damage — turrets {Pct(s.DamageByTurrets, tot)}  ship {Pct(s.DamageByHero, tot)}  orbital {Pct(s.DamageByOrbital, tot)}  abilities {Pct(s.DamageByAbilities, tot)}");
         return sb.ToString();
     }
 

@@ -35,8 +35,8 @@ Level backdrops (assets/game/bg/m0*.jpg, endless.jpg, weekly.jpg)
   (The menu backdrop is drawn procedurally — no image.)
 
 Upgrade-card art (assets/game/cards/*.jpg)
-  Supplied by the project owner (AI-generated key art for the six ship-weapon
-  upgrade cards). Personal build.
+  Supplied by the project owner (AI-generated key art for the ship-weapon and
+  planet orbital-weapon upgrade cards, and the Planet Shield). Personal build.
 
 Fonts (assets/fonts/)
   Orbitron by Matt McInerney, Exo 2 by Natanael Gama — Google Fonts.

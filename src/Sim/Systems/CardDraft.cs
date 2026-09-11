@@ -4,21 +4,28 @@ using Godot;
 namespace Sentinel.Sim;
 
 /// <summary>
-/// The in-fight upgrade draft. Each commander level-up offers a choice of ship
-/// weapon cards (Laser Volley, Missile Barrage, Ion Cannon, Yamato Cannon,
-/// Plasma Field, Shields Boost); picking one raises that weapon a level.
-/// Deterministic — options come off <see cref="_draftRng"/>.
+/// The in-fight upgrade draft. Each commander level-up offers a choice of 4 cards
+/// drawn from one shared pool of ship weapons (Laser Volley, Missile Barrage, …)
+/// and planet orbital weapons (Orbital Cannon, Radiation Zone, …). Picking one
+/// raises that weapon a level. Deterministic — options come off <see cref="_draftRng"/>.
 /// </summary>
 public sealed partial class SimWorld
 {
+    /// <summary>Draft option indices ≥ this are orbital weapons (index − this);
+    /// below it they are hero weapons.</summary>
+    public const int OrbitalCardBase = 100;
+
     private int _pendingDrafts;
-    private readonly List<string> _runCards = new();   // weapon ids picked, in order
-    private readonly List<int> _draftOptions = new();  // weapon indices on offer
+    private readonly List<string> _runCards = new();
+    private readonly List<int> _draftOptions = new();
     private DetRandom _draftRng;
 
     public bool HasPendingDraft => _pendingDrafts > 0 && _draftOptions.Count > 0;
     public IReadOnlyList<int> DraftOptionIndices => _draftOptions;
     public IReadOnlyList<string> RunCards => _runCards;
+
+    public bool IsOrbitalCard(int idx) => idx >= OrbitalCardBase;
+    public int CardWeaponIndex(int idx) => idx >= OrbitalCardBase ? idx - OrbitalCardBase : idx;
 
     private void OfferDraftAfterWave()
     {
@@ -29,21 +36,22 @@ public sealed partial class SimWorld
     private void GenerateDraftOptions()
     {
         _draftOptions.Clear();
-        var weapons = Cfg.HeroWeapons;
-        if (weapons.Count == 0) { _pendingDrafts = 0; return; }
 
         var pool = new List<int>();
         var weights = new List<int>();
-        for (int i = 0; i < weapons.Count; i++)
+
+        void Consider(int cardIdx, int lvl, int max)
         {
-            int lvl = _hwLevel[i];
-            int max = Mathf.Max(1, weapons[i].MaxLevel);
-            if (lvl >= max) continue;
-            pool.Add(i);
-            // unlock a new system first, then favour the ones lagging behind
-            int w = 10 + (lvl == 0 ? 16 : 0) + (max - lvl) * 2;
-            weights.Add(Mathf.Max(1, w));
+            if (lvl >= Mathf.Max(1, max)) return;
+            pool.Add(cardIdx);
+            weights.Add(Mathf.Max(1, 10 + (lvl == 0 ? 14 : 0) + (max - lvl) * 2));
         }
+
+        var hw = Cfg.HeroWeapons;
+        for (int i = 0; i < hw.Count; i++) Consider(i, _hwLevel[i], hw[i].MaxLevel);
+        var ow = Cfg.OrbitalWeapons;
+        for (int i = 0; i < ow.Count; i++) Consider(OrbitalCardBase + i, _owLevel[i], ow[i].MaxLevel);
+
         if (pool.Count == 0) { _pendingDrafts = 0; return; }
 
         int want = Mathf.Min(4, pool.Count);
@@ -60,12 +68,21 @@ public sealed partial class SimWorld
         }
     }
 
-    private void PickCard(int weaponIndex)
+    private void PickCard(int cardIdx)
     {
-        if (!_draftOptions.Contains(weaponIndex)) return;
+        if (!_draftOptions.Contains(cardIdx)) return;
 
-        LevelUpHeroWeapon(weaponIndex);
-        _runCards.Add(Cfg.HeroWeapons[weaponIndex].Id);
+        if (IsOrbitalCard(cardIdx))
+        {
+            int w = cardIdx - OrbitalCardBase;
+            LevelUpOrbitalWeapon(w);
+            _runCards.Add("orbital:" + Cfg.OrbitalWeapons[w].Id);
+        }
+        else
+        {
+            LevelUpHeroWeapon(cardIdx);
+            _runCards.Add(Cfg.HeroWeapons[cardIdx].Id);
+        }
 
         _pendingDrafts = Mathf.Max(0, _pendingDrafts - 1);
         _draftOptions.Clear();

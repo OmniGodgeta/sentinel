@@ -23,6 +23,23 @@ public sealed partial class SimWorld
                     e.Shield = Mathf.Min(e.MaxShield, e.Shield + def.ShieldRegen * dt);
             }
 
+            // radiation / burn damage-over-time
+            if (e.BurnLeft > 0f)
+            {
+                e.BurnLeft -= dt;
+                DamageEnemy(i, e.BurnDps * dt, DamageSource.Orbital);
+                if (!e.Alive) continue;
+            }
+
+            // stun — held in place, no behaviour, no motion
+            if (e.StunLeft > 0f)
+            {
+                e.StunLeft -= dt;
+                e.SlowFactor = 1f;
+                e.DistToCenter = e.Pos.Length();
+                continue;
+            }
+
             StepEnemyBehaviour(ref e, def, i, dt);
 
             // --- motion ---

@@ -12,11 +12,12 @@ public struct RunStats
     public float DamageByTurrets;
     public float DamageByHero;
     public float DamageByAbilities;
+    public float DamageByOrbital;
     public int EnemiesKilled;
     public int EnemiesLeaked;
     public long TicksElapsed;
 
-    public readonly float TotalDamage => DamageByTurrets + DamageByHero + DamageByAbilities;
+    public readonly float TotalDamage => DamageByTurrets + DamageByHero + DamageByAbilities + DamageByOrbital;
 }
 
 /// <summary>
@@ -271,6 +272,7 @@ public sealed partial class SimWorld
         _runXp = 0f;
         _runLevel = 1;
         ResetHeroWeapons();
+        ResetOrbitalWeapons();
     }
 
     public void Enqueue(in SimCommand cmd) => _commands.Enqueue(cmd);
@@ -302,6 +304,7 @@ public sealed partial class SimWorld
                 StepHeroWeapons(SimClock.TickDelta);
                 StepPlanetBattery();
                 StepOrbitalSentinels();
+                StepOrbitalWeapons(SimClock.TickDelta);
                 StepTurrets();
                 StepProjectiles();
                 StepAbilities();
@@ -547,6 +550,7 @@ public sealed partial class SimWorld
         _runXp = 0f;
         _runLevel = 1;
             ResetHeroWeapons();
+            ResetOrbitalWeapons();
             Phase = SimPhase.Wave;
             PhaseTimer = 0f;
             return;
@@ -829,6 +833,7 @@ public sealed partial class SimWorld
             case DamageSource.Turret: Stats.DamageByTurrets += dealt; break;
             case DamageSource.Hero: Stats.DamageByHero += dealt; break;
             case DamageSource.Ability: Stats.DamageByAbilities += dealt; break;
+            case DamageSource.Orbital: Stats.DamageByOrbital += dealt; break;
         }
         Events.Push(SimEventKind.EnemyHit, e.Pos, dealt);
         if (e.Hp <= 0f) KillEnemy(idx, leaked: false);
@@ -916,7 +921,7 @@ public sealed partial class SimWorld
         if (seconds > Turrets[slot].DisabledLeft) Turrets[slot].DisabledLeft = seconds;
     }
 
-    internal enum DamageSource { Turret, Hero, Ability }
+    internal enum DamageSource { Turret, Hero, Ability, Orbital }
 
     // ---- geometry helpers ----
     internal Vector2 ClampToOrbitBand(Vector2 p)

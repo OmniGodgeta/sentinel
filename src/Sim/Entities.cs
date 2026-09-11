@@ -38,6 +38,9 @@ public struct Enemy
     // status
     public float SlowFactor;         // 1 = normal, <1 = slowed (this tick, cleared+reapplied each tick)
     public float PullX, PullY;       // accumulated pull impulse this tick
+    public float StunLeft;           // >0 = held in place, cannot move/attack (orbital lightning / shock orb)
+    public float BurnLeft;           // >0 = taking BurnDps damage-over-time (orbital laser / radiation)
+    public float BurnDps;
 
     // behaviour timers
     public float AttackTimer;        // bombard ranged / boss

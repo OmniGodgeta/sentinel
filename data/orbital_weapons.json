@@ -1,0 +1,38 @@
+{
+  "weapons": [
+    { "id": "orbital_cannon", "name": "Orbital Cannon", "kind": "cannon", "accent": "#f0821e",
+      "max_level": 12, "cooldown": 2.4, "cooldown_per_level": -0.13, "min_cooldown": 0.7,
+      "damage": 26, "damage_per_level": 14, "count": 1, "count_per_level": 0.25,
+      "range": 640, "armor_pierce": true,
+      "text": "A rail sentinel that fires piercing kinetic slugs at the nearest threat." },
+
+    { "id": "orbital_laser", "name": "Orbital Laser", "kind": "laser", "accent": "#e8352f",
+      "max_level": 12, "cooldown": 3.8, "cooldown_per_level": -0.2, "min_cooldown": 1.0,
+      "damage": 22, "damage_per_level": 12, "range": 660,
+      "shield_pierce": true, "dot_dps": 8, "dot_seconds": 3,
+      "text": "Fires a beam that pierces shields and multiple targets, applying burn." },
+
+    { "id": "orbital_lightning", "name": "Orbital Lightning", "kind": "lightning", "accent": "#f5c518",
+      "max_level": 12, "cooldown": 5.5, "cooldown_per_level": -0.28, "min_cooldown": 2.0,
+      "damage": 44, "damage_per_level": 22, "count": 3, "count_per_level": 0.4,
+      "radius": 190, "stun_seconds": 1.2,
+      "text": "Chain lightning that arcs between targets and stuns on impact." },
+
+    { "id": "radiation_line", "name": "Radiation Line", "kind": "rad_line", "accent": "#7ee030",
+      "max_level": 12, "cooldown": 10, "cooldown_per_level": -0.45, "min_cooldown": 5,
+      "damage": 14, "damage_per_level": 7, "duration": 8, "duration_per_level": 1.0,
+      "text": "Projects a lethal radiation line across the field for a time." },
+
+    { "id": "shock_orb", "name": "Shock Orb", "kind": "shock_orb", "accent": "#f2c024",
+      "max_level": 12, "cooldown": 12, "cooldown_per_level": -0.5, "min_cooldown": 6,
+      "damage": 12, "damage_per_level": 6, "radius": 120, "radius_per_level": 10,
+      "duration": 8, "duration_per_level": 0.8, "stun_seconds": 0.6,
+      "text": "Deploys an orb that orbits the planet, unleashing electric shockwaves." },
+
+    { "id": "radiation_zone", "name": "Radiation Zone", "kind": "rad_zone", "accent": "#7ee030",
+      "max_level": 12, "cooldown": 11, "cooldown_per_level": -0.45, "min_cooldown": 5.5,
+      "damage": 10, "damage_per_level": 6, "radius": 130, "radius_per_level": 12,
+      "duration": 12, "duration_per_level": 1.0,
+      "text": "Releases a drifting radiation zone that poisons everything inside it." }
+  ]
+}

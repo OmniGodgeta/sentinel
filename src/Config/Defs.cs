@@ -130,6 +130,42 @@ public sealed record HeroWeaponsDef
     public System.Collections.Generic.List<HeroWeaponDef> Weapons { get; init; } = new();
 }
 
+/// <summary>One of the planet's orbital weapons (data/orbital_weapons.json) —
+/// PDTD-style "sentinels" that orbit the planet and auto-fire. Levels up from the
+/// same in-fight card draft as the hero weapons; later levels also from meta.</summary>
+public sealed record OrbitalWeaponDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Kind { get; init; } = "";        // cannon | laser | lightning | rad_line | shock_orb | rad_zone
+    public string Accent { get; init; } = "#f0a020";
+    public string Text { get; init; } = "";
+    public int MaxLevel { get; init; } = 10;
+    public float Cooldown { get; init; } = 6f;
+    public float CooldownPerLevel { get; init; }
+    public float MinCooldown { get; init; } = 1f;
+    public float Damage { get; init; }
+    public float DamagePerLevel { get; init; }
+    public int Count { get; init; } = 1;           // bolts / chain jumps
+    public float CountPerLevel { get; init; }
+    public float Range { get; init; } = 700f;
+    public float Radius { get; init; }
+    public float RadiusPerLevel { get; init; }
+    public float Duration { get; init; }           // rad_line / shock_orb / rad_zone
+    public float DurationPerLevel { get; init; }
+    public float DotDps { get; init; }             // burn / radiation damage-over-time
+    public float DotSeconds { get; init; }
+    public float StunSeconds { get; init; }
+    public bool ShieldPierce { get; init; }
+    public bool ArmorPierce { get; init; }
+    public int MetaFromLevel { get; init; } = 6;   // levels at/above this need out-of-battle purchase
+}
+
+public sealed record OrbitalWeaponsDef
+{
+    public System.Collections.Generic.List<OrbitalWeaponDef> Weapons { get; init; } = new();
+}
+
 public sealed record TurretFork
 {
     public string Id { get; init; } = "";

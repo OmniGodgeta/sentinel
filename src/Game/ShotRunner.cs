@@ -39,7 +39,7 @@ public sealed partial class ShotRunner : Node2D
         GD.Print($"HeroWeapons.Count = {_game.World.Cfg.HeroWeapons.Count}");
     }
 
-    private bool _launched, _grabWave, _grabDraft, _picked;
+    private bool _launched, _grabWave, _grabDraft, _picked, _xpDone;
 
     public override void _Process(double delta)
     {
@@ -66,9 +66,8 @@ public sealed partial class ShotRunner : Node2D
                 _grabWave = true;
             }
 
-            // farm XP to force a level-up draft
-            if (!_game.DraftPause && !w.HasPendingDraft && _t > 4.5)
-                w.GainRunXp(400f);
+            // one modest XP injection to force ~4 level-ups, then let it play
+            if (!_xpDone && _t > 4.5) { w.GainRunXp(700f); _xpDone = true; }
 
             if (w.HasPendingDraft && !_grabDraft && _t > 5.0)
             {
@@ -80,23 +79,25 @@ public sealed partial class ShotRunner : Node2D
             }
         }
 
-        if (_t > 22) { GD.Print("=== timeout, quitting"); GetTree().Quit(); }
+        if (_t > 30) { GD.Print("=== timeout, quitting"); GetTree().Quit(); }
     }
 
     private void GrabDraft()
     {
-        // let the HUD build the popup for a couple of frames first
         GetTree().CreateTimer(0.6).Timeout += () =>
         {
             Grab("draft");
             var w = _game.World;
-            if (w.HasPendingDraft && w.DraftOptionIndices.Count > 0)
+            // drain every pending draft, preferring orbital cards so they show on the field
+            int guard = 0;
+            while (w.HasPendingDraft && w.DraftOptionIndices.Count > 0 && guard++ < 20)
             {
                 int pick = w.DraftOptionIndices[0];
-                GD.Print($"=== picking option {pick}");
+                foreach (int o in w.DraftOptionIndices) if (w.IsOrbitalCard(o)) { pick = o; break; }
                 _game.RequestPickCard(pick);
             }
-            GetTree().CreateTimer(1.0).Timeout += () => { Grab("after_pick"); GetTree().Quit(); };
+            _game.SetSpeed(2);
+            GetTree().CreateTimer(10.0).Timeout += () => { Grab("orbital_field"); GetTree().Quit(); };
         };
     }
 

@@ -244,6 +244,7 @@ public sealed partial class GameRoot : Node2D
                         case 0: sfx?.Play("turret_shot_b", -10f, 0.16f, 0.02); break;      // laser
                         case 2: sfx?.Play("sentinel_shot", -8f, 0.1f); break;              // ion
                         case 3: sfx?.Play("explosion_big", 0f, 0f); Input.VibrateHandheld(90); break; // yamato
+                        case >= 10: sfx?.Play("sentinel_shot", -12f, 0.18f, 0.06); break;  // orbital weapons
                     }
                     break;
                 case SimEventKind.HeroShieldPop:

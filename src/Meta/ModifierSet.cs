@@ -47,6 +47,10 @@ public sealed class ModifierSet
     public float SentinelDamageMult = 1f;
     public float SentinelRateMult = 1f;
 
+    // ---- orbital weapons: persistent per-weapon levels bought out of battle ----
+    public System.Collections.Generic.Dictionary<string, int> OrbitalMeta = new();
+    public int OrbitalMetaLevel(string id) => OrbitalMeta.TryGetValue(id, out int v) ? v : 0;
+
     // ---- unlocks (base kit is small; level cards open the rest) ----
     public System.Collections.Generic.HashSet<string> UnlockedTurrets = new();
     public System.Collections.Generic.HashSet<string> UnlockedAbilities = new();
@@ -85,6 +89,7 @@ public sealed class ModifierSet
         var c = (ModifierSet)MemberwiseClone();
         c.UnlockedTurrets = new System.Collections.Generic.HashSet<string>(UnlockedTurrets);
         c.UnlockedAbilities = new System.Collections.Generic.HashSet<string>(UnlockedAbilities);
+        c.OrbitalMeta = new System.Collections.Generic.Dictionary<string, int>(OrbitalMeta);
         return c;
     }
 
