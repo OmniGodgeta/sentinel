@@ -17,8 +17,8 @@
   "late_ease_amount": 0.4,
   "endless_ramp_seconds": 170,
   "self_repair_frac_per_sec": 0.0042,
-  "reward_rd_mult": 3.0,
-  "reward_xp_mult": 3.0,
-  "reward_credits_mult": 1.7,
+  "reward_rd_mult": 3.6,
+  "reward_xp_mult": 3.6,
+  "reward_credits_mult": 1.9,
   "core_every_n_minutes": 2
 }

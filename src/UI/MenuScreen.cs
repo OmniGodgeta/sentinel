@@ -51,6 +51,15 @@ public sealed partial class MenuScreen : CanvasLayer
         sub.AddThemeFontSizeOverride("font_size", 18);
         topBar.AddChild(sub);
 
+        // tap the rank badge / name to open the Commander profile
+        var profileTap = new Button { Flat = true, Position = Vector2.Zero, Size = new Vector2(330, 92) };
+        profileTap.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
+        profileTap.AddThemeStyleboxOverride("hover", new StyleBoxEmpty());
+        profileTap.AddThemeStyleboxOverride("pressed", new StyleBoxEmpty());
+        profileTap.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+        profileTap.Pressed += () => { Click(); App.ShowProfile(); };
+        topBar.AddChild(profileTap);
+
         // currency chip — tap to see every balance
         var comm = new GlowButton { Text = $"✦ {App.Shop.Balance}", FontSize = 24, Alt = true, CustomMinimumSize = new Vector2(150, 84) };
         comm.AnchorLeft = 1f; comm.AnchorRight = 1f; comm.OffsetLeft = -246; comm.OffsetRight = -100; comm.OffsetTop = 6;
@@ -76,6 +85,16 @@ public sealed partial class MenuScreen : CanvasLayer
         stageLbl.AddThemeConstantOverride("outline_size", 5);
         stageLbl.AddThemeColorOverride("font_outline_color", new Color(0.01f, 0.03f, 0.06f, 0.9f));
         AddChild(stageLbl);
+
+        var starMapBtn = new GlowButton
+        {
+            Text = "◈  STAR MAP", FontSize = 15, Alt = false,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.60f, AnchorBottom = 0.60f,
+            OffsetLeft = -90, OffsetRight = 90, OffsetTop = 30, OffsetBottom = 74,
+        };
+        starMapBtn.Theme = UiTheme.Instance;
+        starMapBtn.Pressed += () => { Click(); App.ShowLevels(); };
+        AddChild(starMapBtn);
 
         // ---------- PDTD-style bottom bar: Shop · Upgrades · BATTLE · Sentinels · Events ----------
         var bar = new HBoxContainer

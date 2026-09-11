@@ -19,14 +19,12 @@ public sealed partial class AbilityScreen : CanvasLayer
     public override void _Ready()
     {
         Layer = 6;
-        var bg = new ColorRect { Color = new Color(0.03f, 0.03f, 0.05f) };
-        bg.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        AddChild(bg);
+        AddChild(new MenuBackground { PlanetY = 0.5f, PlanetScale = 0.55f, NebulaAlpha = 0.12f });
 
         var root = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetLeft = -270, OffsetRight = 270, OffsetTop = 16, OffsetBottom = -12,
+            OffsetLeft = -270, OffsetRight = 270, OffsetTop = 34, OffsetBottom = -12,
         };
         root.AddThemeConstantOverride("separation", 10);
         root.Theme = UiTheme.Instance;

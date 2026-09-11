@@ -102,15 +102,18 @@ public sealed partial class Hud : CanvasLayer
             Alignment = BoxContainer.AlignmentMode.Center,
         };
         _ctlRow = ctl;
+        ctl.Theme = UiTheme.Instance;
         ctl.AddThemeConstantOverride("separation", 7);
         AddChild(ctl);
         _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(64, 56) };
         _menuOpen.AddThemeFontSizeOverride("font_size", 22);
         _menuOpen.Pressed += () => { if (!Root.IsPaused) { Root.TogglePause(); _pause.Text = "▶"; } };
+        StyleTopButton(_menuOpen, UiTheme.Accent);
         ctl.AddChild(_menuOpen);
         _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(64, 56) };
         _pause.AddThemeFontSizeOverride("font_size", 20);
         _pause.Pressed += () => { Root.TogglePause(); _pause.Text = Root.IsPaused ? "▶" : "❚❚"; };
+        StyleTopButton(_pause, UiTheme.Accent);
         ctl.AddChild(_pause);
         for (int i = 0; i < 4; i++)
         {
@@ -118,6 +121,7 @@ public sealed partial class Hud : CanvasLayer
             var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(72, 56), ToggleMode = true };
             btn.AddThemeFontSizeOverride("font_size", 19);
             btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); };
+            StyleTopButton(btn, UiTheme.Accent);
             ctl.AddChild(btn);
             _speed[i] = btn;
         }
@@ -125,11 +129,13 @@ public sealed partial class Hud : CanvasLayer
         _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(64, 56), ToggleMode = true };
         _buildToggle.AddThemeFontSizeOverride("font_size", 22);
         _buildToggle.TooltipText = "Build / upgrade turrets";
+        StyleTopButton(_buildToggle, new Color(0.95f, 0.7f, 0.3f));
         ctl.AddChild(_buildToggle);
         _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(74, 56), ToggleMode = true, ButtonPressed = true };
         _autoBtn.AddThemeFontSizeOverride("font_size", 15);
         _autoBtn.TooltipText = "Ship weapons auto-fire — tap to fire them by hand instead";
         _autoBtn.Pressed += () => Root.RequestToggleAutoFire();
+        StyleTopButton(_autoBtn, new Color(0.5f, 0.95f, 0.6f));
         ctl.AddChild(_autoBtn);
 
         // boss bar
@@ -691,6 +697,29 @@ public sealed partial class Hud : CanvasLayer
     {
         int sp = n.IndexOf(' ');
         return sp > 0 ? n[..sp].ToUpperInvariant() : n.ToUpperInvariant();
+    }
+
+    /// <summary>Armoured chip look for the top control row (speed/pause/build/auto) —
+    /// same card-frame language as the ability buttons and the weapon-upgrade cards,
+    /// so the always-visible battle controls actually read against the starfield.</summary>
+    private static void StyleTopButton(Button b, Color accent)
+    {
+        StyleBoxFlat Box(float bgA, float borderA) => new()
+        {
+            BgColor = new Color(0.05f, 0.06f, 0.09f, 0.9f + bgA * 0.1f),
+            BorderColor = new Color(accent, borderA),
+            BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+        };
+        b.AddThemeStyleboxOverride("normal", Box(0f, 0.55f));
+        b.AddThemeStyleboxOverride("hover", Box(0.15f, 0.85f));
+        b.AddThemeStyleboxOverride("focus", Box(0.15f, 0.85f));
+        var pressed = Box(0.3f, 1f); pressed.BgColor = new Color(accent, 0.30f);
+        b.AddThemeStyleboxOverride("pressed", pressed);
+        b.AddThemeColorOverride("font_color", new Color(1f, 1f, 1f, 0.92f));
+        b.AddThemeColorOverride("font_hover_color", Colors.White);
+        b.AddThemeColorOverride("font_pressed_color", Colors.White);
+        b.AddThemeColorOverride("font_focus_color", Colors.White);
     }
 
     private static StyleBoxFlat CardBox(Color accent, float bgA) => new()

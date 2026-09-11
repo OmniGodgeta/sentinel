@@ -11,7 +11,7 @@ public sealed partial class SettingsScreen : CanvasLayer
     public override void _Ready()
     {
         Layer = 6;
-        AddChild(new MenuBackground { PlanetY = 0.22f, NebulaAlpha = 0.4f });
+        AddChild(new MenuBackground { PlanetY = 0.5f, PlanetScale = 0.55f, NebulaAlpha = 0.25f });
 
         var wrap = new CenterContainer();
         wrap.SetAnchorsPreset(Control.LayoutPreset.FullRect);

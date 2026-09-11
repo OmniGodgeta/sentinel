@@ -22,12 +22,12 @@ public sealed partial class ShopScreen : CanvasLayer
     public override void _Ready()
     {
         Layer = 6;
-        AddChild(new MenuBackground { PlanetY = 0.16f, NebulaAlpha = 0.10f });
+        AddChild(new MenuBackground { PlanetY = 0.5f, PlanetScale = 0.55f, NebulaAlpha = 0.10f });
 
         var root = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetLeft = -300, OffsetRight = 300, OffsetTop = 16, OffsetBottom = -12,
+            OffsetLeft = -300, OffsetRight = 300, OffsetTop = 34, OffsetBottom = -12,
         };
         root.AddThemeConstantOverride("separation", 10);
         root.Theme = UiTheme.Instance;

@@ -20,12 +20,12 @@ public sealed partial class SentinelScreen : CanvasLayer
     public override void _Ready()
     {
         Layer = 6;
-        AddChild(new MenuBackground { PlanetY = 0.14f, NebulaAlpha = 0.10f });
+        AddChild(new MenuBackground { PlanetY = 0.5f, PlanetScale = 0.55f, NebulaAlpha = 0.10f });
 
         var root = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetLeft = -320, OffsetRight = 320, OffsetTop = 16, OffsetBottom = -12,
+            OffsetLeft = -320, OffsetRight = 320, OffsetTop = 34, OffsetBottom = -12,
         };
         root.AddThemeConstantOverride("separation", 10);
         root.Theme = UiTheme.Instance;
@@ -70,7 +70,7 @@ public sealed partial class SentinelScreen : CanvasLayer
         {
             int lvl = s.PlanetShieldLevel;
             int max = 12;
-            var card = MakeCard(new Color(0.32f, 0.72f, 1f), "PLANET SHIELD",
+            var card = MakeCard(new Color(0.32f, 0.72f, 1f), "PLANET SHIELD", "planet_shield",
                 $"Orbital barrier — absorbs {Mathf.RoundToInt(SimWorld.PlanetShieldStrength(lvl))} damage before the planet is touched. Recharges slowly in battle.",
                 lvl, max);
             var row = card.GetNode<HBoxContainer>("row");
@@ -103,7 +103,7 @@ public sealed partial class SentinelScreen : CanvasLayer
         {
             int lvl = s.OrbitalMeta.TryGetValue(w.Id, out int v) ? v : 0;
             int cap = w.MaxLevel;
-            var card = MakeCard(HexColor(w.Accent), w.Name.ToUpperInvariant(), w.Text, lvl, cap);
+            var card = MakeCard(HexColor(w.Accent), w.Name.ToUpperInvariant(), w.Id, w.Text, lvl, cap);
             var row = card.GetNode<HBoxContainer>("row");
             if (lvl < cap)
             {
@@ -127,7 +127,7 @@ public sealed partial class SentinelScreen : CanvasLayer
         }
     }
 
-    private PanelContainer MakeCard(Color accent, string name, string desc, int lvl, int max)
+    private PanelContainer MakeCard(Color accent, string name, string imgId, string desc, int lvl, int max)
     {
         var p = new PanelContainer();
         p.AddThemeStyleboxOverride("panel", new StyleBoxFlat
@@ -136,11 +136,30 @@ public sealed partial class SentinelScreen : CanvasLayer
             BorderColor = new Color(accent, 0.6f),
             BorderWidthLeft = 4, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
             CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
-            ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 10, ContentMarginBottom = 10,
+            ContentMarginLeft = 10, ContentMarginRight = 12, ContentMarginTop = 10, ContentMarginBottom = 10,
         });
         var row = new HBoxContainer { Name = "row" };
         row.AddThemeConstantOverride("separation", 12);
         p.AddChild(row);
+
+        var art = new TextureRect
+        {
+            Texture = CardTexture(imgId),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            CustomMinimumSize = new Vector2(64, 64),
+            ClipContents = true,
+        };
+        var artFrame = new PanelContainer { CustomMinimumSize = new Vector2(64, 64) };
+        artFrame.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0, 0, 0, 0.3f), BorderColor = new Color(accent, 0.7f),
+            BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 6, CornerRadiusTopRight = 6, CornerRadiusBottomLeft = 6, CornerRadiusBottomRight = 6,
+            ContentMarginLeft = 0, ContentMarginRight = 0, ContentMarginTop = 0, ContentMarginBottom = 0,
+        });
+        artFrame.AddChild(art);
+        row.AddChild(artFrame);
 
         var col = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         col.AddThemeConstantOverride("separation", 3);
@@ -154,6 +173,15 @@ public sealed partial class SentinelScreen : CanvasLayer
         tx.AddThemeFontSizeOverride("font_size", 12);
         col.AddChild(tx);
         return p;
+    }
+
+    private readonly System.Collections.Generic.Dictionary<string, Texture2D> _cardTex = new();
+    private Texture2D? CardTexture(string id)
+    {
+        if (_cardTex.TryGetValue(id, out var t)) return t;
+        t = GD.Load<Texture2D>($"res://assets/game/cards/{id}.jpg");
+        _cardTex[id] = t;
+        return t;
     }
 
     private static Color HexColor(string hex) { try { return new Color(hex); } catch { return UiTheme.Accent; } }

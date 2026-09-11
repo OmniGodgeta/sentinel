@@ -23,6 +23,11 @@ public sealed partial class MenuBackground : Node2D
     public float NebulaAlpha = 1f;
     public string Image = "";
     public bool ShowPlanet = true;
+    /// <summary>Slow idle zoom + pan on the planet so a static background screen still breathes.</summary>
+    public bool AnimatePlanet = true;
+
+    private Vector2 _basePos;
+    private float _baseDiam;
 
     private PlanetView? _planet;
     private Texture2D? _tex;
@@ -75,11 +80,24 @@ public sealed partial class MenuBackground : Node2D
     {
         if (_planet == null) return;
         var vp = GetViewportRect().Size;
-        _planet.Position = new Vector2(vp.X * 0.5f, vp.Y * PlanetY);
-        _planet.Diameter = Mathf.Min(vp.X * 0.74f, 420f) * PlanetScale;
+        _basePos = new Vector2(vp.X * 0.5f, vp.Y * PlanetY);
+        _baseDiam = Mathf.Min(vp.X * 0.74f, 420f) * PlanetScale;
+        _planet.Position = _basePos;
+        _planet.Diameter = _baseDiam;
     }
 
-    public override void _Process(double delta) { _t += (float)delta; QueueRedraw(); }
+    public override void _Process(double delta)
+    {
+        _t += (float)delta;
+        if (_planet != null && AnimatePlanet)
+        {
+            float zoom = 1f + 0.05f * Mathf.Sin(_t * 0.045f);
+            var pan = new Vector2(Mathf.Sin(_t * 0.028f) * _baseDiam * 0.05f, Mathf.Cos(_t * 0.037f) * _baseDiam * 0.035f);
+            _planet.Position = _basePos + pan;
+            _planet.Diameter = _baseDiam * zoom;
+        }
+        QueueRedraw();
+    }
 
     public override void _Draw()
     {

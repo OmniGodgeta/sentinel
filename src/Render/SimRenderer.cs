@@ -373,20 +373,31 @@ public sealed partial class SimRenderer : Node2D
         // active field effects
         foreach (ref readonly var fx in World.OrbitalEffects)
         {
-            if (fx.Kind == 1) // radiation line — PDTD Radiation Link: a fixed lethal corridor
+            if (fx.Kind == 1) // radiation line — PDTD Radiation Link: relay stations + a linked beam
             {
-                var d = Vector2.FromAngle(fx.P0);
-                Vector2 a = d * World.B.PlanetRadius;
-                Vector2 b = d * World.B.DespawnRadius;
                 var gc = OrbitalCols[3];
-                DrawLine(a, b, new Color(gc, 0.22f), 30f);
-                DrawLine(a, b, new Color(gc, 0.7f), 9f);
-                DrawLine(a, b, new Color(0.92f, 1f, 0.82f, 0.95f), 3f);
-                // travelling energy nodes along the corridor
-                for (int s = 0; s < 6; s++)
+                int nodeN = Mathf.Max(2, fx.NodeCount);
+                System.Span<Vector2> nodes = stackalloc Vector2[4];
+                for (int k = 0; k < nodeN; k++) nodes[k] = World.RadLineNode(in fx, k);
+
+                for (int seg = 0; seg < nodeN - 1; seg++)
                 {
-                    float ph = Mathf.PosMod(gt * 0.9f + s * 0.18f, 1f);
-                    DrawCircle(a.Lerp(b, ph), 4f, new Color(0.9f, 1f, 0.8f, 0.8f));
+                    Vector2 a = nodes[seg], b = nodes[seg + 1];
+                    DrawLine(a, b, new Color(gc, 0.22f), 26f);
+                    DrawLine(a, b, new Color(gc, 0.7f), 8f);
+                    DrawLine(a, b, new Color(0.92f, 1f, 0.82f, 0.95f), 2.6f);
+                    for (int s = 0; s < 4; s++)
+                    {
+                        float ph = Mathf.PosMod(gt * 0.9f + s * 0.25f, 1f);
+                        DrawCircle(a.Lerp(b, ph), 3.5f, new Color(0.9f, 1f, 0.8f, 0.8f));
+                    }
+                }
+                // the relay stations themselves — small mini-beacons at each node
+                for (int k = 0; k < nodeN; k++)
+                {
+                    DrawCircle(nodes[k], 8f, new Color(gc, 0.18f));
+                    DrawArc(nodes[k], 6f, 0, Mathf.Tau, 12, new Color(gc, 0.85f), 1.8f);
+                    DrawCircle(nodes[k], 2.6f, new Color(0.9f, 1f, 0.85f, 0.95f));
                 }
             }
             else if (fx.Kind == 4) // beam laser — PDTD Beam sentinel: continuous locked-on burn

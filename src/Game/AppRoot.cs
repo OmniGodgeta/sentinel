@@ -112,6 +112,7 @@ public sealed partial class AppRoot : Node
     public void ShowShop() => SwapTo(new ShopScreen { App = this });
     public void ShowUpgrades() => SwapTo(new UpgradesScreen { App = this });
     public void ShowSentinels() => SwapTo(new SentinelScreen { App = this });
+    public void ShowProfile() => SwapTo(new ProfileScreen { App = this });
 
     /// <summary>Resolve the equipped ability loadout to unlocked ids + their per-ability effect/cd multipliers.</summary>
     private (string[] loadout, float[] eff, float[] cd) ResolveLoadout()

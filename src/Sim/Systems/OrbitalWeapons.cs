@@ -29,6 +29,24 @@ public sealed partial class SimWorld
         public Vector2 From;    // beam_laser: the platform's current position (it keeps orbiting)
         public EnemyHandle Target;   // beam_laser: locked target
         public int WeaponIndex;      // beam_laser: which platform this beam is anchored to
+        public int NodeCount;        // rad_line: how many linked relay stations (2 = a single link)
+        public float Spin;           // rad_line: angular speed the whole link chain orbits at
+        public float StartTime;      // rad_line: GameTime this effect was cast
+    }
+
+    private const float RadLineRing = 0.62f;      // × DespawnRadius — where the relay stations sit
+    private const float RadLineSpreadDeg = 64f;    // arc the chain of stations spans
+
+    /// <summary>Position of Radiation Line relay station <paramref name="k"/> (of
+    /// <see cref="OwEffect.NodeCount"/>) right now — shared by the sim and the
+    /// renderer so the drawn chain always matches what's actually dealing damage.</summary>
+    public Vector2 RadLineNode(in OwEffect fx, int k)
+    {
+        int n = Mathf.Max(2, fx.NodeCount);
+        float spread = Mathf.DegToRad(RadLineSpreadDeg);
+        float baseAngle = fx.P0 + fx.Spin * (GameTime - fx.StartTime);
+        float a = baseAngle + (n == 1 ? 0f : -spread * 0.5f + spread * k / (n - 1));
+        return Vector2.FromAngle(a) * (B.DespawnRadius * RadLineRing);
     }
     private readonly System.Collections.Generic.List<OwEffect> _owEffects = new();
 
@@ -157,10 +175,17 @@ public sealed partial class SimWorld
             }
             case "rad_line":
             {
-                // PDTD's Radiation Link — a fixed corridor toward the current threat, held for the duration
+                // PDTD's Radiation Link — relay stations linked by a damage corridor, slowly
+                // orbiting the planet; higher levels add relays (more connections)
                 int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
                 float bearing = t >= 0 ? Enemies[t].Pos.Angle() : Rng.NextFloat(0f, Mathf.Tau);
-                _owEffects.Add(new OwEffect { Kind = 1, DieAt = GameTime + dur, Dps = dmg, P0 = bearing });
+                int nodes = Mathf.Clamp(2 + L / 4, 2, 4);
+                float spinDir = Rng.NextInt(2) == 0 ? 1f : -1f;
+                _owEffects.Add(new OwEffect
+                {
+                    Kind = 1, DieAt = GameTime + dur, Dps = dmg, P0 = bearing,
+                    NodeCount = nodes, Spin = spinDir * (0.10f + 0.01f * L), StartTime = GameTime,
+                });
                 break;
             }
             case "shock_orb":
@@ -181,20 +206,32 @@ public sealed partial class SimWorld
         float interval = 0.25f;
         float t = GameTime;
 
-        if (fx.Kind == 1) // radiation line — PDTD's Radiation Link: a fixed corridor for the duration
+        if (fx.Kind == 1) // radiation line — PDTD's Radiation Link: relay stations joined by a beam
         {
-            Vector2 dir = Vector2.FromAngle(fx.P0);
+            int n = Mathf.Max(2, fx.NodeCount);
+            System.Span<Vector2> nodes = stackalloc Vector2[4];
+            for (int k = 0; k < n; k++) nodes[k] = RadLineNode(in fx, k);
+
             while (fx.Tick >= interval)
             {
                 fx.Tick -= interval;
-                for (int e = 0; e < EnemyHighWater; e++)
+                for (int seg = 0; seg < n - 1; seg++)
                 {
-                    ref readonly var en = ref Enemies[e];
-                    if (!en.Alive) continue;
-                    float along = en.Pos.Dot(dir);
-                    if (along < B.PlanetRadius || along > B.DespawnRadius) continue;
-                    if ((en.Pos - dir * along).Length() > 26f + en.Radius) continue;
-                    DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
+                    Vector2 a = nodes[seg], b = nodes[seg + 1];
+                    Vector2 dir = b - a;
+                    float len = dir.Length();
+                    if (len < 1f) continue;
+                    dir /= len;
+                    for (int e = 0; e < EnemyHighWater; e++)
+                    {
+                        ref readonly var en = ref Enemies[e];
+                        if (!en.Alive) continue;
+                        Vector2 rel = en.Pos - a;
+                        float along = rel.Dot(dir);
+                        if (along < 0f || along > len) continue;
+                        if ((rel - dir * along).Length() > 24f + en.Radius) continue;
+                        DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
+                    }
                 }
             }
         }

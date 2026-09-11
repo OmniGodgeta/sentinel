@@ -19,7 +19,7 @@ public sealed partial class LevelUpScreen : CanvasLayer
     public override void _Ready()
     {
         Layer = 7;
-        AddChild(new MenuBackground { PlanetY = 0.24f });
+        AddChild(new MenuBackground { PlanetY = 0.5f, PlanetScale = 0.5f, NebulaAlpha = 0.2f });
 
         var wrap = new CenterContainer();
         wrap.SetAnchorsPreset(Control.LayoutPreset.FullRect);
