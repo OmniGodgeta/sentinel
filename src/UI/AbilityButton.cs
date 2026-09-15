@@ -20,7 +20,7 @@ public sealed partial class AbilityButton : Control
     public void Configure(AbilityDef def)
     {
         _def = def;
-        CustomMinimumSize = new Vector2(96, 108);
+        CustomMinimumSize = new Vector2(112, 126);
         TooltipText = $"{def.Name}\n{def.Role}";
     }
 
@@ -47,7 +47,7 @@ public sealed partial class AbilityButton : Control
         if (_def == null) return;
         var sz = Size;
         var role = RoleColor(_def.Role);
-        float ch = 8f;                                   // corner chamfer
+        float ch = 9f;                                   // corner chamfer
         var frame = new Rect2(1, 1, sz.X - 2, sz.Y - 2);
 
         // ---- outer glow when ready ----
@@ -69,7 +69,7 @@ public sealed partial class AbilityButton : Control
 
         // ---- corner brackets ----
         var bcol = new Color(role, _ready ? 0.95f : 0.55f);
-        DrawCornerBrackets(Shrink(frame, 4f), 9f, bcol);
+        DrawCornerBrackets(Shrink(frame, 4f), 10f, bcol);
 
         // ---- glyph ----
         var gc = sz * new Vector2(0.5f, 0.44f);
@@ -82,7 +82,7 @@ public sealed partial class AbilityButton : Control
             DrawRect(new Rect2(frame.Position, new Vector2(frame.Size.X, frame.Size.Y * frac)), new Color(0.02f, 0.03f, 0.05f, 0.74f));
             DrawRect(new Rect2(frame.Position.X, frame.Position.Y + frame.Size.Y * frac - 2f, frame.Size.X, 2f), new Color(role, 0.7f));
             DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 8f), Mathf.CeilToInt(_cd).ToString(),
-                       HorizontalAlignment.Center, sz.X, 22, Colors.White);
+                       HorizontalAlignment.Center, sz.X, 25, Colors.White);
         }
         else if (_active > 0.01f)
         {
@@ -94,13 +94,13 @@ public sealed partial class AbilityButton : Control
         if (_armed > 0f)
         {
             float g = 0.45f + 0.55f * Mathf.Abs(Mathf.Sin(_t * 7f));
-            DrawCornerBrackets(Grow(frame, 3f), 12f, new Color(1f, 0.92f, 0.35f, g));
+            DrawCornerBrackets(Grow(frame, 3f), 13f, new Color(1f, 0.92f, 0.35f, g));
         }
 
         // ---- name plate ----
-        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 16f, frame.Size.X - 6f, 13f), new Color(0f, 0f, 0f, 0.5f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 5f), _def.Name.ToUpperInvariant(),
-                   HorizontalAlignment.Center, sz.X, 10, new Color(role.Lightened(0.3f), 0.9f));
+        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 18f, frame.Size.X - 6f, 15f), new Color(0f, 0f, 0f, 0.5f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 6f), _def.Name.ToUpperInvariant(),
+                   HorizontalAlignment.Center, sz.X, 11, new Color(role.Lightened(0.3f), 0.9f));
     }
 
     // ---- chamfered-rect helpers (the card frame shape) ----

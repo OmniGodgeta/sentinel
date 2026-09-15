@@ -9,6 +9,7 @@ namespace Sentinel.UI;
 /// costs Commendations (coins) + Sentinel Cores (the exp-equivalent). The level
 /// bought here is where the weapon starts every battle; the in-fight cards take it
 /// further. Planet Shield lives here too — upgraded only outside battle.
+/// Reached from the Upgrades hub (<see cref="UpgradesScreen"/>), not the main menu.
 /// </summary>
 public sealed partial class SentinelScreen : CanvasLayer
 {
@@ -35,7 +36,7 @@ public sealed partial class SentinelScreen : CanvasLayer
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
         var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
-        back.Pressed += () => App.ShowMenu();
+        back.Pressed += () => App.ShowUpgrades();
         head.AddChild(back);
         var title = new Label { Text = "  SENTINELS", VerticalAlignment = VerticalAlignment.Center };
         title.AddThemeFontOverride("font", UiTheme.Display);

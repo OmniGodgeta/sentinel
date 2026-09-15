@@ -29,10 +29,18 @@ The working dir / repo is `sentinel` and the C# assembly + namespace stay
    `data/survival.json` holds every spawn/difficulty constant.
 3. **No monetisation surface.** No payment SDK, no loot boxes, no random rewards,
    no premium currency, no FOMO timers — not even stubbed.
-4. **Free assets only** — CC0 or CC-BY (never NC / "personal use"). Kenney is the
-   primary source. Credit CC-BY in `assets/game/CREDITS.txt`. `assets/music/` is
-   the one exception (copyrighted, personal build) and is flagged for removal
-   before any public release.
+4. **Free assets only by default** — CC0 or CC-BY (never NC / "personal use").
+   Kenney is the primary source. Credit CC-BY in `assets/game/CREDITS.txt`.
+   `assets/music/` is a standing exception (copyrighted, personal build) and is
+   flagged for removal before any public release.
+   **User exception (2026-09-15):** this app is sideloaded only and will never
+   be published, so the user has said copyrighted sounds/animations/art are
+   fine to use too, same as the music — no need to ask each time. Still default
+   to free/original work; use copyrighted assets when they're a clear
+   improvement (e.g. matching Planet Defense TD's actual look/feel more
+   closely — see `docs/pdtd-reference` pointer in `docs/ROADMAP.md` §6), and
+   note the source in `CREDITS.txt` regardless so a future "make this public"
+   pass knows what would need to come out.
 
 ## Release ritual
 

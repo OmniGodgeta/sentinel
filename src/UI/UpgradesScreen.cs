@@ -5,8 +5,10 @@ namespace Sentinel.UI;
 
 /// <summary>
 /// UPGRADES — the hub for everything that improves the planet and the commander
-/// outside of battle: the Research tree, battle Protocols (abilities), and Planet
-/// Modules. (Sentinels and the cosmetic Shop have their own buttons.)
+/// outside of battle: the Research tree, battle Protocols (abilities), Sentinels
+/// (orbital weapon + Planet Shield upgrades), and Planet Modules. (The cosmetic
+/// Shop and Codex have their own top-level buttons too — Codex is duplicated
+/// here for discoverability.)
 /// </summary>
 public sealed partial class UpgradesScreen : CanvasLayer
 {
@@ -56,6 +58,9 @@ public sealed partial class UpgradesScreen : CanvasLayer
         root.AddChild(HubButton("◆  PROTOCOLS",
             "Equip the battle abilities you've recovered from Commander level-ups (Kinetic Barrage, Aegis Barrier…).",
             App.ShowAbilities));
+        root.AddChild(HubButton("✷  SENTINELS",
+            "Permanent Commendations / Sentinel Cores upgrades for the 6 orbital weapons, plus Planet Shield.",
+            App.ShowSentinels));
         root.AddChild(HubButton("⬢  PLANET MODULES",
             "Slot-in modules with varied effects — extra integrity, faster repair, spawn dampeners, reward boosters.  (coming soon)",
             null));

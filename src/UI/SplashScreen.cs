@@ -83,6 +83,7 @@ public sealed partial class SplashScreen : CanvasLayer
                 if (UpdateChecker.IsNewer(tag, UpdateChecker.Current()))
                 {
                     string label = string.IsNullOrWhiteSpace(name) || name == tag ? tag : $"{name} ({tag})";
+                    UpdateChecker.MarkAvailable(tag, url);
                     ShowGate(label, url);
                 }
             }

@@ -32,6 +32,7 @@ public sealed partial class Hud : CanvasLayer
     private Button _pause = null!;
     private Button _menuOpen = null!;
     private Button _buildToggle = null!;
+    private Button _updateBadge = null!;
 
     /// <summary>Build/upgrade panel is showing over the play field (real-time management).</summary>
     public bool BuildOpen { get; private set; }
@@ -95,44 +96,58 @@ public sealed partial class Hud : CanvasLayer
         _status.AddThemeFontSizeOverride("font_size", 18);
         top.AddChild(_status);
 
+        // update-available badge — mirrors the menu card's state so a run in progress
+        // (survival holds can run long) still surfaces it instead of only at launch
+        _updateBadge = new Button
+        {
+            Text = "⇩", CustomMinimumSize = new Vector2(48, 48),
+            AnchorLeft = 1f, AnchorRight = 1f, OffsetLeft = -58, OffsetRight = -10, OffsetTop = 8,
+            TooltipText = "Update available — tap to download",
+            Visible = Sentinel.Meta.UpdateChecker.Available,
+        };
+        _updateBadge.AddThemeFontSizeOverride("font_size", 22);
+        StyleTopButton(_updateBadge, new Color(1f, 0.75f, 0.3f));
+        _updateBadge.Pressed += () => OS.ShellOpen(Sentinel.Meta.UpdateChecker.AvailableUrl);
+        AddChild(_updateBadge);
+
         // speed + pause + leave + build row
         var ctl = new HBoxContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -256, OffsetTop = 96, OffsetRight = 256,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -300, OffsetTop = 96, OffsetRight = 300,
             Alignment = BoxContainer.AlignmentMode.Center,
         };
         _ctlRow = ctl;
         ctl.Theme = UiTheme.Instance;
-        ctl.AddThemeConstantOverride("separation", 7);
+        ctl.AddThemeConstantOverride("separation", 8);
         AddChild(ctl);
-        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(64, 56) };
-        _menuOpen.AddThemeFontSizeOverride("font_size", 22);
+        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(76, 66) };
+        _menuOpen.AddThemeFontSizeOverride("font_size", 26);
         _menuOpen.Pressed += () => { if (!Root.IsPaused) { Root.TogglePause(); _pause.Text = "▶"; } };
         StyleTopButton(_menuOpen, UiTheme.Accent);
         ctl.AddChild(_menuOpen);
-        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(64, 56) };
-        _pause.AddThemeFontSizeOverride("font_size", 20);
+        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(76, 66) };
+        _pause.AddThemeFontSizeOverride("font_size", 23);
         _pause.Pressed += () => { Root.TogglePause(); _pause.Text = Root.IsPaused ? "▶" : "❚❚"; };
         StyleTopButton(_pause, UiTheme.Accent);
         ctl.AddChild(_pause);
         for (int i = 0; i < 4; i++)
         {
             int mult = i + 1;
-            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(72, 56), ToggleMode = true };
-            btn.AddThemeFontSizeOverride("font_size", 19);
+            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(82, 66), ToggleMode = true };
+            btn.AddThemeFontSizeOverride("font_size", 22);
             btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); };
             StyleTopButton(btn, UiTheme.Accent);
             ctl.AddChild(btn);
             _speed[i] = btn;
         }
         UpdateSpeedButtons(1);
-        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(64, 56), ToggleMode = true };
-        _buildToggle.AddThemeFontSizeOverride("font_size", 22);
+        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(76, 66), ToggleMode = true };
+        _buildToggle.AddThemeFontSizeOverride("font_size", 26);
         _buildToggle.TooltipText = "Build / upgrade turrets";
         StyleTopButton(_buildToggle, new Color(0.95f, 0.7f, 0.3f));
         ctl.AddChild(_buildToggle);
-        _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(74, 56), ToggleMode = true, ButtonPressed = true };
-        _autoBtn.AddThemeFontSizeOverride("font_size", 15);
+        _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(88, 66), ToggleMode = true, ButtonPressed = true };
+        _autoBtn.AddThemeFontSizeOverride("font_size", 17);
         _autoBtn.TooltipText = "Ship weapons auto-fire — tap to fire them by hand instead";
         _autoBtn.Pressed += () => Root.RequestToggleAutoFire();
         StyleTopButton(_autoBtn, new Color(0.5f, 0.95f, 0.6f));
@@ -172,7 +187,7 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
-        _wavePanel.OffsetTop = -244;   // weapon row + ability bar + hint
+        _wavePanel.OffsetTop = -270;   // weapon row + ability bar + hint
         AddChild(_wavePanel);
         var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         _wavePanel.AddChild(wv);
@@ -375,6 +390,8 @@ public sealed partial class Hud : CanvasLayer
 
     public void Refresh()
     {
+        _updateBadge.Visible = Sentinel.Meta.UpdateChecker.Available;
+
         var w = Root.World;
         float hpFraction = w.PlanetIntegrityMax > 0 ? w.PlanetIntegrity / w.PlanetIntegrityMax : 0;
         _integrity.Value = hpFraction;
@@ -664,8 +681,8 @@ public sealed partial class Hud : CanvasLayer
                 var def = w.Cfg.HeroWeapons[i];
                 var col = HexColor(def.Accent, UiTheme.Accent);
                 int i2 = i;
-                var b = new Button { CustomMinimumSize = new Vector2(96, 52) };
-                b.AddThemeFontSizeOverride("font_size", 12);
+                var b = new Button { CustomMinimumSize = new Vector2(112, 62) };
+                b.AddThemeFontSizeOverride("font_size", 14);
                 b.AddThemeStyleboxOverride("normal", CardBox(col, 0.16f));
                 b.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
                 b.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));

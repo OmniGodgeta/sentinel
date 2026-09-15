@@ -29,7 +29,7 @@ public sealed partial class SimWorld
         public Vector2 From;    // beam_laser: the platform's current position (it keeps orbiting)
         public EnemyHandle Target;   // beam_laser: locked target
         public int WeaponIndex;      // beam_laser: which platform this beam is anchored to
-        public int NodeCount;        // rad_line: how many linked relay stations (2 = a single link)
+        public int NodeCount;        // rad_line: how many linked relay stations (2-5; 2 = a single link)
         public float Spin;           // rad_line: angular speed the whole link chain orbits at
         public float StartTime;      // rad_line: GameTime this effect was cast
     }
@@ -179,7 +179,9 @@ public sealed partial class SimWorld
                 // orbiting the planet; higher levels add relays (more connections)
                 int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
                 float bearing = t >= 0 ? Enemies[t].Pos.Angle() : Rng.NextFloat(0f, Mathf.Tau);
-                int nodes = Mathf.Clamp(2 + L / 4, 2, 4);
+                // levels up in relay stations, not just damage — 2 nodes (1 link) at L1-3,
+                // up to 5 nodes (4 links) at max level, matching PDTD's Radiation Link
+                int nodes = Mathf.Clamp(2 + (L - 1) / 3, 2, 5);
                 float spinDir = Rng.NextInt(2) == 0 ? 1f : -1f;
                 _owEffects.Add(new OwEffect
                 {
@@ -209,7 +211,7 @@ public sealed partial class SimWorld
         if (fx.Kind == 1) // radiation line — PDTD's Radiation Link: relay stations joined by a beam
         {
             int n = Mathf.Max(2, fx.NodeCount);
-            System.Span<Vector2> nodes = stackalloc Vector2[4];
+            System.Span<Vector2> nodes = stackalloc Vector2[5];
             for (int k = 0; k < n; k++) nodes[k] = RadLineNode(in fx, k);
 
             while (fx.Tick >= interval)

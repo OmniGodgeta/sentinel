@@ -23,12 +23,12 @@ public sealed partial class MenuScreen : CanvasLayer
         var p = App.Prog;
 
         // ---------- top identity + currency bar ----------
-        var topBar = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 12, OffsetBottom = 118, OffsetLeft = 14, OffsetRight = -14 };
+        var topBar = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 12, OffsetBottom = 132, OffsetLeft = 14, OffsetRight = -14 };
         topBar.Theme = UiTheme.Instance;
         AddChild(topBar);
 
         // rank badge
-        var badge = new PanelContainer { CustomMinimumSize = new Vector2(84, 84) };
+        var badge = new PanelContainer { CustomMinimumSize = new Vector2(100, 100) };
         badge.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(0.06f, 0.10f, 0.18f, 0.9f),
@@ -38,21 +38,21 @@ public sealed partial class MenuScreen : CanvasLayer
         badge.Position = new Vector2(0, 6);
         var bl = new Label { Text = $"{p.Commander}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         bl.AddThemeFontOverride("font", UiTheme.Display);
-        bl.AddThemeFontSizeOverride("font_size", 38);
+        bl.AddThemeFontSizeOverride("font_size", 44);
         bl.AddThemeColorOverride("font_color", UiTheme.Accent);
         badge.AddChild(bl);
         topBar.AddChild(badge);
 
-        var name = new Label { Text = "COMMANDER", Position = new Vector2(100, 8) };
+        var name = new Label { Text = "COMMANDER", Position = new Vector2(112, 12) };
         name.AddThemeFontOverride("font", UiTheme.Display);
-        name.AddThemeFontSizeOverride("font_size", 28);
+        name.AddThemeFontSizeOverride("font_size", 32);
         topBar.AddChild(name);
-        var sub = new Label { Text = $"Hero {p.Hero}/20    ·    RD {F(s.ResearchData)}    ·    Cores {s.SentinelCores}", Position = new Vector2(100, 50), Modulate = new Color(1, 1, 1, 0.66f) };
-        sub.AddThemeFontSizeOverride("font_size", 18);
+        var sub = new Label { Text = $"Hero {p.Hero}/20    ·    RD {F(s.ResearchData)}    ·    Cores {s.SentinelCores}", Position = new Vector2(112, 58), Modulate = new Color(1, 1, 1, 0.66f) };
+        sub.AddThemeFontSizeOverride("font_size", 21);
         topBar.AddChild(sub);
 
         // tap the rank badge / name to open the Commander profile
-        var profileTap = new Button { Flat = true, Position = Vector2.Zero, Size = new Vector2(330, 92) };
+        var profileTap = new Button { Flat = true, Position = Vector2.Zero, Size = new Vector2(340, 106) };
         profileTap.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
         profileTap.AddThemeStyleboxOverride("hover", new StyleBoxEmpty());
         profileTap.AddThemeStyleboxOverride("pressed", new StyleBoxEmpty());
@@ -60,16 +60,22 @@ public sealed partial class MenuScreen : CanvasLayer
         profileTap.Pressed += () => { Click(); App.ShowProfile(); };
         topBar.AddChild(profileTap);
 
+        var gear = new GlowButton { Text = "⚙", FontSize = 44, Alt = true, CustomMinimumSize = new Vector2(100, 100) };
+        gear.AnchorLeft = 1f; gear.AnchorRight = 1f; gear.OffsetLeft = -100; gear.OffsetRight = 0; gear.OffsetTop = 4;
+        gear.Pressed += () => { Click(); App.ShowSettings(); };
+        topBar.AddChild(gear);
+
         // currency chip — tap to see every balance
-        var comm = new GlowButton { Text = $"✦ {App.Shop.Balance}", FontSize = 24, Alt = true, CustomMinimumSize = new Vector2(150, 84) };
-        comm.AnchorLeft = 1f; comm.AnchorRight = 1f; comm.OffsetLeft = -246; comm.OffsetRight = -100; comm.OffsetTop = 6;
+        var comm = new GlowButton { Text = $"✦ {App.Shop.Balance}", FontSize = 28, Alt = true, CustomMinimumSize = new Vector2(176, 100) };
+        comm.AnchorLeft = 1f; comm.AnchorRight = 1f; comm.OffsetLeft = -290; comm.OffsetRight = -114; comm.OffsetTop = 4;
         comm.Pressed += () => { Click(); ShowWallet(); };
         topBar.AddChild(comm);
 
-        var gear = new GlowButton { Text = "⚙", FontSize = 40, Alt = true, CustomMinimumSize = new Vector2(84, 84) };
-        gear.AnchorLeft = 1f; gear.AnchorRight = 1f; gear.OffsetLeft = -84; gear.OffsetRight = 0; gear.OffsetTop = 6;
-        gear.Pressed += () => { Click(); App.ShowSettings(); };
-        topBar.AddChild(gear);
+        // codex — beside the credits chip
+        var codex = new GlowButton { Text = "☰ CODEX", FontSize = 20, Alt = true, CustomMinimumSize = new Vector2(136, 100) };
+        codex.AnchorLeft = 1f; codex.AnchorRight = 1f; codex.OffsetLeft = -440; codex.OffsetRight = -304; codex.OffsetTop = 4;
+        codex.Pressed += () => { Click(); App.ShowCodex(); };
+        topBar.AddChild(codex);
 
         var (mfile, mid2, mname, cleared) = NextMission();
 
@@ -86,21 +92,11 @@ public sealed partial class MenuScreen : CanvasLayer
         stageLbl.AddThemeColorOverride("font_outline_color", new Color(0.01f, 0.03f, 0.06f, 0.9f));
         AddChild(stageLbl);
 
-        var starMapBtn = new GlowButton
-        {
-            Text = "◈  STAR MAP", FontSize = 15, Alt = false,
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.60f, AnchorBottom = 0.60f,
-            OffsetLeft = -90, OffsetRight = 90, OffsetTop = 30, OffsetBottom = 74,
-        };
-        starMapBtn.Theme = UiTheme.Instance;
-        starMapBtn.Pressed += () => { Click(); App.ShowLevels(); };
-        AddChild(starMapBtn);
-
-        // ---------- PDTD-style bottom bar: Shop · Upgrades · BATTLE · Sentinels · Events ----------
+        // ---------- PDTD-style bottom bar: Shop · Upgrades · BATTLE · Star Map · Events ----------
         var bar = new HBoxContainer
         {
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
-            OffsetLeft = 14, OffsetRight = -14, OffsetTop = -134, OffsetBottom = -30,
+            OffsetLeft = 14, OffsetRight = -14, OffsetTop = -158, OffsetBottom = -30,
             Alignment = BoxContainer.AlignmentMode.Center,
         };
         bar.AddThemeConstantOverride("separation", 8);
@@ -112,8 +108,8 @@ public sealed partial class MenuScreen : CanvasLayer
 
         var battle = new GlowButton
         {
-            Text = cleared ? "STAR MAP" : "BATTLE", FontSize = 28, Primary = true,
-            CustomMinimumSize = new Vector2(170, 104),
+            Text = cleared ? "STAR MAP" : "BATTLE", FontSize = 32, Primary = true,
+            CustomMinimumSize = new Vector2(190, 124),
         };
         battle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         battle.SizeFlagsStretchRatio = 1.5f;
@@ -121,7 +117,7 @@ public sealed partial class MenuScreen : CanvasLayer
         battle.Pressed += () => { Confirm(); if (cleared) App.ShowLevels(); else App.StartMission(mfile, mid2); };
         bar.AddChild(battle);
 
-        bar.AddChild(NavBtn("✷\nSENTINELS", App.ShowSentinels, true));
+        bar.AddChild(NavBtn("◈\nSTAR MAP", App.ShowLevels, true));
 
         var wk = Sentinel.Meta.WeeklyChallenge.Current();
         bar.AddChild(NavBtn("★\nEVENTS", App.StartWeekly, true));
@@ -192,7 +188,7 @@ public sealed partial class MenuScreen : CanvasLayer
 
     private GlowButton NavBtn(string label, System.Action onPress, bool alt)
     {
-        var b = new GlowButton { Text = label, FontSize = 15, Alt = alt, CustomMinimumSize = new Vector2(0, 92) };
+        var b = new GlowButton { Text = label, FontSize = 18, Alt = alt, CustomMinimumSize = new Vector2(0, 110) };
         b.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         b.Pressed += () => { Click(); onPress(); };
         return b;

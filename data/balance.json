@@ -15,7 +15,7 @@
   "xp_per_wave": 12,
   "xp_mission_clear": 100,
 
-  "battery_damage": 22,
+  "battery_damage": 11,
   "battery_interval": 1.0,
   "battery_salvo": 3,
   "battery_missile_speed": 320,

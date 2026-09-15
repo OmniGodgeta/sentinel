@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.23.0, 2026-09-10.** Update this file when you finish or start
+Last updated: **v0.24.0, 2026-09-15.** Update this file when you finish or start
 anything.
 
 ---
@@ -357,6 +357,92 @@ User played through L1–6 and sent screenshots; this is the direct feedback pas
   rewards should be "a little better."
 - `SimTest` `ALL CHECKS OK`, 1×≡4× identical.
 
+### v0.24.0 — feedback pass: planet-battery balance, joystick redock, bigger HUD, menu reflow, laser/missile SFX, in-mission update badge
+User-reported feedback session (no on-device pass yet — see §4, still the blocker).
+- **`data/balance.json` `battery_damage` 22→11** — the planet's own missile battery
+  was one-shotting Skiffs (22 hp basic enemy) even at the softest early-mission
+  scale (`DifficultyScale` ≈0.70 at m01 start, ≈15 effective hp). Halving it means
+  a Skiff always needs **2** battery-missile hits, never 1, at every difficulty
+  level in the game (worst case is m01 start; verified against `DifficultyScale`
+  algebra, not just SimTest win/loss). Bot still clears m01–m06 per SimTest — no
+  regression.
+- **Radiation Line (`orbital_weapons.json radiation_line`) levels up its relay
+  count faster and further** — user: "should have more line connected" as you
+  level it, PDTD-style. Old curve `2 + L/4` capped at 4 nodes and needed L8 to
+  get there; new `2 + (L-1)/3` (clamped 2–5) spans the *whole* 1–12 level range:
+  L1-3→2 nodes (1 link), L4-6→3, L7-9→4, L10-12→5 (4 links). Bumped the
+  `stackalloc Vector2[4]`→`[5]` buffers in `OrbitalWeapons.cs` `StepOwEffect` and
+  `SimRenderer.cs` to match. **User explicitly OK'd leaning further into PDTD's
+  designs/assets for this weapon (and in general) — see the note in §7, this
+  build is personal and will never be published.**
+- **Virtual joystick redocked** (`src/UI/VirtualJoystick.cs`) — user: it was
+  "hard to show up," needing the thumb to relocate every touch because the ring
+  only appeared wherever you first touched (a fully floating stick). Now a
+  translucent base ring is **always drawn** at a fixed spot near the bottom-left
+  of the touch zone (dim when idle, bright when held); a touch anywhere in the
+  zone still drives it, but the knob offset is always relative to that fixed
+  dock instead of the touch-down point. `EnsureBase()` computes the dock lazily
+  once the control has a real `Size`.
+  Screenshot-verified via `ShotRunner`/`Shots.tscn`: the dock renders as a dim
+  ring at a sane bottom-left spot, clear of the weapon/ability panel. **Still
+  not touch-tested** — the actual drag feel (does it need a huge initial swing
+  to reach full deflection from a touch far from the dock?) needs a real device.
+- **HUD in-mission buttons enlarged**: top control row (☰ ❚❚ 1x-4x ⚒ AUTO) grew
+  from 56-64px tall to 66-76px (font 15-22→17-26); the bottom weapon-select row
+  96×52→112×62 (font 12→14); `AbilityButton` 96×108→112×126 (its self-drawn frame
+  scales with `Size` already; chamfer/bracket/font constants nudged up to match).
+  `_wavePanel.OffsetTop` -244→-270 for the extra height.
+- **Menu (`MenuScreen.cs`) reflow** — user: buttons should all be "a bit bigger,"
+  plus 3 structural asks:
+  - Rank badge/name/sub, credits chip, and ⚙ settings all sized up (~84→100-176px,
+    font 24-40→28-44).
+  - **New ☰ CODEX button** in the top bar beside the credits chip (opens
+    `App.ShowCodex` directly — Codex was previously only reachable one level
+    deep, inside Upgrades).
+  - **★ Star Map moved into the bottom nav bar** (was a small separate button
+    tucked under the stage label) — it now sits where Sentinels used to be.
+  - **Sentinels moved into the Upgrades hub** (`UpgradesScreen.cs` gained a
+    "✷ SENTINELS" tile) — the bottom bar is now SHOP · UPGRADES · BATTLE ·
+    STAR MAP · EVENTS. `SentinelScreen`'s back button now returns to Upgrades,
+    not the menu.
+  - Bottom-bar `NavBtn`s 92→110px tall (font 15→18); BATTLE 170×104→190×124
+    (font 28→32).
+  - Screenshot-verified (menu + Upgrades) via a throwaway `MenuShot.cs`/
+    `MenuShot.tscn` harness (same pattern as prior sessions — instantiate
+    `AppRoot`, jump straight to the screen, grab a PNG; deleted after use, not
+    kept). Codex/credits/gear cluster and the 5-button bottom bar both render
+    clean with no overlap; Sentinels shows correctly as the 3rd Upgrades tile.
+- **Laser + missile SFX resynthesised** for a punchier, more "realistic" weapon
+  character (user: "if possible... more realistic"). `turret_shot` /
+  `turret_shot_b` (turret lasers) / `sentinel_shot` (orbital weapons) replaced
+  Kenney's "Sci-Fi Sounds" pack with a layered descending-chirp tone
+  (`aevalsrc` linear frequency sweep) + a filtered noise crack + a sub thump —
+  3 distinct variants. `missile_launch` / `battery_launch` rebuilt with an
+  ignition crack, a `tremolo`-modulated brown-noise rocket-motor roar, a sub
+  thump, and a receding lowpass-decaying whoosh (was a simpler hiss+thump).
+  All in `tools/gen_sfx.sh` (now the source of truth for all 9 synthesised
+  effects, not just the original 6 — `mkdir -p` added so the script is
+  self-contained). `assets/game/CREDITS.txt` updated; `tools/sfx/` (the script's
+  scratch output dir) added to `.gitignore`.
+  ⚠ **Not yet listened to** — no audio-playback tool available this session;
+  the filter chains were verified to run clean (`ffprobe`/`volumedetect`, no
+  clipping, sane durations) but not auditioned. Have a listen in-engine and
+  tweak to taste before calling this done.
+- **In-mission update badge** — user: wants to know about an update "in game,"
+  not just at the menu/splash. Splash already has a *mandatory* gate and the
+  menu already has a dismissible card, both fire once per launch — but neither
+  helps if the check resolves (or a release drops) *after* you're already in a
+  long survival hold. `Meta/UpdateChecker` now exposes static
+  `Available`/`AvailableTag`/`AvailableUrl`, set by whichever check (splash's own
+  request, or the menu's `UpdateChecker` instance) resolves first; `Hud.cs` shows
+  a small amber ⇩ badge next to the integrity bar whenever it's true, tapping
+  opens the release page. Polled once/frame in `Hud.Refresh()` (cheap bool read).
+- Bumped `config/version` 0.23.0→0.24.0 (`project.godot` + `export_presets.cfg`)
+  per the usual ritual — **not tagged/pushed/released this session**, that's
+  still the user's call.
+- `SimTest` `ALL CHECKS OK`, 1×≡4× identical, m01-m06 still won (balance edits
+  didn't regress the scripted bot).
+
 ---
 
 ## 2. Architecture map
@@ -563,7 +649,13 @@ rooted) has the game installed if you need a live capture.
 3. **No monetisation surface** — no payment SDK, loot boxes, random rewards,
    premium currency, or FOMO timers, not even stubbed.
 4. **Free assets only** — CC0 / CC-BY. Kenney primary. Credit CC-BY in
-   `assets/game/CREDITS.txt`. Music is the flagged exception.
+   `assets/game/CREDITS.txt`. Music is the flagged exception. **Relaxed by the
+   user 2026-09-15**: since this is a personal build that will never be
+   published, copyrighted sounds/animations are fine going forward too if they
+   noticeably improve the game — see `../CLAUDE.md` §4 note. Still prefer
+   free/original assets by default; reach for copyrighted ones when they're a
+   clear step up (e.g. matching PDTD's actual look/feel more closely), and keep
+   noting the source so a future "make this public" pass knows what to rip out.
 5. **Pronoun/attribution**: this session's commit trailer is
    `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` +
    `Claude-Session: https://claude.ai/code/session_01DjdMzGRRkfZ2EixgmGYkBm`
@@ -589,7 +681,7 @@ SDK + `~/.android/debug.keystore`.
 the release. Pushing to `main` without a tag just makes an artifact. `gh` is
 authed as `OmniGodgeta`.
 
-Current: **v0.11.0**, `application/config/version = "0.11.0"`, APK ~214 MB.
+Current: **v0.24.0**, `application/config/version = "0.24.0"`, APK ~214 MB.
 
 ---
 

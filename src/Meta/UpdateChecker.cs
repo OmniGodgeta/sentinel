@@ -16,6 +16,17 @@ public sealed partial class UpdateChecker : CanvasLayer
 
     private static bool _checkedThisLaunch;
 
+    /// <summary>Set by whichever check (splash gate or this menu card) resolves first each
+    /// launch — lets any other screen, including the in-mission HUD, know a build is
+    /// waiting without re-hitting the GitHub API.</summary>
+    public static bool Available { get; private set; }
+    public static string AvailableTag { get; private set; } = "";
+    public static string AvailableUrl { get; private set; } = "";
+    public static void MarkAvailable(string tag, string url)
+    {
+        Available = true; AvailableTag = tag; AvailableUrl = url;
+    }
+
     public override void _Ready()
     {
         Layer = 20;
@@ -44,6 +55,7 @@ public sealed partial class UpdateChecker : CanvasLayer
             string name = Get("name", tag);
 
             if (!IsNewer(tag, Current())) { QueueFree(); return; }
+            MarkAvailable(tag, url);
             ShowCard(string.IsNullOrWhiteSpace(name) ? tag : name, tag, notes, url);
         }
         catch { QueueFree(); }

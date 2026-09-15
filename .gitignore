@@ -21,6 +21,7 @@ Thumbs.db
 
 # Scratch
 /scratch/
+/tools/sfx/
 telemetry/*.jsonl
 
 

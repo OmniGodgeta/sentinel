@@ -377,7 +377,7 @@ public sealed partial class SimRenderer : Node2D
             {
                 var gc = OrbitalCols[3];
                 int nodeN = Mathf.Max(2, fx.NodeCount);
-                System.Span<Vector2> nodes = stackalloc Vector2[4];
+                System.Span<Vector2> nodes = stackalloc Vector2[5];
                 for (int k = 0; k < nodeN; k++) nodes[k] = World.RadLineNode(in fx, k);
 
                 for (int seg = 0; seg < nodeN - 1; seg++)
