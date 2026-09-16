@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.26.0, 2026-09-16.** Update this file when you finish or start
+Last updated: **v0.26.1, 2026-09-16.** Update this file when you finish or start
 anything.
 
 ---
@@ -162,35 +162,84 @@ still lines up with the taller panel.
 centred with room to spare, bottom weapon cards visibly bigger and less
 sparse-looking (screenshotted at Commander level 6, three unlocked weapons).
 
-### Still open from this ask — genuinely large, not started
+### Still open from this ask
 
-- **#6 — match PDTD's ratios for enemy stats and upgrade numbers.** User
-  confirmed: ratios/relative feel, not literal PDTD numbers (Beyond's damage
-  scale is its own economy — established back at the v0.12 calibration pass,
-  still the right call). This needs the same kind of careful per-entity work
-  as v0.12's balance pass (`docs/balance-pass-1.md`) — going through
-  `~/Work/pdtd-reference/NUMBERS.md`'s enemy roster and the 11-weapon table,
-  computing relative HP/damage/cost ratios, and retuning `data/enemies.json`
-  + `data/turrets.json` + `data/hero_weapons.json` + `data/orbital_weapons.json`
-  to match that *shape* — a real, multi-hour session of its own, not a quick
-  follow-up. Note the 4 new orbital weapons added under #4 above used PDTD's
-  own per-weapon `dmg base`/`atk CD` figures as a *starting point* already
-  (see the table in §6 below), so that piece is partially done; the other 7
-  orbital weapons + all enemies + hero weapons haven't been touched this way.
-- **#7 — enemy + player-attack animation.** Beyond's renderer draws every
-  enemy and the hero ship as a single static sprite/procedural shape rotated
-  to face its travel direction (`SimRenderer.DrawEnemies`/`DrawHero`) — there
-  is no frame-by-frame animation anywhere in the renderer, enemy or player.
-  PDTD's own `.anim.ab` clips (checked during the v0.25.2 sprite work) are
-  simple one-property Transform tweens on a 3D rig, not directly portable to
-  this 2D static-sprite renderer. Real animation here means either (a) a
-  sprite-sheet pipeline (extract/author multiple frames per enemy, add
-  `AnimatedSprite`-equivalent playback to `SimRenderer`) or (b) procedural
-  motion (idle bob, engine-glow flicker, a windup on attack) layered onto the
-  existing static blits — (b) is far cheaper and more in keeping with how
-  the hero ship already gets a trail/glow, but is a design choice, not an
-  extraction task. Not started either way — flag to the user which they want
-  before picking one.
+- **Numbers-to-PDTD-ratios: enemies and hero/turret weapons still untouched.**
+  The orbital-weapon *cooldowns* got a real ratio retune this round (below) —
+  enemies (`data/enemies.json`), turrets (`data/turrets.json`), and hero ship
+  weapons (`data/hero_weapons.json`) did not. Turrets and hero weapons have no
+  direct PDTD equivalent to ratio-match against (PDTD has one central gun, no
+  turret roster, and no hero ship at all — those numbers are Beyond's own and
+  already came from real playtesting iteration across several sessions, not
+  from PDTD). Enemies were re-checked, not re-touched: verified live that
+  `data/enemies.json`'s near-zero-armor-except-heavies pattern from
+  `docs/balance-pass-1.md` hasn't drifted, and that `SimWorld`'s
+  `DifficultyScale` already encodes PDTD's stated "hp scales much faster than
+  damage" per-level principle in code (`e.Hp` scales linearly with
+  `DifficultyScale`, `e.ContactDamage` only by its square root) — so the
+  *qualitative* ratio already holds. PDTD's own literal per-level hp/atk
+  curve (`NUMBERS.md`, x1→x25.96 by level 20, continuing to the billions by
+  level 300+) doesn't transplant at all — it's built for an endless
+  hundreds-of-levels meta-progression, a fundamentally different shape than
+  Beyond's 8-mission arc + single 5-minute hold. If a future numbers pass is
+  wanted, it's real per-entity work like balance-pass-1, not a quick follow-up.
+
+---
+
+## Recently completed — procedural animation + orbital-weapon cooldown ratios (v0.26.1)
+
+Follow-up to v0.26.0 above, same day. User picked procedural motion (over a
+sprite-sheet pipeline) for the deferred enemy/player-attack animation item,
+and asked to go ahead with the numbers-to-PDTD-ratios balance pass too.
+
+**Procedural animation** (`SimRenderer.cs`, render-only — nothing in `src/Sim/`
+touched, `SimTest` byte-identical before/after):
+- **Enemies** (`DrawEnemies`): a slow lateral idle wobble (amplitude scaled
+  down for bigger/boss enemies, phase seeded off each enemy's array slot so a
+  cluster of the same type doesn't move in lockstep) plus a faint fading
+  thrust trail behind any moving non-boss enemy, colored from its own tint.
+  Both offset only where the sprite is *drawn* — health bars, shield rings,
+  aura circles, and the boss mechanic seam-line all stay anchored to the
+  sim's real `e.Pos` so nothing gameplay-relevant drifts.
+- **Hero ship**: a new `_heroRecoil` render-local timer (decays in `_Process`,
+  same pattern as the existing `_shake` field) triggers on
+  `SimEventKind.HeroWeaponFired` (ship weapons only — orbital-weapon fires
+  reuse the same event with `I>=10` and are explicitly excluded, since they
+  fire from planet-orbiting platforms, not the ship) and
+  `VolleyLaunched`. Kicks the drawn ship backward along its own facing and
+  flares the engine-trail intensity for a few frames, so firing reads as a
+  physical event on the hull itself, layered on top of the weapon-specific
+  VFX (laser cone, Yamato blast, missile trail) that already existed.
+- **Verified**: `SimTest` ALL CHECKS OK (identical to pre-animation — confirms
+  render-only), checked live in a running mission.
+- Not done: no per-enemy hit-flash (the existing `EnemyHit`→spark-particle
+  event already gives strong positional hit feedback; a sprite-level flash
+  would need a per-enemy-handle timer map the renderer doesn't currently
+  track — skipped as a nice-to-have, not requested specifically).
+
+**Orbital-weapon cooldown ratios** — a real, bounded ratio-match against
+PDTD's own 11-weapon table (`~/Work/pdtd-reference/NUMBERS.md` §"The 11
+weapons", `atkCD` column). `orbital_cannon`↔Railgun (`atkCD` 3) was already a
+1:1 anchor from the v0.21 sentinel work; every other orbital weapon's
+`cooldown`/`min_cooldown`/`cooldown_per_level` was rescaled so its ratio to
+`orbital_cannon` matches its PDTD counterpart's ratio to Railgun (e.g.
+Radiation Link/Radiation Zone/Force Field/Ball Lightning all share PDTD
+`atkCD`=10 → all three of Beyond's matching weapons converge to the same
+6.33s cooldown, a real tie in PDTD's own data, not a calc artifact). Net
+effect: `orbital_laser` and `waterdrop` got meaningfully slower (were
+proportionally too fast vs PDTD), `radiation_line`/`radiation_zone`/
+`shock_orb`/`force_field`/`sweep_laser` all got faster (were proportionally
+too slow) — see the diff in `data/orbital_weapons.json` for exact before/after
+numbers. **Damage values were deliberately left untouched** — PDTD's `dmg
+base` multipliers aren't cleanly comparable to absolute numbers the way
+cooldowns are (durational effects like Beam/Radiation Zone mix a per-tick
+multiplier with a separate duration in ways that don't reduce to one ratio),
+and Beyond's existing damage numbers are the product of several rounds of
+actual playtesting (v0.12/v0.19/v0.22/v0.24), which a rougher one-table
+ratio guess shouldn't blindly override. **Verified**: `SimTest` ALL CHECKS OK,
+`deterministic=ok` throughout — this is a real balance value change though,
+same as always: it's provisional until the user's own on-device pass
+confirms the new tempo feels right, not the last word.
 
 ---
 
@@ -1209,7 +1258,7 @@ SDK + `~/.android/debug.keystore`.
 the release. Pushing to `main` without a tag just makes an artifact. `gh` is
 authed as `OmniGodgeta`.
 
-Current: **v0.26.0**, `application/config/version = "0.26.0"`, APK ~200 MB
+Current: **v0.26.1**, `application/config/version = "0.26.1"`, APK ~200 MB
 (now built via custom Gradle — see `CLAUDE.md`'s Android build note).
 
 ---

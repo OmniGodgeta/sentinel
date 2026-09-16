@@ -32,6 +32,7 @@ public sealed partial class SimRenderer : Node2D
     private float _shake;
     private Vector2 _lastHeroPos;
     private float _puffTimer;
+    private float _heroRecoil;   // procedural fire-recoil kick, render-only (see OnSimEvent/HeroWeaponFired)
 
     // Near-white: every enemy sprite is now real PDTD art with its own baked-in
     // color identity (gold, red, blue-grey, black chitin, ...) — a strong tint
@@ -96,6 +97,14 @@ public sealed partial class SimRenderer : Node2D
             case SimEventKind.VolleyLaunched:
                 Push(FxKind.Muzzle, e.Pos, e.Pos, 14f, 0.14f, Ord.muzzle);
                 Root.Fx?.Flash(Ord.muzzle, 0.05f);
+                _heroRecoil = Mathf.Min(1f, _heroRecoil + 0.6f);
+                break;
+            case SimEventKind.HeroWeaponFired:
+                // procedural fire-kick on the ship itself — only for the hero's own
+                // ship weapons (I 0-3: laser/missile/ion/yamato); orbital weapons
+                // reuse this same event with I=10+index and fire from the planet's
+                // sentinel platforms, not the ship, so they shouldn't kick it
+                if (e.I < 10) _heroRecoil = Mathf.Min(1f, _heroRecoil + 0.6f);
                 break;
             case SimEventKind.EnemySpawned:
                 Push(FxKind.Warp, e.Pos, e.Pos, e.A + 10f, 0.35f, new Color(0.7f, 0.5f, 1f));
@@ -169,6 +178,8 @@ public sealed partial class SimRenderer : Node2D
                      2.4f + GD.Randf() * 2.2f, 0.45f + GD.Randf() * 0.4f, c);
             }
         }
+
+        _heroRecoil = Mathf.MoveToward(_heroRecoil, 0f, 4.5f * dt);
 
         if (_shake > 0.05f)
         {
@@ -566,8 +577,29 @@ public sealed partial class SimRenderer : Node2D
             float sizePx = (boss ? e.Radius * 2.8f : e.Radius * 3.3f) + 10f;
             float rot = e.Vel.LengthSquared() > 1f ? e.Vel.Angle() + Mathf.Pi / 2f : e.Pos.Angle() + Mathf.Pi / 2f;
 
-            DrawCircle(e.Pos, sizePx * 0.75f, new Color(tint, 0.16f));
-            Blit(tex, e.Pos, boss && e.MechanicActive ? 0f : rot, sizePx,
+            // procedural idle motion — a slow lateral wobble (phase seeded off the
+            // enemy's own slot so a field of the same enemy type doesn't move in
+            // lockstep) plus a faint thrust trail scaled by actual speed. Render-only:
+            // offsets only where the sprite is drawn, never e.Pos itself, so hp bars/
+            // shield rings/aura circles below stay exactly where the sim says they are.
+            float bobAmp = boss ? 1.2f : Mathf.Clamp(5f - e.Radius * 0.12f, 1.4f, 4f);
+            float bobSpeed = 1.7f + (i % 7) * 0.31f;
+            float bobPhase = i * 2.3f;
+            Vector2 drawPos = e.Pos + Vector2.FromAngle(rot + Mathf.Pi / 2f) * (Mathf.Sin(World.GameTime * bobSpeed + bobPhase) * bobAmp);
+
+            if (!boss && e.Vel.LengthSquared() > 100f)
+            {
+                Vector2 back = -e.Vel.Normalized();
+                float trailLen = Mathf.Clamp(e.Vel.Length() * 0.14f, 5f, 20f);
+                for (int t = 1; t <= 3; t++)
+                {
+                    float ft = t / 3f;
+                    DrawCircle(drawPos + back * (trailLen * ft), 2.4f * (1f - ft) + 0.5f, new Color(tint.Lightened(0.35f), 0.3f * (1f - ft)));
+                }
+            }
+
+            DrawCircle(drawPos, sizePx * 0.75f, new Color(tint, 0.16f));
+            Blit(tex, drawPos, boss && e.MechanicActive ? 0f : rot, sizePx,
                  boss && e.MechanicActive ? new Color(0.7f, 0.7f, 0.8f) : tint);
 
             if (boss && e.MechanicActive)
@@ -663,7 +695,15 @@ public sealed partial class SimRenderer : Node2D
         }
 
         DrawCircle(h.Pos, 44f, new Color(0.35f, 0.75f, 1f, 0.09f));
-        DrawShip(h.Pos, heading, 1f, speedFrac, gt);
+
+        // procedural fire-recoil kick (see OnSimEvent/HeroWeaponFired) — a quick
+        // punch backward along the ship's own facing, plus a matching brief flare
+        // on the engine trail, so firing reads as a physical event on the hull
+        // itself and not just the weapon's own VFX. Purely a draw-position offset —
+        // never touches h.Pos, so aim reticles/auras/FX anchored to it stay exact.
+        Vector2 recoilOffset = Vector2.FromAngle(heading + Mathf.Pi) * (_heroRecoil * 5f);
+        float thrustDraw = Mathf.Clamp(speedFrac + _heroRecoil * 0.5f, 0f, 1f);
+        DrawShip(h.Pos + recoilOffset, heading, 1f, thrustDraw, gt);
 
         // --- Shields Boost hex barrier ---
         if (World.HeroShield > 0f && World.HeroShieldLeft > 0f)
