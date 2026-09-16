@@ -16,10 +16,10 @@ public sealed partial class SimWorld
     private const float OwOrbit = 2.45f;   // × SentinelOrbitRadius — a clear orbit ring in open space
 
     // active timed field effects (radiation line / shock orb / radiation zone / beam laser /
-    // force field / sweeping laser)
+    // force field)
     public struct OwEffect
     {
-        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone, 4 beam_laser, 5 force_field, 6 sweep_laser
+        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone, 4 beam_laser, 5 force_field
         public float DieAt;     // GameTime
         public float Tick;      // dps accumulator
         public float Dps;
@@ -238,21 +238,6 @@ public sealed partial class SimWorld
                 // PDTD's Force Field — a damage + slow pulse anchored on the planet itself
                 _owEffects.Add(new OwEffect { Kind = 5, DieAt = GameTime + dur, Dps = dmg, Radius = radius, Slow = d.SlowFactor > 0f ? d.SlowFactor : 1f });
                 break;
-            case "sweep_laser":
-            {
-                // PDTD's plain Laser — a thin beam that sweeps through an arc (distinct from
-                // the Beam sentinel's fixed lock-on)
-                int t = ClosestEnemyTo(from, d.Range);
-                float bearing = t >= 0 ? (Enemies[t].Pos - from).Angle() : Rng.NextFloat(0f, Mathf.Tau);
-                const float sweepDeg = 70f;
-                _owEffects.Add(new OwEffect
-                {
-                    Kind = 6, DieAt = GameTime + dur, Dps = dmg, Radius = d.Range, WeaponIndex = i,
-                    P0 = bearing - Mathf.DegToRad(sweepDeg * 0.5f),
-                    Spin = Mathf.DegToRad(sweepDeg) / Mathf.Max(0.2f, dur), StartTime = GameTime,
-                });
-                break;
-            }
         }
 
         _owCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1));
@@ -342,27 +327,6 @@ public sealed partial class SimWorld
                     ref var en = ref Enemies[e];
                     if (!en.Alive || en.Pos.LengthSquared() > rSq) continue;
                     DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital);
-                }
-            }
-        }
-        else if (fx.Kind == 6) // sweeping laser — thin beam rotating through an arc from its platform
-        {
-            fx.From = OrbitalPlatformPos(fx.WeaponIndex);
-            float ang = fx.P0 + fx.Spin * (GameTime - fx.StartTime);
-            Vector2 dir = Vector2.FromAngle(ang);
-            fx.Pos = fx.From + dir * fx.Radius;
-            while (fx.Tick >= interval)
-            {
-                fx.Tick -= interval;
-                for (int e = 0; e < EnemyHighWater; e++)
-                {
-                    ref var en = ref Enemies[e];
-                    if (!en.Alive) continue;
-                    Vector2 rel = en.Pos - fx.From;
-                    float along = rel.Dot(dir);
-                    if (along < 0f || along > fx.Radius) continue;
-                    if ((rel - dir * along).Length() > 18f + en.Radius) continue;
-                    DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
                 }
             }
         }

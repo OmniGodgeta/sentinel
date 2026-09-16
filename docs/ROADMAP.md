@@ -5,8 +5,59 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.26.3, 2026-09-16.** Update this file when you finish or start
+Last updated: **v0.26.4, 2026-09-16.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — removed `sweep_laser` (v0.26.4)
+
+Follow-up to v0.26.3 below, same day. User confirmed: remove `sweep_laser`
+outright rather than try to reconcile it against PDTD's real "Laser" weapon
+(still blocked on the missing `pdtd-reference` material — see v0.26.3's "still
+open" note). `orbital_laser` (`kind: "beam_laser"`) already faithfully covers
+PDTD's **Beam** (continuous lock-on, since v0.21.0/v0.22.0's combat rework);
+`sweep_laser` was the *other* PDTD weapon, "Laser" ("fires Lasers... in their
+path"), added in v0.26.0 as an invented 70°-arc-sweep mechanic that was never
+verified against real PDTD footage/data and the user wasn't happy with in
+play.
+
+**Removed everywhere**, not just hidden:
+- `data/orbital_weapons.json` — the `sweep_laser` entry deleted (roster is
+  now 9 orbital weapons, was 10).
+- `src/Sim/Systems/OrbitalWeapons.cs` — the `case "sweep_laser"` cast branch
+  and the `fx.Kind == 6` step handler (the rotating-arc damage tick) both
+  deleted. `OwEffect.Kind` is now 1–5 only (rad_line / shock_orb / rad_zone /
+  beam_laser / force_field) — nothing else used slot 6, safe to just retire
+  the number rather than renumber.
+- `src/Render/SimRenderer.cs` — the `Kind == 6` draw branch deleted, and the
+  now-10th `OrbitalCols[9]` entry (sweep_laser's pink) dropped so the array
+  stays index-aligned with `Cfg.OrbitalWeapons` (order-dependent — if you add
+  a new orbital weapon, append its color at the end, don't insert in the
+  middle).
+- `tools/gen_cards.py` — the `sweep_laser` procedural-card-art branch and its
+  `cards` list entry removed (3 procedural cards left: waterdrop, space_bomb,
+  force_field).
+- `assets/game/cards/sweep_laser.jpg` (+ `.import`) deleted — it was
+  placeholder procedural art (no owner-supplied original to preserve), and
+  `assets/game/CREDITS.txt` updated (4 procedural cards → 3).
+- `CardDraft.cs`/`SentinelScreen.cs` needed **no changes** — both already
+  iterate `Cfg.OrbitalWeapons` generically (same reason adding the 4 new
+  weapons in v0.26.0 needed no UI wiring), so the draft pool and the
+  out-of-battle upgrade menu both just show 9 weapons now automatically.
+
+**Verified**: `dotnet build` clean, `SimTest` `ALL CHECKS OK`,
+`deterministic=ok`, 1×≡4× identical, m01–m06 still won (endless dipped to
+wave 4 from 6 — the known "naive test-bot always picks the first draft
+option" artifact from the smaller card pool, documented precedent at v0.13.0
+and v0.26.0, not a regression to chase).
+
+**If PDTD's actual "Laser" weapon needs a real implementation later**, it
+needs the reference material — don't just re-add `sweep_laser`'s old arc-sweep
+guess without checking it against real PDTD data/footage first.
+
+`config/version` bumped 0.26.3→0.26.4 (`project.godot` + `export_presets.cfg`)
+— not tagged/released this session.
 
 ---
 

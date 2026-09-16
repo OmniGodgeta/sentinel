@@ -381,7 +381,6 @@ public sealed partial class SimRenderer : Node2D
         new(0.18f, 0.78f, 0.91f),  // waterdrop
         new(0.77f, 0.31f, 0.88f),  // space_bomb
         new(0.61f, 0.36f, 0.90f),  // force_field
-        new(1.00f, 0.36f, 0.54f),  // sweep_laser
     };
 
     private void DrawOrbitalWeapons()
@@ -500,14 +499,6 @@ public sealed partial class SimRenderer : Node2D
                     var p2 = Vector2.FromAngle(aa) * fx.Radius;
                     DrawLine(p2, p2 - Vector2.FromAngle(aa) * 14f, new Color(fc, 0.7f), 2f);
                 }
-            }
-            else if (fx.Kind == 6) // sweeping laser — PDTD's plain Laser: a thin beam sweeping an arc
-            {
-                var sc = OrbitalCols[9];
-                DrawLine(fx.From, fx.Pos, new Color(sc, 0.30f), 7f);
-                DrawLine(fx.From, fx.Pos, new Color(sc, 0.75f), 3f);
-                DrawLine(fx.From, fx.Pos, new Color(1f, 0.95f, 0.95f, 0.9f), 1.3f);
-                DrawCircle(fx.Pos, 5f, new Color(sc, 0.8f));
             }
             else // shock orb (2) / radiation zone (3) — concentric radial shockwaves (PDTD SHOCK ORB look)
             {

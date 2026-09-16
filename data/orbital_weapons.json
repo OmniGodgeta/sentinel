@@ -49,12 +49,6 @@
       "max_level": 12, "cooldown": 6.33, "cooldown_per_level": -0.246, "min_cooldown": 3.17,
       "damage": 7, "damage_per_level": 3.5, "radius": 210, "radius_per_level": 10,
       "duration": 5, "duration_per_level": 0.4, "slow_factor": 0.55,
-      "text": "Projects a damaging field around the planet that slows everything it touches." },
-
-    { "id": "sweep_laser", "name": "Sweeping Laser", "kind": "sweep_laser", "accent": "#ff5c8a",
-      "max_level": 12, "cooldown": 3.17, "cooldown_per_level": -0.132, "min_cooldown": 1.45,
-      "damage": 10, "damage_per_level": 5, "range": 620,
-      "duration": 1.1, "duration_per_level": 0.05, "shield_pierce": true,
-      "text": "Sweeps a thin beam through an arc, cutting down everything it crosses." }
+      "text": "Projects a damaging field around the planet that slows everything it touches." }
   ]
 }

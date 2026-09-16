@@ -93,9 +93,9 @@ Level backdrops (assets/game/bg/m0*.jpg, endless.jpg, weekly.jpg)
 Upgrade-card art (assets/game/cards/*.jpg)
   Supplied by the project owner (AI-generated key art for the ship-weapon and
   planet orbital-weapon upgrade cards, and the Planet Shield). Personal build.
-  The 4 new orbital-weapon cards added when the sentinel roster was extended
-  to match PDTD's full 11-weapon list (waterdrop, space_bomb, force_field,
-  sweep_laser — see docs/ROADMAP.md) are an exception: no AI art was supplied
+  The 3 new orbital-weapon cards added when the sentinel roster was extended
+  to match PDTD's full 11-weapon list (waterdrop, space_bomb, force_field —
+  see docs/ROADMAP.md) are an exception: no AI art was supplied
   for these, so they're procedurally generated instead (`tools/gen_cards.py`
   — radial nebula gradient + starfield + a drawn glyph, in the weapon's own
   accent color, matching the card-frame language used elsewhere). Original
