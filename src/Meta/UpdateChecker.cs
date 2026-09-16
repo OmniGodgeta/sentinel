@@ -22,9 +22,10 @@ public sealed partial class UpdateChecker : CanvasLayer
     public static bool Available { get; private set; }
     public static string AvailableTag { get; private set; } = "";
     public static string AvailableUrl { get; private set; } = "";
-    public static void MarkAvailable(string tag, string url)
+    public static string AvailableApkUrl { get; private set; } = "";
+    public static void MarkAvailable(string tag, string url, string apkUrl = "")
     {
-        Available = true; AvailableTag = tag; AvailableUrl = url;
+        Available = true; AvailableTag = tag; AvailableUrl = url; AvailableApkUrl = apkUrl;
     }
 
     public override void _Ready()
@@ -54,9 +55,27 @@ public sealed partial class UpdateChecker : CanvasLayer
             string notes = Get("body", "");
             string name = Get("name", tag);
 
+            // the APK asset's own direct-download URL — lets Download fetch it in-app
+            // instead of only opening the release page in a browser
+            string apkUrl = "";
+            if (d.TryGetValue("assets", out var assetsVal) && assetsVal.VariantType == Variant.Type.Array)
+            {
+                foreach (var av in assetsVal.AsGodotArray())
+                {
+                    if (av.VariantType != Variant.Type.Dictionary) continue;
+                    var ad = av.AsGodotDictionary();
+                    string an = ad.TryGetValue("name", out var anv) ? anv.AsString() : "";
+                    if (an.EndsWith(".apk"))
+                    {
+                        apkUrl = ad.TryGetValue("browser_download_url", out var auv) ? auv.AsString() : "";
+                        break;
+                    }
+                }
+            }
+
             if (!IsNewer(tag, Current())) { QueueFree(); return; }
-            MarkAvailable(tag, url);
-            ShowCard(string.IsNullOrWhiteSpace(name) ? tag : name, tag, notes, url);
+            MarkAvailable(tag, url, apkUrl);
+            ShowCard(string.IsNullOrWhiteSpace(name) ? tag : name, tag, notes, url, apkUrl);
         }
         catch { QueueFree(); }
     }
@@ -85,7 +104,7 @@ public sealed partial class UpdateChecker : CanvasLayer
         return o;
     }
 
-    private void ShowCard(string title, string tag, string notes, string url)
+    private void ShowCard(string title, string tag, string notes, string url, string apkUrl)
     {
         // a slim, non-blocking card pinned near the top of the menu
         var wrap = new MarginContainer
@@ -132,6 +151,18 @@ public sealed partial class UpdateChecker : CanvasLayer
             col.AddChild(nl);
         }
 
+        var progress = new ProgressBar
+        {
+            MinValue = 0, MaxValue = 1, Value = 0, ShowPercentage = false,
+            CustomMinimumSize = new Vector2(0, 8), Visible = false,
+        };
+        col.AddChild(progress);
+
+        var status = new Label { Visible = false, HorizontalAlignment = HorizontalAlignment.Center };
+        status.AddThemeFontSizeOverride("font_size", 13);
+        status.Modulate = new Color(1, 1, 1, 0.7f);
+        col.AddChild(status);
+
         var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         row.AddThemeConstantOverride("separation", 10);
         col.AddChild(row);
@@ -144,7 +175,25 @@ public sealed partial class UpdateChecker : CanvasLayer
         var dl = new Button { Text = "Download", CustomMinimumSize = new Vector2(180, 50) };
         dl.AddThemeFontSizeOverride("font_size", 17);
         UiTheme.StylePrimary(dl);
-        dl.Pressed += () => { OS.ShellOpen(url); QueueFree(); };
+        bool downloadFailed = false;
+        dl.Pressed += () =>
+        {
+            if (string.IsNullOrEmpty(apkUrl) || downloadFailed) { OS.ShellOpen(url); QueueFree(); return; }
+            dl.Disabled = true; later.Disabled = true;
+            progress.Visible = true; status.Visible = true;
+            status.Text = OS.GetName() == "Android" ? "downloading…" : "downloading… (desktop build — no installer, just saves the file)";
+            UpdateDownloader.Start(this, apkUrl,
+                onProgress: f => progress.Value = f,
+                onDone: (ok, info) =>
+                {
+                    if (ok) { QueueFree(); return; }
+                    downloadFailed = true;
+                    status.Text = $"download failed ({info}) — tap to open the release page instead";
+                    status.Modulate = new Color(1f, 0.6f, 0.55f);
+                    dl.Disabled = false; later.Disabled = false;
+                    dl.Text = "Open in Browser";
+                });
+        };
         row.AddChild(dl);
     }
 }

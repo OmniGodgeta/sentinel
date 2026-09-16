@@ -40,7 +40,7 @@ public sealed partial class GameRoot : Node2D
     // TopReserve grows by the display's safe-area inset (notch / punch-hole) so the
     // status + speed row never sits under the camera cutout.
     public float TopReserve { get; private set; } = 172f;
-    public const float BottomReserve = 306f;
+    public const float BottomReserve = 408f;
     public float SafeTopInset { get; private set; }
 
     /// <summary>True while the sim is frozen only because a card draft is waiting —

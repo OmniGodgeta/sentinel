@@ -1,6 +1,9 @@
 # Godot 4+
 .godot/
-/android/
+/android/build/
+# android/overlay/ IS committed — our own small additions layered onto the
+# regenerated android/build/ by tools/setup_android_gradle.sh (see that script
+# and CLAUDE.md's in-app updater note for why a custom Gradle build is needed).
 export_presets.cfg.local
 
 # .NET

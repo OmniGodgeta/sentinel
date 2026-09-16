@@ -15,15 +15,17 @@ public sealed partial class SimWorld
 
     private const float OwOrbit = 2.45f;   // × SentinelOrbitRadius — a clear orbit ring in open space
 
-    // active timed field effects (radiation line / shock orb / radiation zone / beam laser)
+    // active timed field effects (radiation line / shock orb / radiation zone / beam laser /
+    // force field / sweeping laser)
     public struct OwEffect
     {
-        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone, 4 beam_laser
+        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone, 4 beam_laser, 5 force_field, 6 sweep_laser
         public float DieAt;     // GameTime
         public float Tick;      // dps accumulator
         public float Dps;
         public float Radius;
         public float Stun;
+        public float Slow;      // force_field: 1 = normal speed, <1 = slowed while inside
         public float P0;        // rad_line: fixed bearing; shock_orb/rad_zone: seed angle
         public Vector2 Pos;     // shock_orb / rad_zone centre; beam_laser: current beam endpoint
         public Vector2 From;    // beam_laser: the platform's current position (it keeps orbiting)
@@ -196,6 +198,61 @@ public sealed partial class SimWorld
             case "rad_zone":
                 _owEffects.Add(new OwEffect { Kind = 3, DieAt = GameTime + dur, Dps = dmg, Radius = radius, P0 = Rng.NextFloat(0f, Mathf.Tau) });
                 break;
+            case "waterdrop":
+            {
+                // PDTD's Waterdrop — a single fast bolt that pierces everything in its path
+                int t = ClosestEnemyTo(from, d.Range);
+                if (t < 0) break;
+                Vector2 dir = (Enemies[t].Pos - from).Normalized();
+                Vector2 end = from + dir * d.Range;
+                for (int e = 0; e < EnemyHighWater; e++)
+                {
+                    ref var en = ref Enemies[e];
+                    if (!en.Alive) continue;
+                    Vector2 rel = en.Pos - from;
+                    float along = rel.Dot(dir);
+                    if (along < 0f || along > d.Range) continue;
+                    if ((rel - dir * along).Length() > 26f + en.Radius) continue;
+                    DamageEnemy(e, dmg, DamageSource.Orbital, armorPen: d.ArmorPierce ? 9999f : 0f);
+                }
+                _fxOwBeamLeft = 0.14f; _fxOwBeamKind = 2; _fxOwBeamFrom = from; _fxOwBeamTo = end;
+                break;
+            }
+            case "space_bomb":
+            {
+                // PDTD's Space Bomb — a lobbed gravity bomb, instant AoE at the impact point
+                int t = ClosestEnemyTo(from, d.Range);
+                if (t < 0) break;
+                Vector2 impact = Enemies[t].Pos;
+                float rSq = radius * radius;
+                for (int e = 0; e < EnemyHighWater; e++)
+                {
+                    ref var en = ref Enemies[e];
+                    if (!en.Alive || en.Pos.DistanceSquaredTo(impact) > rSq) continue;
+                    DamageEnemy(e, dmg, DamageSource.Orbital);
+                }
+                _fxOwBeamLeft = 0.24f; _fxOwBeamKind = 3; _fxOwBeamFrom = from; _fxOwBeamTo = impact;
+                break;
+            }
+            case "force_field":
+                // PDTD's Force Field — a damage + slow pulse anchored on the planet itself
+                _owEffects.Add(new OwEffect { Kind = 5, DieAt = GameTime + dur, Dps = dmg, Radius = radius, Slow = d.SlowFactor > 0f ? d.SlowFactor : 1f });
+                break;
+            case "sweep_laser":
+            {
+                // PDTD's plain Laser — a thin beam that sweeps through an arc (distinct from
+                // the Beam sentinel's fixed lock-on)
+                int t = ClosestEnemyTo(from, d.Range);
+                float bearing = t >= 0 ? (Enemies[t].Pos - from).Angle() : Rng.NextFloat(0f, Mathf.Tau);
+                const float sweepDeg = 70f;
+                _owEffects.Add(new OwEffect
+                {
+                    Kind = 6, DieAt = GameTime + dur, Dps = dmg, Radius = d.Range, WeaponIndex = i,
+                    P0 = bearing - Mathf.DegToRad(sweepDeg * 0.5f),
+                    Spin = Mathf.DegToRad(sweepDeg) / Mathf.Max(0.2f, dur), StartTime = GameTime,
+                });
+                break;
+            }
         }
 
         _owCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1));
@@ -263,6 +320,49 @@ public sealed partial class SimWorld
                         if ((rel - dir * along).Length() > 22f + en.Radius) continue;
                         DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
                     }
+                }
+            }
+        }
+        else if (fx.Kind == 5) // force field — planet-centred damage + slow aura
+        {
+            float rSq = fx.Radius * fx.Radius;
+            if (fx.Slow > 0f && fx.Slow < 1f)
+            {
+                for (int e = 0; e < EnemyHighWater; e++)
+                {
+                    ref readonly var en = ref Enemies[e];
+                    if (en.Alive && en.Pos.LengthSquared() <= rSq) ApplySlow(e, fx.Slow);
+                }
+            }
+            while (fx.Tick >= interval)
+            {
+                fx.Tick -= interval;
+                for (int e = 0; e < EnemyHighWater; e++)
+                {
+                    ref var en = ref Enemies[e];
+                    if (!en.Alive || en.Pos.LengthSquared() > rSq) continue;
+                    DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital);
+                }
+            }
+        }
+        else if (fx.Kind == 6) // sweeping laser — thin beam rotating through an arc from its platform
+        {
+            fx.From = OrbitalPlatformPos(fx.WeaponIndex);
+            float ang = fx.P0 + fx.Spin * (GameTime - fx.StartTime);
+            Vector2 dir = Vector2.FromAngle(ang);
+            fx.Pos = fx.From + dir * fx.Radius;
+            while (fx.Tick >= interval)
+            {
+                fx.Tick -= interval;
+                for (int e = 0; e < EnemyHighWater; e++)
+                {
+                    ref var en = ref Enemies[e];
+                    if (!en.Alive) continue;
+                    Vector2 rel = en.Pos - fx.From;
+                    float along = rel.Dot(dir);
+                    if (along < 0f || along > fx.Radius) continue;
+                    if ((rel - dir * along).Length() > 18f + en.Radius) continue;
+                    DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
                 }
             }
         }

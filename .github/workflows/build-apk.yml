@@ -89,6 +89,15 @@ jobs:
       - name: Determinism / sim check
         run: ~/godot/godot --headless --path . scenes/SimTest.tscn --quit
 
+      - name: Set up Android custom Gradle build
+        # android/build/ isn't committed (it's ~200MB, almost entirely Godot's own
+        # prebuilt libs — regenerable, same idea as export_templates). This unzips
+        # the cached export template's android_source.zip fresh and layers
+        # android/overlay/ (our own small in-app-updater additions) on top —
+        # needed for the FileProvider + REQUEST_INSTALL_PACKAGES permission a plain
+        # (non-Gradle) APK export can't add. See tools/setup_android_gradle.sh.
+        run: bash tools/setup_android_gradle.sh
+
       - name: Export Android APK
         run: |
           set -e

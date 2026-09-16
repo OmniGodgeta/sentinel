@@ -159,6 +159,7 @@ public sealed record OrbitalWeaponDef
     public float StunSeconds { get; init; }
     public bool ShieldPierce { get; init; }
     public bool ArmorPierce { get; init; }
+    public float SlowFactor { get; init; }         // force_field: 1 = normal speed, e.g. 0.5 = half speed
     public int MetaFromLevel { get; init; } = 6;   // levels at/above this need out-of-battle purchase
 }
 

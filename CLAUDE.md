@@ -47,8 +47,11 @@ The working dir / repo is `sentinel` and the C# assembly + namespace stay
 Bump **`config/version`** in `project.godot` **and** `version/code` +
 `version/name` in `export_presets.cfg`, then push a `v*` tag. CI
 (`.github/workflows/build-apk.yml`) builds the APK and attaches it to the
-release. The in-app updater (`src/Meta/UpdateChecker.cs`) compares the running
-`config/version` against the latest GitHub release.
+release. The in-app updater (`src/Meta/UpdateChecker.cs` +
+`src/Meta/UpdateDownloader.cs`) compares the running `config/version` against
+the latest GitHub release, and on Android downloads the APK in-app and hands
+it straight to the system installer (see the Android build note below) —
+elsewhere (desktop dev builds) it just downloads and reveals the file.
 
 ## Build
 
@@ -58,3 +61,50 @@ godot --headless --path . --import                      # import assets (first r
 godot --headless --path . scenes/SimTest.tscn --quit    # determinism + balance table
 godot --path . scenes/Main.tscn                         # run the game
 ```
+
+## Android build: custom Gradle, not plain APK export (since v0.26.0)
+
+`export_presets.cfg`'s Android preset has `gradle_build/use_gradle_build=true`
+— required because the in-app updater needs the `REQUEST_INSTALL_PACKAGES`
+permission, which plain (non-Gradle) APK export can't add.
+
+`res://android/build/` (Godot's generated Gradle project, ~200MB, almost all
+prebuilt `libs/`) is **not committed** — regenerate it with
+`bash tools/setup_android_gradle.sh` whenever it's missing (CI runs this
+automatically; local exports need it run once, or after deleting `android/build/`).
+What IS committed is `android/overlay/` — our own small additions the script
+layers on top after unzipping Godot's stock template fresh:
+- `AndroidManifest.xml` — adds the `REQUEST_INSTALL_PACKAGES` permission and
+  `.BeyondApp` as the `<application android:name>`. Deliberately does **not**
+  declare its own `<provider>` — Godot's own `godot-lib` `.aar` already
+  registers a FileProvider at `${applicationId}.fileprovider` with a
+  files-path covering the whole internal files root, which already covers
+  where the updater downloads to (`user://update.apk`). A second `<provider>`
+  for the same purpose collided with it in the manifest merge — don't re-add
+  one without checking `godot_provider_paths.xml` in the Godot `.aar` first.
+- `BeyondApp.kt` — a trivial `Application` subclass that stashes an
+  Application Context in a companion object, so plain static Kotlin can reach
+  a Context without needing the current Activity.
+- `UpdateInstaller.kt` — the actual install trigger: builds a
+  `FileProvider.getUriForFile` content URI for the downloaded APK and fires
+  `ACTION_VIEW`. Called from C# via `Godot.JavaClassWrapper.Wrap("com.godot.game.UpdateInstaller").Call("install", path)`
+  — a plain static-method bridge, not a full Godot Android Plugin (no `.gdap`,
+  no separate Gradle module needed for something this small).
+
+Note the Kotlin/Java source package is `com.godot.game` (Godot's own fixed
+`namespace` for this template) — **not** `com.shadowswords.beyond` (the real
+`applicationId`, resolved separately by Gradle/the manifest at build time).
+`JavaClassWrapper.Wrap(...)` needs the real compiled class name, i.e. the
+`com.godot.game.*` one.
+
+Verified end-to-end locally this session: `godot --headless --path . --export-debug
+Android build/beyond-debug.apk` succeeds, the manifest carries the permission,
+and `com.godot.game.{BeyondApp,UpdateInstaller}` are present in the built
+`classes*.dex` (checked via `strings`). **Not yet verified on a real device**
+— that's the one thing left to confirm (the actual tap-to-install flow).
+
+If a local machine's `export/android/java_sdk_path` (in Godot's
+`editor_settings-4.7.tres`) points at a JRE-only install (no `javac`), the
+Gradle build fails with a Gradle `JAVA_COMPILER` toolchain error — point it at
+a real JDK (this box: `jdk17-openjdk`, matching CI's `actions/setup-java`
+version). This is a local editor-settings issue, not a project one.

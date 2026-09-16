@@ -20,10 +20,12 @@ The earth.gdshader (equirectangular -> lit sphere) is original to this project.
 Sound effects (assets/audio/)
   Kenney (kenney.nl) — "Impact Sounds", "Interface Sounds", "Digital Audio".
   Licensed CC0 1.0 Universal (public domain).
-  turret_shot / turret_shot_b / explosion_big / battery_launch / planet_hit
-  are synthesised for this project (layered filtered noise + chirp/sweep
-  tones + sub-bass via ffmpeg — see tools/gen_sfx.sh) — original content, no
-  third-party samples. The laser shots (turret_shot / turret_shot_b) replaced
+  turret_shot / turret_shot_b / explosion_big / battery_launch / planet_hit /
+  card_reveal are synthesised for this project (layered filtered noise +
+  chirp/sweep tones + sub-bass via ffmpeg — see tools/gen_sfx.sh) — original
+  content, no third-party samples. card_reveal plays once when the upgrade
+  draft popup opens (a rising shimmer, distinct from card_pick's confirm
+  chime below). The laser shots (turret_shot / turret_shot_b) replaced
   Kenney's "Sci-Fi Sounds" pack at v0.24.0 for a punchier, more textured zap.
   mission_won / mission_lost / card_pick / ability_cast / explosion /
   explosion_b / shield / ui_click / missile_launch / sentinel_shot were
@@ -91,6 +93,13 @@ Level backdrops (assets/game/bg/m0*.jpg, endless.jpg, weekly.jpg)
 Upgrade-card art (assets/game/cards/*.jpg)
   Supplied by the project owner (AI-generated key art for the ship-weapon and
   planet orbital-weapon upgrade cards, and the Planet Shield). Personal build.
+  The 4 new orbital-weapon cards added when the sentinel roster was extended
+  to match PDTD's full 11-weapon list (waterdrop, space_bomb, force_field,
+  sweep_laser — see docs/ROADMAP.md) are an exception: no AI art was supplied
+  for these, so they're procedurally generated instead (`tools/gen_cards.py`
+  — radial nebula gradient + starfield + a drawn glyph, in the weapon's own
+  accent color, matching the card-frame language used elsewhere). Original
+  content, no third-party source.
 
 Fonts (assets/fonts/)
   Orbitron by Matt McInerney, Exo 2 by Natanael Gama — Google Fonts.

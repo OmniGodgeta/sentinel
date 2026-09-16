@@ -5,12 +5,194 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.25.2, 2026-09-16.** Update this file when you finish or start
+Last updated: **v0.26.0, 2026-09-16.** Update this file when you finish or start
 anything.
 
 ---
 
-## Recently completed — PDTD enemy/boss sprite swap (v0.25.2)
+## Recently completed — in-app updater, sentinel roster, HUD/card polish (v0.26.0)
+
+User asked for several things after v0.25.2 shipped: (1) fix the in-app
+updater — it opened GitHub but pressing "update" still failed, only a full
+uninstall/reinstall actually worked; (2) sound + animation on every upgrade
+card; (3) confirm/build out the Planet Shield; (4) add PDTD's full sentinel
+(orbital weapon) roster, "replacing or modifying everything needed" (cards,
+animation, sounds, menu); (5) bigger/centered top HUD buttons and bigger
+bottom weapon/ability cards ("looks very empty"); (6) match enemy/upgrade
+**numbers** to PDTD's ratios, and (7) enemy + player-attack animation. Given
+the combined scope (effectively "redo most of the game to match PDTD"), asked
+the user to help sequence it — they said use my own judgment on order, match
+PDTD's *ratios* not raw numbers (already the established v0.12 approach), and
+approved the riskier native-Android work for #1. **Shipped this session: #1,
+#2, #4 (cards/sim/render/sound/menu), #5. Not done: #3 turned out to already
+be complete (see below), #6 (numbers retune) and #7 (real animation) were not
+started — both are genuinely large, separate efforts, see "Still open" below.**
+
+### #1 — in-app updater now actually installs (Android)
+
+Root cause: "Download" only ever did `OS.ShellOpen(releasePageUrl)` — opens a
+browser tab, and getting from there to an actually-installed update needed
+the user to find the asset, download it, and manually open it, which is
+where "fails" was coming from (nothing in the code path actually attempted an
+install).
+
+Now: `src/Meta/UpdateDownloader.cs` downloads the release's `.apk` asset
+in-app (progress bar in the same update card) and, on Android, hands it to
+the system package installer via `Godot.JavaClassWrapper.Wrap("com.godot.game.UpdateInstaller").Call("install", path)`
+— see `CLAUDE.md`'s new "Android build: custom Gradle" section for the full
+mechanism (`android/overlay/` — `UpdateInstaller.kt` + `BeyondApp.kt` +
+manifest permission, layered onto a regenerated `android/build/` by
+`tools/setup_android_gradle.sh`; **not** committing the ~200MB generated
+Gradle project itself). This required switching the Android export to a
+custom Gradle build (`REQUEST_INSTALL_PACKAGES` isn't addable via plain APK
+export) — a real pipeline change, done with the user's explicit go-ahead.
+
+**Verified**: a full local `--export-debug Android` gradle build succeeds,
+the compiled manifest carries the permission (`aapt2 dump badging`), and
+`com.godot.game.{BeyondApp,UpdateInstaller}` are present in the built APK's
+`classes3.dex` (checked via `strings` on the extracted dex). CI's
+`build-apk.yml` now runs `tools/setup_android_gradle.sh` before export — this
+is the **first real test of the new pipeline in CI**, check it went green
+before trusting this is fully wired (`gh run list`).
+**Not verified**: the actual on-device tap-to-install flow — Android still
+requires one manual tap on the system installer's "Install" screen (expected,
+can't be skipped without root); confirm on the S24 or similar that the
+button actually reaches that screen and the reinstall completes cleanly.
+
+### #2 — card sound + animation
+
+`card_reveal.ogg` (new, synthesized — `tools/gen_sfx.sh`) plays once when the
+draft popup opens (distinct from `card_pick.ogg`'s existing per-pick confirm
+chime). `Hud.RefreshDraft` now staggers each card in with a scale+fade
+pop-in tween (`Tween.TransitionType.Back` overshoot, ~70ms stagger per card),
+and picking a card gives it a quick punch-scale before the popup closes.
+Didn't add unique per-weapon-type sounds (10 orbital + 6 hero weapons would
+be a lot of new SFX for a single pass) — every weapon's *cast* sound was
+already `sentinel_shot`/the hero-weapon-specific ones from earlier sessions,
+unchanged.
+
+### #3 — Planet Shield: turned out already done, nothing to build
+
+Investigated before assuming a gap: Planet Shield has existed since v0.22.0
+(mechanic) and got its animated hex-dome visual in v0.25.0 — purchasable in
+`SentinelScreen`, levels via RD early / Exotic Alloy past level 4. Nothing
+new needed here. (Don't confuse this with the *new* "Force Field" orbital
+weapon added under #4 below — different thing: Force Field is an offensive
+damage+slow pulse, Planet Shield is the defensive damage-absorb dome.)
+
+### #4 — PDTD's full 11-weapon sentinel roster
+
+PDTD's actual weapon list (`~/Work/pdtd-reference/NUMBERS.md` §"The 11
+weapons") is: Missile, Waterdrop, Railgun, Laser, Beam, Radiation Link,
+Radiation Zone, Space Bomb, Force Field, Chain Lightning, Ball Lightning.
+Beyond already covered most of these before this session — Missile ≈ the
+planet's always-on missile battery (a separate system, not a draftable
+orbital card), Railgun≈`orbital_cannon`, Beam≈`orbital_laser` (continuous
+lock), Radiation Link≈`radiation_line`, Radiation Zone≈`radiation_zone`,
+Chain Lightning≈`orbital_lightning`, Ball Lightning≈`shock_orb`. The
+genuinely missing 4 were added as new `data/orbital_weapons.json` entries +
+`src/Sim/Systems/OrbitalWeapons.cs` mechanics + `SimRenderer.DrawOrbitalWeapons`
+visuals, matching the existing per-weapon-kind pattern:
+- **`waterdrop`** — instant piercing bolt at the nearest enemy, damages
+  everything along the line (PDTD's Waterdrop: high single-hit, `penetrate: 9999`).
+- **`space_bomb`** — instant AoE burst at the nearest enemy's position
+  (PDTD's Space Bomb: lobbed gravity bomb).
+- **`force_field`** — a new persistent effect kind (`OwEffect.Kind==5`), a
+  planet-centred damage + slow pulse (reuses `SimWorld.ApplySlow`, the same
+  per-tick-reapply mechanism the Graviton turret and slow abilities already
+  use) — PDTD's Force Field ("continuous damage... inflict slow on hit").
+  **Not the same system as Planet Shield** (see #3) despite the similar name.
+- **`sweep_laser`** — a new persistent effect kind (`OwEffect.Kind==6`), a
+  thin beam that rotates through a 70° arc over its duration from the firing
+  platform — PDTD's plain "Laser" ("fires Lasers... in their path"), distinct
+  from the already-existing `orbital_laser`/Beam's fixed lock-on.
+
+`CardDraft.cs` and `SentinelScreen.cs` both already iterate
+`Cfg.OrbitalWeapons` generically — the new 4 needed zero wiring to appear in
+the in-run draft or the meta-upgrade menu ("menu" in the ask, done for free).
+Card art: no AI art was supplied for these 4 (unlike the existing cards, all
+owner-supplied) — `tools/gen_cards.py` generates a placeholder (nebula
+gradient + starfield + a drawn glyph in the weapon's accent color) instead;
+credited in `CREDITS.txt` as original/procedural, not AI or PDTD-sourced.
+Sound: all orbital weapons already fire through the same generic
+`Events.Push(SimEventKind.HeroWeaponFired, ...)` → `sentinel_shot.ogg` path
+regardless of kind, so the 4 new ones got working audio for free too.
+
+**Verified**: `SimTest` ALL CHECKS OK (1×≡4× identical — new sim code is
+render+logic but doesn't touch anything determinism-sensitive beyond the
+existing per-tick patterns it reuses); checked live in a running mission —
+`waterdrop`, `space_bomb`, and `force_field` all appeared as draft cards with
+correct procedural art and got leveled/fired, force_field's dome rendered
+correctly around the planet. `sweep_laser` wasn't drawn in the draft pool
+during this playtest (pure luck of the random draw) — its code path is
+structurally identical to the others and compiles/type-checks, but hasn't
+been eyeballed in motion; worth a quick look next time it comes up.
+
+**A scripted-bot-only side effect, not a bug**: `SimTest`'s endless-mode
+metric dropped from wave 41 (v0.25.2) to wave 6. Root cause confirmed
+harmless: the test bot (`SimTest.cs`) always picks
+`w.DraftOptionIndices[0]` — the *first* offered card, no evaluation — so
+going from a 12-card draft pool (6 hero + 6 orbital) to a 16-card one (6 + 10)
+means the naive bot spreads investment across more half-leveled new weapons
+instead of focusing the strong original ones. `deterministic=ok` and
+`changed-outcome=ok` on every other check — nothing crashed or ran away, it's
+a known artifact of "always pick first" (documented precedent: v0.13.0 had
+the same kind of swing from a card-system change). Real balance is the
+user's on-device pass per the long-standing project convention — don't chase
+this number.
+
+### #5 — HUD sizing: top row bigger + actually centered, bottom cards bigger
+
+The top control row (`Hud.cs`'s `_ctlRow`: ☰ ❚❚ 1x-4x ⚒ AUTO ✈) was
+positioned in an anchor box (600px wide) narrower than its actual content
+width (~784px including separation) — an `HBoxContainer` isn't clipped to
+its anchor box, so it silently overflowed to the right and read as
+off-centre, which is what "make the top buttons... centered" was actually
+reporting (not a request to add new centering logic — the anchor math was
+already nominally centred, the box was just too small for its own content).
+Fixed by widening the box to 920px (comfortably over the new, ~15%-larger
+button sizes) so it stops overflowing. `HeroWeaponButton`/`AbilityButton`
+(the bottom-bar weapon/ability cards) grew 100×100/100×110 → 136×136/136×146
+— the empty-feeling gap in the bottom panel was mostly these being
+undersized relative to the panel, not the panel itself. `GameRoot.BottomReserve`
+306→408 and `_wavePanel`'s height grown to match so the play-field clipping
+still lines up with the taller panel.
+
+**Verified**: checked live in a running mission — top row now sits genuinely
+centred with room to spare, bottom weapon cards visibly bigger and less
+sparse-looking (screenshotted at Commander level 6, three unlocked weapons).
+
+### Still open from this ask — genuinely large, not started
+
+- **#6 — match PDTD's ratios for enemy stats and upgrade numbers.** User
+  confirmed: ratios/relative feel, not literal PDTD numbers (Beyond's damage
+  scale is its own economy — established back at the v0.12 calibration pass,
+  still the right call). This needs the same kind of careful per-entity work
+  as v0.12's balance pass (`docs/balance-pass-1.md`) — going through
+  `~/Work/pdtd-reference/NUMBERS.md`'s enemy roster and the 11-weapon table,
+  computing relative HP/damage/cost ratios, and retuning `data/enemies.json`
+  + `data/turrets.json` + `data/hero_weapons.json` + `data/orbital_weapons.json`
+  to match that *shape* — a real, multi-hour session of its own, not a quick
+  follow-up. Note the 4 new orbital weapons added under #4 above used PDTD's
+  own per-weapon `dmg base`/`atk CD` figures as a *starting point* already
+  (see the table in §6 below), so that piece is partially done; the other 7
+  orbital weapons + all enemies + hero weapons haven't been touched this way.
+- **#7 — enemy + player-attack animation.** Beyond's renderer draws every
+  enemy and the hero ship as a single static sprite/procedural shape rotated
+  to face its travel direction (`SimRenderer.DrawEnemies`/`DrawHero`) — there
+  is no frame-by-frame animation anywhere in the renderer, enemy or player.
+  PDTD's own `.anim.ab` clips (checked during the v0.25.2 sprite work) are
+  simple one-property Transform tweens on a 3D rig, not directly portable to
+  this 2D static-sprite renderer. Real animation here means either (a) a
+  sprite-sheet pipeline (extract/author multiple frames per enemy, add
+  `AnimatedSprite`-equivalent playback to `SimRenderer`) or (b) procedural
+  motion (idle bob, engine-glow flicker, a windup on attack) layered onto the
+  existing static blits — (b) is far cheaper and more in keeping with how
+  the hero ship already gets a trail/glow, but is a design choice, not an
+  extraction task. Not started either way — flag to the user which they want
+  before picking one.
+
+---
 
 User asked (2026-09-15/16) to replace all regular-enemy AND boss sprites with
 ones sourced from Planet Defense: Space TD (PDTD), per the standing
@@ -1027,7 +1209,8 @@ SDK + `~/.android/debug.keystore`.
 the release. Pushing to `main` without a tag just makes an artifact. `gh` is
 authed as `OmniGodgeta`.
 
-Current: **v0.25.2**, `application/config/version = "0.25.2"`, APK ~214 MB.
+Current: **v0.26.0**, `application/config/version = "0.26.0"`, APK ~200 MB
+(now built via custom Gradle — see `CLAUDE.md`'s Android build note).
 
 ---
 

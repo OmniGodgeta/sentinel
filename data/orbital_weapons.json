@@ -33,6 +33,28 @@
       "max_level": 12, "cooldown": 7.5, "cooldown_per_level": -0.3, "min_cooldown": 3.8,
       "damage": 9, "damage_per_level": 5, "radius": 130, "radius_per_level": 12,
       "duration": 12, "duration_per_level": 1.0,
-      "text": "Releases a drifting radiation zone that poisons everything inside it." }
+      "text": "Releases a drifting radiation zone that poisons everything inside it." },
+
+    { "id": "waterdrop", "name": "Waterdrop", "kind": "waterdrop", "accent": "#2ec6e8",
+      "max_level": 12, "cooldown": 2.3, "cooldown_per_level": -0.11, "min_cooldown": 0.8,
+      "damage": 30, "damage_per_level": 16, "range": 600, "armor_pierce": true,
+      "text": "Fires a piercing waterdrop bolt that strikes every enemy in its path." },
+
+    { "id": "space_bomb", "name": "Space Bomb", "kind": "space_bomb", "accent": "#c44fe0",
+      "max_level": 12, "cooldown": 5.5, "cooldown_per_level": -0.24, "min_cooldown": 2.6,
+      "damage": 20, "damage_per_level": 10, "radius": 95, "radius_per_level": 9, "range": 650,
+      "text": "Lobs a gravity bomb that detonates for area damage on impact." },
+
+    { "id": "force_field", "name": "Force Field", "kind": "force_field", "accent": "#9b5de5",
+      "max_level": 12, "cooldown": 9, "cooldown_per_level": -0.35, "min_cooldown": 4.5,
+      "damage": 7, "damage_per_level": 3.5, "radius": 210, "radius_per_level": 10,
+      "duration": 5, "duration_per_level": 0.4, "slow_factor": 0.55,
+      "text": "Projects a damaging field around the planet that slows everything it touches." },
+
+    { "id": "sweep_laser", "name": "Sweeping Laser", "kind": "sweep_laser", "accent": "#ff5c8a",
+      "max_level": 12, "cooldown": 4.8, "cooldown_per_level": -0.2, "min_cooldown": 2.2,
+      "damage": 10, "damage_per_level": 5, "range": 620,
+      "duration": 1.1, "duration_per_level": 0.05, "shield_pierce": true,
+      "text": "Sweeps a thin beam through an arc, cutting down everything it crosses." }
   ]
 }

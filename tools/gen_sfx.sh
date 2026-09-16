@@ -134,8 +134,23 @@ ffmpeg -y -v error -filter_complex "
    alimiter=limit=0.95,volume=1.35,aformat=channel_layouts=mono
 " $Q planet_hit.ogg
 
+# ---------- CARD REVEAL (upgrade-draft popup opens) — bright rising shimmer,
+# distinct from card_pick's confirm chime; plays once per draft, not per card ----------
+ffmpeg -y -v error -filter_complex "
+ aevalsrc=exprs='sin(2*PI*(700*t+2600*t*t))*exp(-2.2*t)':s=44100:d=0.5[sweep];
+ sine=frequency=1760:duration=0.12[b1];
+ [b1]volume=0.9,afade=t=in:st=0:d=0.01,afade=t=out:st=0.06:d=0.06,adelay=60|60[bell1];
+ sine=frequency=2637:duration=0.14[b2];
+ [b2]volume=0.8,afade=t=in:st=0:d=0.01,afade=t=out:st=0.07:d=0.07,adelay=140|140[bell2];
+ anoisesrc=d=0.5:c=white:a=1:s=88[n];
+ [n]highpass=f=5000,volume=0.5,afade=t=out:st=0.02:d=0.4[air];
+ [sweep][bell1][bell2][air]amix=inputs=4:normalize=0:weights=0.9 1 0.85 0.4,
+   acompressor=threshold=-16dB:ratio=3:attack=2:release=140,
+   alimiter=limit=0.9,volume=1.1,aformat=channel_layouts=mono
+" $Q card_reveal.ogg
+
 echo "--- generated ---"
-for f in turret_shot turret_shot_b sentinel_shot explosion explosion_b explosion_big missile_launch battery_launch planet_hit; do
+for f in turret_shot turret_shot_b sentinel_shot explosion explosion_b explosion_big missile_launch battery_launch planet_hit card_reveal; do
   d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 $f.ogg)
   v=$(ffmpeg -i $f.ogg -af volumedetect -f null /dev/null 2>&1 | grep -oE 'mean_volume: [-0-9.]+|max_volume: [-0-9.]+' | tr '\n' ' ')
   printf "  %-16s %.2fs  %s\n" "$f" "$d" "$v"

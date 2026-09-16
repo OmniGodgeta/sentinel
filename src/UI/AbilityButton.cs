@@ -20,7 +20,7 @@ public sealed partial class AbilityButton : Control
     public void Configure(AbilityDef def)
     {
         _def = def;
-        CustomMinimumSize = new Vector2(100, 110);
+        CustomMinimumSize = new Vector2(136, 146);
         TooltipText = $"{def.Name}\n{def.Role}";
     }
 
@@ -98,9 +98,9 @@ public sealed partial class AbilityButton : Control
         }
 
         // ---- name plate ----
-        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 18f, frame.Size.X - 6f, 15f), new Color(0f, 0f, 0f, 0.5f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 6f), _def.Name.ToUpperInvariant(),
-                   HorizontalAlignment.Center, sz.X, 11, new Color(role.Lightened(0.3f), 0.9f));
+        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 22f, frame.Size.X - 6f, 19f), new Color(0f, 0f, 0f, 0.5f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 7f), _def.Name.ToUpperInvariant(),
+                   HorizontalAlignment.Center, sz.X, 14, new Color(role.Lightened(0.3f), 0.9f));
     }
 
     // ---- chamfered-rect helpers (the card frame shape) ----

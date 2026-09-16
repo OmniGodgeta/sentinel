@@ -124,50 +124,53 @@ public sealed partial class Hud : CanvasLayer
         _updateBadge.Pressed += () => OS.ShellOpen(Sentinel.Meta.UpdateChecker.AvailableUrl);
         AddChild(_updateBadge);
 
-        // speed + pause + leave + build row
+        // speed + pause + leave + build row.
+        // Box width must cover the actual summed content width (buttons + separation) —
+        // an HBoxContainer isn't clipped to its anchor box, so an undersized box here
+        // made the row spill past its right edge and read as off-centre.
         var ctl = new HBoxContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -300, OffsetTop = 96, OffsetRight = 300,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -460, OffsetTop = 96, OffsetRight = 460,
             Alignment = BoxContainer.AlignmentMode.Center,
         };
         _ctlRow = ctl;
         ctl.Theme = UiTheme.Instance;
-        ctl.AddThemeConstantOverride("separation", 8);
+        ctl.AddThemeConstantOverride("separation", 9);
         AddChild(ctl);
-        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(76, 66) };
-        _menuOpen.AddThemeFontSizeOverride("font_size", 26);
+        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(88, 76) };
+        _menuOpen.AddThemeFontSizeOverride("font_size", 29);
         _menuOpen.Pressed += () => { if (!Root.IsPaused) { Root.TogglePause(); _pause.Text = "▶"; } };
         StyleTopButton(_menuOpen, UiTheme.Accent);
         ctl.AddChild(_menuOpen);
-        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(76, 66) };
-        _pause.AddThemeFontSizeOverride("font_size", 23);
+        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(88, 76) };
+        _pause.AddThemeFontSizeOverride("font_size", 26);
         _pause.Pressed += () => { Root.TogglePause(); _pause.Text = Root.IsPaused ? "▶" : "❚❚"; };
         StyleTopButton(_pause, UiTheme.Accent);
         ctl.AddChild(_pause);
         for (int i = 0; i < 4; i++)
         {
             int mult = i + 1;
-            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(82, 66), ToggleMode = true };
-            btn.AddThemeFontSizeOverride("font_size", 22);
+            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(94, 76), ToggleMode = true };
+            btn.AddThemeFontSizeOverride("font_size", 24);
             btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); };
             StyleTopButton(btn, UiTheme.Accent);
             ctl.AddChild(btn);
             _speed[i] = btn;
         }
         UpdateSpeedButtons(1);
-        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(76, 66), ToggleMode = true };
-        _buildToggle.AddThemeFontSizeOverride("font_size", 26);
+        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(88, 76), ToggleMode = true };
+        _buildToggle.AddThemeFontSizeOverride("font_size", 29);
         _buildToggle.TooltipText = "Build / upgrade turrets";
         StyleTopButton(_buildToggle, new Color(0.95f, 0.7f, 0.3f));
         ctl.AddChild(_buildToggle);
-        _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(88, 66), ToggleMode = true, ButtonPressed = true };
-        _autoBtn.AddThemeFontSizeOverride("font_size", 17);
+        _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(100, 76), ToggleMode = true, ButtonPressed = true };
+        _autoBtn.AddThemeFontSizeOverride("font_size", 19);
         _autoBtn.TooltipText = "Ship weapons auto-fire — tap to fire them by hand instead";
         _autoBtn.Pressed += () => Root.RequestToggleAutoFire();
         StyleTopButton(_autoBtn, new Color(0.5f, 0.95f, 0.6f));
         ctl.AddChild(_autoBtn);
-        _autopilotBtn = new Button { Text = "✈", CustomMinimumSize = new Vector2(76, 66), ToggleMode = true };
-        _autopilotBtn.AddThemeFontSizeOverride("font_size", 26);
+        _autopilotBtn = new Button { Text = "✈", CustomMinimumSize = new Vector2(88, 76), ToggleMode = true };
+        _autopilotBtn.AddThemeFontSizeOverride("font_size", 29);
         _autopilotBtn.TooltipText = "Autopilot — the ship flies itself toward threats; attacks always auto-fire";
         _autopilotBtn.Pressed += () => Root.RequestToggleAutopilot();
         StyleTopButton(_autopilotBtn, new Color(0.55f, 0.75f, 1f));
@@ -207,7 +210,7 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
-        _wavePanel.OffsetTop = -238;   // weapon row + ability bar + hint
+        _wavePanel.OffsetTop = -340;   // weapon row + ability bar + hint (both card rows enlarged)
         // lighter than the default theme panel — a soft backing, not a solid blue box
         _wavePanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
@@ -218,12 +221,13 @@ public sealed partial class Hud : CanvasLayer
         });
         AddChild(_wavePanel);
         var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
+        wv.AddThemeConstantOverride("separation", 10);
         _wavePanel.AddChild(wv);
         _weaponRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        _weaponRow.AddThemeConstantOverride("separation", 6);
+        _weaponRow.AddThemeConstantOverride("separation", 10);
         wv.AddChild(_weaponRow);
         var abRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        abRow.AddThemeConstantOverride("separation", 10);
+        abRow.AddThemeConstantOverride("separation", 14);
         wv.AddChild(abRow);
         for (int i = 0; i < _abilityBtns.Length; i++)
         {
@@ -616,10 +620,13 @@ public sealed partial class Hud : CanvasLayer
         hash = hash * 31 + w.RunCards.Count;
         if (hash == _draftShownHash) return;
         _draftShownHash = hash;
+        Sentinel.Audio.AudioManager.Instance?.Play("card_reveal");
 
         foreach (Node c in _draftCards.GetChildren()) c.QueueFree();
+        int cardPos = 0;
         foreach (int idx in w.DraftOptionIndices)
         {
+            int myPos = cardPos++;
             bool orbital = w.IsOrbitalCard(idx);
             int wi = w.CardWeaponIndex(idx);
             string cardId, cardName, accent;
@@ -648,12 +655,21 @@ public sealed partial class Hud : CanvasLayer
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 ClipContents = true,
+                PivotOffset = new Vector2(70, 220),
+                Scale = new Vector2(0.7f, 0.7f),
+                Modulate = new Color(1, 1, 1, 0f),
             };
             btn.AddThemeStyleboxOverride("normal", CardBox(col, 0.12f));
             btn.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
             btn.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));
             btn.AddThemeStyleboxOverride("focus", CardBox(col, 0.30f));
-            btn.Pressed += () => { Root.RequestPickCard(i2); _draftShownHash = -1; };
+            btn.Pressed += () =>
+            {
+                // a quick confirm punch before the popup clears and the sim resumes
+                var t2 = btn.CreateTween();
+                t2.TweenProperty(btn, "scale", new Vector2(1.08f, 1.08f), 0.07f);
+                Root.RequestPickCard(i2); _draftShownHash = -1;
+            };
 
             var v = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
             v.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -694,6 +710,15 @@ public sealed partial class Hud : CanvasLayer
             v.AddChild(lv);
 
             _draftCards.AddChild(btn);
+
+            // staggered pop-in: each card scales up from small/transparent with a
+            // slight overshoot, offset a beat after the one before it
+            var t = btn.CreateTween();
+            t.TweenInterval(myPos * 0.07f);
+            t.TweenProperty(btn, "modulate:a", 1f, 0.16f);
+            t.Parallel().TweenProperty(btn, "scale", new Vector2(1.06f, 1.06f), 0.16f)
+                .SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+            t.TweenProperty(btn, "scale", Vector2.One, 0.08f);
         }
     }
 

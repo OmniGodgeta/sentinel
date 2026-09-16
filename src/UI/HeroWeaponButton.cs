@@ -22,7 +22,7 @@ public sealed partial class HeroWeaponButton : Control
     public void Configure(string name, string kind, Color accent, bool alwaysOn)
     {
         _name = name; _kind = kind; _accent = accent; _alwaysOn = alwaysOn;
-        CustomMinimumSize = new Vector2(100, 100);
+        CustomMinimumSize = new Vector2(136, 136);
         TooltipText = name;
     }
 
@@ -47,7 +47,7 @@ public sealed partial class HeroWeaponButton : Control
     {
         var sz = Size;
         bool ready = _cd <= 0.01f;
-        float ch = 9f;
+        float ch = 11f;
         var frame = new Rect2(1, 1, sz.X - 2, sz.Y - 2);
 
         if (ready && !_alwaysOn)
@@ -68,14 +68,14 @@ public sealed partial class HeroWeaponButton : Control
         DrawIcon(gc, Mathf.Min(sz.X, sz.Y) * 0.22f, new Color(_accent.Lightened(0.15f), _alwaysOn || ready ? 1f : 0.7f));
 
         // level chip, top-left
-        DrawRect(new Rect2(frame.Position.X + 4f, frame.Position.Y + 4f, 26f, 16f), new Color(0, 0, 0, 0.55f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(frame.Position.X + 7f, frame.Position.Y + 17f), $"L{_level}",
-                   HorizontalAlignment.Left, 26f, 13, new Color(1, 1, 1, 0.85f));
+        DrawRect(new Rect2(frame.Position.X + 5f, frame.Position.Y + 5f, 34f, 20f), new Color(0, 0, 0, 0.55f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(frame.Position.X + 9f, frame.Position.Y + 20f), $"L{_level}",
+                   HorizontalAlignment.Left, 34f, 16, new Color(1, 1, 1, 0.85f));
 
         if (_alwaysOn)
         {
-            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 24f), "ON",
-                       HorizontalAlignment.Center, sz.X, 15, new Color(0.6f, 1f, 0.7f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 30f), "ON",
+                       HorizontalAlignment.Center, sz.X, 18, new Color(0.6f, 1f, 0.7f));
         }
         else if (!ready)
         {
@@ -88,8 +88,8 @@ public sealed partial class HeroWeaponButton : Control
             float lineY = frame.Position.Y + frame.Size.Y - 22f;
             DrawRect(new Rect2(frame.Position.X + 4f, lineY, frame.Size.X - 8f, 4f), new Color(0, 0, 0, 0.5f));
             DrawRect(new Rect2(frame.Position.X + 4f, lineY, (frame.Size.X - 8f) * (1f - frac), 4f), new Color(_accent, 0.95f));
-            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 26f), $"{_cd:0.0}s",
-                       HorizontalAlignment.Center, sz.X, 15, Colors.White);
+            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 32f), $"{_cd:0.0}s",
+                       HorizontalAlignment.Center, sz.X, 18, Colors.White);
         }
         else
         {
@@ -99,9 +99,9 @@ public sealed partial class HeroWeaponButton : Control
             CutOutline(Shrink(frame, 2f), ch - 1f, new Color(_accent, m * 0.6f), 2f);
         }
 
-        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 16f, frame.Size.X - 6f, 13f), new Color(0f, 0f, 0f, 0.5f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 5f), _name.ToUpperInvariant(),
-                   HorizontalAlignment.Center, sz.X, 10, new Color(_accent.Lightened(0.3f), 0.9f));
+        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 20f, frame.Size.X - 6f, 17f), new Color(0f, 0f, 0f, 0.5f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 6f), _name.ToUpperInvariant(),
+                   HorizontalAlignment.Center, sz.X, 13, new Color(_accent.Lightened(0.3f), 0.9f));
     }
 
     private void DrawIcon(Vector2 c, float s, Color col)

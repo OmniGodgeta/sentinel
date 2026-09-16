@@ -367,6 +367,10 @@ public sealed partial class SimRenderer : Node2D
         new(0.55f, 0.92f, 0.25f),  // rad_line
         new(0.98f, 0.80f, 0.22f),  // shock_orb
         new(0.55f, 0.92f, 0.25f),  // rad_zone
+        new(0.18f, 0.78f, 0.91f),  // waterdrop
+        new(0.77f, 0.31f, 0.88f),  // space_bomb
+        new(0.61f, 0.36f, 0.90f),  // force_field
+        new(1.00f, 0.36f, 0.54f),  // sweep_laser
     };
 
     private void DrawOrbitalWeapons()
@@ -407,21 +411,27 @@ public sealed partial class SimRenderer : Node2D
             DrawCircle(p, 1.8f, Colors.White);
         }
 
-        // instant strike (cannon / laser) — beam + a radial impact shockwave at the mark
+        // instant strike (cannon / laser / waterdrop / space bomb) — beam + a radial impact shockwave
         if (World.FxOrbitalBeamLeft > 0f)
         {
-            bool laser = World.FxOrbitalBeamKind == 1;
-            var c = laser ? OrbitalCols[1] : OrbitalCols[0];
-            float span = laser ? 0.16f : 0.12f;
+            int bk = World.FxOrbitalBeamKind;
+            var c = bk switch { 1 => OrbitalCols[1], 2 => OrbitalCols[6], 3 => OrbitalCols[7], _ => OrbitalCols[0] };
+            float span = bk switch { 1 => 0.16f, 2 => 0.14f, 3 => 0.24f, _ => 0.12f };
             float k = Mathf.Clamp(World.FxOrbitalBeamLeft / span, 0f, 1f);
             var from = World.FxOrbitalBeamFrom;
             var to = World.FxOrbitalBeamTo;
-            DrawLine(from, to, new Color(c, 0.32f * k), laser ? 7f : 5f);
-            DrawLine(from, to, new Color(1f, 0.96f, 0.9f, 0.9f * k), laser ? 3f : 2f);
-            // impact rings expanding on the ground
+            bool bomb = bk == 3;
+            if (!bomb)
+            {
+                DrawLine(from, to, new Color(c, 0.32f * k), bk == 1 ? 7f : 5f);
+                DrawLine(from, to, new Color(1f, 0.96f, 0.9f, 0.9f * k), bk == 1 ? 3f : 2f);
+            }
+            // impact rings expanding on the ground — bigger for the space bomb's blast
             float grow = (1f - k);
-            DrawArc(to, 8f + grow * 46f, 0, Mathf.Tau, 28, new Color(c, 0.7f * k), 3f);
-            DrawArc(to, 4f + grow * 26f, 0, Mathf.Tau, 22, new Color(1f, 0.95f, 0.9f, 0.6f * k), 2f);
+            float ringMul = bomb ? 2.1f : 1f;
+            DrawArc(to, (8f + grow * 46f) * ringMul, 0, Mathf.Tau, 28, new Color(c, 0.7f * k), bomb ? 4f : 3f);
+            DrawArc(to, (4f + grow * 26f) * ringMul, 0, Mathf.Tau, 22, new Color(1f, 0.95f, 0.9f, 0.6f * k), 2f);
+            if (bomb) DrawCircle(to, 10f * k, new Color(c, 0.5f * k));
         }
 
         // active field effects
@@ -465,6 +475,28 @@ public sealed partial class SimRenderer : Node2D
                 float pulse = 0.6f + 0.4f * Mathf.Sin(gt * 20f);
                 DrawCircle(fx.Pos, 6f * pulse, new Color(lc, 0.8f));
                 DrawArc(fx.Pos, 10f, 0, Mathf.Tau, 20, new Color(lc, 0.5f), 2f);
+            }
+            else if (fx.Kind == 5) // force field — PDTD Force Field: a planet-hugging damage + slow dome
+            {
+                var fc = OrbitalCols[8];
+                float life = Mathf.Clamp((fx.DieAt - gt), 0f, 1f);
+                float pulse = 0.5f + 0.5f * Mathf.Sin(gt * 4f);
+                DrawCircle(Vector2.Zero, fx.Radius, new Color(fc, (0.06f + 0.03f * pulse) * life + 0.02f));
+                DrawArc(Vector2.Zero, fx.Radius, 0, Mathf.Tau, 64, new Color(fc, 0.55f + 0.2f * pulse), 2.4f);
+                for (int s = 0; s < 10; s++)
+                {
+                    float aa = s * Mathf.Tau / 10f - gt * 0.6f;
+                    var p2 = Vector2.FromAngle(aa) * fx.Radius;
+                    DrawLine(p2, p2 - Vector2.FromAngle(aa) * 14f, new Color(fc, 0.7f), 2f);
+                }
+            }
+            else if (fx.Kind == 6) // sweeping laser — PDTD's plain Laser: a thin beam sweeping an arc
+            {
+                var sc = OrbitalCols[9];
+                DrawLine(fx.From, fx.Pos, new Color(sc, 0.30f), 7f);
+                DrawLine(fx.From, fx.Pos, new Color(sc, 0.75f), 3f);
+                DrawLine(fx.From, fx.Pos, new Color(1f, 0.95f, 0.95f, 0.9f), 1.3f);
+                DrawCircle(fx.Pos, 5f, new Color(sc, 0.8f));
             }
             else // shock orb (2) / radiation zone (3) — concentric radial shockwaves (PDTD SHOCK ORB look)
             {
