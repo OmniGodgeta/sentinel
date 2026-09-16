@@ -5,8 +5,62 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.25.1, 2026-09-15.** Update this file when you finish or start
+Last updated: **v0.25.2, 2026-09-16.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — PDTD enemy/boss sprite swap (v0.25.2)
+
+User asked (2026-09-15/16) to replace all regular-enemy AND boss sprites with
+ones sourced from Planet Defense: Space TD (PDTD), per the standing
+copyrighted-asset exception (`CLAUDE.md` §4, personal/never-published build).
+**Done.** The earlier assumption that PDTD's enemies/bosses were 3D meshes
+that couldn't be flattened without stretching/seaming was **wrong** — direct
+inspection of the Unity data showed they're flat pre-rendered `SpriteRenderer`
+sprites (no `Mesh`/`MeshRenderer`/`SkinnedMeshRenderer` anywhere), the same
+trick already used for `assets/game/missile.png`. All 11
+`assets/game/enemies/*.png` (10 regular + `boss_threshing_gate`) were
+extracted via UnityPy, cropped, oriented nose-up (`siege_crawler` needed a
+180° flip), and dropped in; `SimRenderer.EnemyTint` was reset to near-white
+across the board so it stops multiply-darkening PDTD's own baked-in sprite
+colors. Full source-prefab mapping is in `assets/game/CREDITS.txt`'s
+"Enemy + boss sprites" entry; the corrected 3D-mesh-vs-sprite finding and
+extraction method are written up in §6a below. Verified: `dotnet build` clean,
+`SimTest.tscn` ALL CHECKS OK (1×≡4× identical — art-only, sim untouched), and
+checked live in a running mission (enemy sprite renders with transparency
+intact, rotates to face its travel direction, no tint discoloration).
+
+**Turret/sentinel visuals were investigated and left as Kenney art** — PDTD
+itself has only one player turret (two prefab variants of the same central
+planet-gun; PDTD's own design has no turret roster), so there's nothing to
+draw from for Beyond's 8 distinct turret types (`data/turrets.json`) the way
+there was for the 11-enemy roster. Turret *sound* (`sentinel_shot.ogg`) was
+already replaced with real PDTD audio back at v0.24.0/v0.25.0, before this ask
+existed — that part was already done.
+
+### Still open (unrelated to the art swap, don't lose these)
+
+- **PDTD-style upgrade cards**: user wants PDTD's boost/upgrade *types*
+  (damage%, count-vs-damage tradeoffs, splash%, proc-chance "super" hits)
+  while keeping Beyond's own custom card art/names. Genuinely a
+  `CardDraft.cs`/`HeroWeapons.cs` architecture change (today's system only
+  knows "+1 level"), not an asset swap — **not started**. Don't undersell this
+  one's scope the way the enemy-art estimate turned out to be oversold.
+- **In-app update checker**: user reported "the in-game update didn't seem to
+  work" but then realized they were testing a stale manually-installed APK and
+  said they'd manually update and re-check — **outcome not yet confirmed**,
+  worth asking or checking `src/Meta/UpdateChecker.cs` if it comes up again.
+- **Login/cloud save & joystick from v0.25.1**: both confirmed **working** by
+  the user after they manually reinstalled the real v0.25.1 build ("creating
+  account works", "control stick works perfectly") — these are DONE, not open.
+- **Declined, don't revisit**: the user asked about directly patching PDTD's
+  own APK to strip its ads/IAP gates (to "just play PDTD free"). Declined —
+  that's cracking another company's shipped monetization, a different thing
+  than reusing assets in our own game. Stick with that answer if it comes up
+  again.
+- Arc 2 / further content still gated behind the user's own on-device balance
+  pass (long-standing convention, unrelated to any of the above).
 
 ---
 
@@ -635,24 +689,29 @@ User tested v0.25.0 on-device same day; this is the direct bug-report pass.
   above: PDTD's "Missile: dmg base 1" is a multiplier in its own weapon
   economy, not a transplantable absolute number for Beyond's completely
   different damage scale.
-- **Enemy/boss/sentinel full visual replacement — investigated, NOT done**
-  (user asked to replace all of them with PDTD's). PDTD's characters are real
-  3D meshes with UV-mapped materials (confirmed: the `.png.ab` textures under
-  `assets/Res/materials/enemy/**` are normal maps / shader inputs / boss
-  diffuse textures baked for a specific mesh's UVs, not flat sprites) rendered
-  in Unity's 3D pipeline. `SimRenderer.DrawEnemies` draws flat 2D sprites
-  (`Art.Enemy(id)`). Dropping a mesh's UV-mapped diffuse texture onto a flat
-  quad would show visible seams/stretching — it would look broken, not
-  better. The missile sprite swap above worked specifically because
-  particle/VFX billboards are flat even in 3D engines; that trick doesn't
-  generalize to character/ship art. A real version of this needs either
-  rendering each 3D model to a sprite from this game's camera angle (needs a
-  3D tool — Blender headless render or similar — not attempted) or hand-
-  picking flat accent/VFX textures (engine glow, energy auras — several exist
-  in the bundle, e.g. `meteorite_head_fire.png`, `engine_glow_1.png`) to layer
-  onto Beyond's *existing* sprites instead of a full swap. Full writeup and
-  the exact `.ab` paths found are in `tools/extract_pdtd_audio.py`'s trailing
-  comment block. Left for a dedicated follow-up.
+- **Enemy/boss visual replacement — DONE at v0.25.2.** The write-up above
+  (and the old §6a note it pointed to) was **wrong**: PDTD's enemies/bosses
+  turned out to be flat pre-rendered `SpriteRenderer` sprites, not 3D meshes —
+  a v0.25.1-session spike inspected the actual Unity objects and found no
+  `Mesh`/`MeshRenderer`/`SkinnedMeshRenderer` anywhere in the enemy prefabs.
+  See the "🔴 ACTIVE HANDOFF" section this file carried at v0.25.1/early
+  v0.25.2 (now folded into history below) for the full corrected finding, and
+  `assets/game/CREDITS.txt`'s "Enemy + boss sprites" entry for the source
+  mapping (which PDTD prefab became which Beyond enemy). All 11
+  `assets/game/enemies/*.png` replaced, `SimRenderer.EnemyTint` reset to
+  near-white so it stops washing out PDTD's baked-in sprite colors.
+  **Sentinel/turret visuals were investigated and left as Kenney art** — PDTD
+  itself has exactly one player turret (`prefab/gun/gun.prefab.ab` +
+  `autocannon.prefab.ab`, two variants of the same central planet-gun,
+  because PDTD's own design has no turret roster), versus Beyond's 8 distinct
+  turret types (`data/turrets.json`). There's no PDTD equivalent to draw from
+  the way there was for the 11-enemy roster, and the one extractable texture
+  (`art/gun/machine_gun0.png.ab`, `gun_plus.png.ab`) came out through UnityPy
+  as a near-blank luminance mask that didn't hold together as a usable sprite
+  even after a luminance→alpha pass — not pursued further. Turret *sound*
+  (`sentinel_shot.ogg`) was already replaced with real PDTD audio back at
+  v0.24.0/v0.25.0 (see the audio entry above) — that part of the "sentinels
+  and their sounds" ask was already done before this pass.
 - **Upgrade cards "same boosts as PDTD, keep my own custom cards" —
   investigated, NOT implemented.** Pulled PDTD's actual card design
   (`config/data/skill_upgrade_data`, 208 cards, digested in
@@ -872,7 +931,7 @@ opcode-independent constant pool; `tools/luavm.py` is a mini-VM for the ~10
 opcodes the data-literal configs use. Phone `R3CX40CAQ7T` (Galaxy S24, not
 rooted) has the game installed if you need a live capture.
 
-### 6a. PDTD *asset* extraction (audio done, art/animation NOT done — v0.25.0)
+### 6a. PDTD *asset* extraction (audio, shield/missile/enemy/boss art all done — v0.25.2)
 
 Per the user's explicit 2026-09-15 OK to use PDTD's real assets in this
 personal build (§7 / `CLAUDE.md` §4), this session went past the config-only
@@ -900,25 +959,28 @@ the ~415 MB `UnityDataAssetPack.apk` inside it holds all the real game data).
   `.ab` files carry no embedded version string). Re-processed
   luminance→alpha so it composites as a translucent overlay. Wired into
   `SimRenderer.DrawHexShieldSurface` on the Planet Shield dome.
-- **Sprites / enemy art / animations — NOT done, and it's a bigger job than it
-  looks.** The Unity data pack *is* laid out invitingly (one asset per `.ab`
-  file, named by path — e.g. `assets/Res/gameobjects/weapon/{laser,missile,
-  radiationline}/...`, `assets/Res/anim/animation/*.anim.ab` +
-  `*.controller.ab`, `assets/Res/prefab/enemy/{name}/...`), and UnityPy can
-  load any of it. But: **PDTD's enemies are 3D models** (see
-  `assets/Res/models/mechanoid/`), not 2D sprite sheets — Beyond is a fully 2D
-  top-down game (`SimRenderer` draws everything procedurally with
-  `DrawLine`/`DrawPolygon`/etc., Kenney flat sprites for the few textured
-  bits). A Unity `AnimationClip` (the `.anim.ab` files) animates transform/
-  material curves on a 3D rig — it is not portable to Godot 2D procedural
-  drawing without either (a) standing up an offline 3D render pipeline to bake
-  the models+animations into sprite sheets, or (b) hand-recreating the motion
-  in Beyond's existing vector-draw style by eye (an illustration task, not an
-  extraction task). Both are real, scoped, multi-hour-plus projects of their
-  own — don't attempt either as a quick follow-up; decide with the user which
-  approach (if any) before starting, since (a) needs tooling this box doesn't
-  have and (b) is really "redesign Beyond's enemy art referencing PDTD," a
-  different kind of task than "extract PDTD's assets."
+- **Enemy + boss sprites — done at v0.25.2.** The claim in the paragraph this
+  replaces (and in the older "Enemy/boss/sentinel" entry in §5) was **wrong**:
+  PDTD's enemies/bosses are not 3D models rendered live. Directly inspecting
+  the Unity objects in e.g. `prefab/enemy/bug/bug_mantis_middle.prefab.ab` and
+  `prefab/enemy/bug/bug_wallmaker_boss.prefab.ab` showed only
+  `SpriteRenderer`/`Transform`/`GameObject` components — no `Mesh`,
+  `MeshRenderer`, or `SkinnedMeshRenderer` anywhere. The 3D look was modeled
+  once by PDTD's artists and baked down to a flat pre-rendered PNG per enemy
+  for runtime use (`textures/battleship/<family>/<id>.png.ab`), exactly like
+  the missile billboard above — not a UV-mapped live mesh. (`assets/Res/
+  models/mechanoid/` — the thing the old write-up pointed to as proof — turned
+  out to be unrelated to the enemy roster actually spawned in missions.) So
+  the swap was extract-texture → crop → orient nose-up → drop into
+  `assets/game/enemies/`, the same scope as the missile sprite, not a
+  render-pipeline project. All 11 `assets/game/enemies/*.png` replaced; see
+  `assets/game/CREDITS.txt`'s "Enemy + boss sprites" entry for the per-enemy
+  PDTD source prefab. `AnimationClip`/Mecanim rig replacement genuinely
+  wasn't attempted (PDTD's `.anim.ab` idle/attack clips are simple one-
+  property Transform tweens per the mantis spike, not a rig — porting those
+  to Beyond's static-sprite-plus-rotation renderer would be new scope, not an
+  extraction) — static sprites only, which is consistent with how Beyond
+  already draws every other enemy.
 - Tooling used lives in a **venv, not committed**: `python3 -m venv <dir> &&
   pip install UnityPy fsb5`. Neither package is a repo dependency.
 
@@ -965,7 +1027,7 @@ SDK + `~/.android/debug.keystore`.
 the release. Pushing to `main` without a tag just makes an artifact. `gh` is
 authed as `OmniGodgeta`.
 
-Current: **v0.25.0**, `application/config/version = "0.25.0"`, APK ~214 MB.
+Current: **v0.25.2**, `application/config/version = "0.25.2"`, APK ~214 MB.
 
 ---
 
@@ -984,11 +1046,13 @@ Current: **v0.25.0**, `application/config/version = "0.25.0"`, APK ~214 MB.
   working on bosses at the last level" (v0.25.0 ask) is really an arc-2+ item —
   don't build new boss content ahead of arc 2 itself, which per §4/§5 is
   gated behind the user's on-device balance pass. Nothing new needed here yet.
-- **PDTD art/animation**: real audio + one texture were pulled from the game's
-  actual asset files this session (§6a) — sprites/enemy-model/animation
-  replacement was explicitly asked for but NOT attempted; it's a fundamentally
-  different, larger job (PDTD's enemies are 3D models with Mecanim animation
-  clips; Beyond is 2D procedural) — read §6a before starting on it.
+- **PDTD art/animation**: audio, shield texture, missile sprite, and all 11
+  enemy/boss sprites have been pulled from the game's actual asset files
+  (§6a) — done as of v0.25.2. Turret/sentinel *visual* swap was investigated
+  and intentionally skipped (PDTD has no turret roster to draw from — see §5);
+  turret *sound* was already done back at v0.24.0/v0.25.0. Mecanim animation
+  clips were not ported (static sprites only, matching how Beyond already
+  draws everything else) — read §6a before revisiting either.
 - **Login/cloud-save round-trip is unverified end-to-end** (v0.25.0) — the
   Supabase project, `saves` table, and RLS policies were all checked directly
   and are correct, and the C# builds clean, but nobody has actually run

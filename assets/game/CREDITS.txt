@@ -49,12 +49,34 @@ Hero/battery missile sprite (assets/game/missile.png)
   Games, com.cyberjoy.prjw5n2 — assets/Res/gameobjects/weapon/missile/
   texture/supermissile01.png.ab) via UnityPy, same permission as above.
   Re-processed (luminance -> alpha, rotated so the nose points "up" to match
-  this renderer's sprite convention, downscaled). Enemy/boss/sentinel *visual*
-  replacement was investigated and intentionally NOT done this pass — see
-  docs/ROADMAP.md §6a for why (PDTD's characters are 3D meshes with UV-mapped
-  materials; this renderer draws flat 2D sprites, so a direct texture swap
-  would look stretched/seamed, unlike this VFX billboard which works fine
-  flat in both engines).
+  this renderer's sprite convention, downscaled).
+
+Enemy + boss sprites (assets/game/enemies/*.png)
+  All 11 replaced at v0.25.2 with real Planet Defense: Space TD art (CyberJoy
+  Games, com.cyberjoy.prjw5n2), extracted via UnityPy from each prefab's
+  `textures/battleship/**/*.png.ab` dependency and re-processed (crop to
+  content, rotate so the nose points "up" per this renderer's sprite
+  convention — only `siege_crawler` needed a 180° flip, downscale). An
+  earlier session wrongly assumed PDTD's enemies/bosses were 3D meshes that
+  couldn't be flattened without stretching/seaming — a direct inspection of
+  the Unity data (SpriteRenderer-only components, no Mesh/MeshRenderer/
+  SkinnedMeshRenderer anywhere) showed they're flat pre-rendered sprites like
+  the missile art above, so the swap was the same scope of work. Source
+  prefab per enemy: skiff <- union/union_drone_small, hauler <-
+  union/union_transport_big, interceptor <- wind/wind_hunter_middle,
+  aegis_cruiser <- union/union_escort_big, bombard <- union/union_laseratk_middle,
+  carrier <- bug/bug_hive_big, phase_runner <- watch/watch_timeecho_small,
+  leech <- bug/bug_leech_small, warden <- wind/wind_repairunit_big,
+  siege_crawler <- wind/wind_siege_big, boss_threshing_gate <-
+  bug/bug_wallmaker_boss. `SimRenderer.EnemyTint` was reset to near-white for
+  all of these — the old tint values existed to give the plain Kenney
+  placeholders visual variety, but multiplying a strong tint onto PDTD's own
+  baked-in color identity (gold/red/blue-grey/black chitin, ...) would wash
+  it out or recolor it oddly.
+  Turret/sentinel visuals were investigated the same pass and left as Kenney
+  art: PDTD's own build has exactly one player turret (`prefab/gun/`, two
+  variants), so there's no roster of 8 distinct PDTD turret designs to draw
+  from the way there was for the 11-enemy roster — see docs/ROADMAP.md.
 
 Planet skins (assets/game/planets/)
   Kenney (kenney.nl) — "Planets". CC0 1.0 Universal.

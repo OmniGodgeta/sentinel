@@ -33,20 +33,25 @@ public sealed partial class SimRenderer : Node2D
     private Vector2 _lastHeroPos;
     private float _puffTimer;
 
+    // Near-white: every enemy sprite is now real PDTD art with its own baked-in
+    // color identity (gold, red, blue-grey, black chitin, ...) — a strong tint
+    // here would multiply-darken/recolor it. Kept as a dict (not a flat
+    // Color.White) so future placeholder-art enemies can still opt into a
+    // Kenney-style variety tint without touching the draw call.
     private static readonly Dictionary<string, Color> EnemyTint = new()
     {
-        ["skiff"] = new(1.00f, 0.55f, 0.52f),
-        ["hauler"] = new(0.75f, 0.80f, 1.00f),
-        ["interceptor"] = new(1.00f, 0.82f, 0.45f),
-        ["aegis_cruiser"] = new(0.60f, 0.95f, 1.00f),
-        ["bombard"] = new(1.00f, 0.60f, 0.45f),
-        ["carrier"] = new(0.80f, 0.70f, 1.00f),
-        ["phase_runner"] = new(0.90f, 0.60f, 1.00f),
-        ["leech"] = new(0.80f, 1.00f, 0.65f),
-        ["warden"] = new(0.65f, 1.00f, 0.78f),
-        ["siege_crawler"] = new(1.00f, 0.72f, 0.55f),
+        ["skiff"] = new(1f, 1f, 1f),
+        ["hauler"] = new(1f, 1f, 1f),
+        ["interceptor"] = new(1f, 1f, 1f),
+        ["aegis_cruiser"] = new(1f, 1f, 1f),
+        ["bombard"] = new(1f, 1f, 1f),
+        ["carrier"] = new(1f, 1f, 1f),
+        ["phase_runner"] = new(1f, 1f, 1f),
+        ["leech"] = new(1f, 1f, 1f),
+        ["warden"] = new(1f, 1f, 1f),
+        ["siege_crawler"] = new(1f, 1f, 1f),
     };
-    private static Color Tint(string id) => EnemyTint.TryGetValue(id, out var c) ? c : new Color(1f, 0.6f, 0.6f);
+    private static Color Tint(string id) => EnemyTint.TryGetValue(id, out var c) ? c : new Color(1f, 1f, 1f);
 
     public void AddShake(float a) => _shake = Mathf.Min(16f, _shake + a);
 
@@ -523,7 +528,7 @@ public sealed partial class SimRenderer : Node2D
             if (!e.Alive) continue;
             var def = World.EnemyDefAt(e.DefIndex);
             bool boss = def.Class == "boss";
-            var tint = boss ? new Color(1f, 0.55f, 0.85f) : Tint(def.Id);
+            var tint = boss ? new Color(1f, 1f, 1f) : Tint(def.Id);
             var tex = Art.Enemy(boss ? "boss_threshing_gate" : def.Id);
 
             float sizePx = (boss ? e.Radius * 2.8f : e.Radius * 3.3f) + 10f;
