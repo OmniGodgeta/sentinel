@@ -25,7 +25,15 @@ public sealed partial class VirtualJoystick : Control
     private const float _baseInsetBottom = 300f;  // fixed-base offset from the zone's bottom edge
     private bool _active;
     private int _touchId = -1;
-    private Vector2 _center;      // fixed dock position (same coordinate frame as incoming event.Position)
+    // Both control-LOCAL (0,0 = this control's own top-left) — Godot delivers
+    // _gui_input touch/mouse positions already local to the receiving control,
+    // so nothing here may add/subtract this.Position. An earlier version did
+    // (to "convert" for _Draw, which IS local already) and it happened to look
+    // right on screen while being quietly wrong for every drag computation —
+    // harmless on the old left-docked zone (Position.X was 0 there) but badly
+    // wrong once the dock moved to the right side (Position.X ~half the
+    // screen), which is why steering right stopped tracking the thumb.
+    private Vector2 _center;
     private Vector2 _knob;
     private bool _baseReady;
 
@@ -40,7 +48,7 @@ public sealed partial class VirtualJoystick : Control
     {
         if (_baseReady && Size.Y > 0f) return;
         if (Size.Y <= 0f) return;
-        _center = Position + new Vector2(Size.X - _baseInsetRight, Size.Y - _baseInsetBottom);
+        _center = new Vector2(Size.X - _baseInsetRight, Size.Y - _baseInsetBottom);
         _knob = _center;
         _baseReady = true;
     }
@@ -106,8 +114,8 @@ public sealed partial class VirtualJoystick : Control
     {
         EnsureBase();
         if (!_baseReady) return;
-        var c = _center - Position;   // control-local
-        var k = _knob - Position;
+        var c = _center;
+        var k = _knob;
         var accent = new Color(0.26f, 0.82f, 0.87f);
         float a = _active ? 1f : 0.4f;   // dim, always-visible dock; brighter while held
         DrawCircle(c, _maxRadius, new Color(accent, 0.06f * a));

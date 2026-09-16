@@ -71,6 +71,15 @@ SAFE_REPLACEMENTS = {
     "explosion_b": (78, "electric-impact"),
     "shield": (74, "能量护盾解除音效"),     # "energy shield release"
     "ui_click": (69, "click"),
+    # added 2026-09-15 (2nd pass): missile_launch is the hero's own Missile
+    # Barrage volley (~6-15s cooldown depending on level) — infrequent enough
+    # that a 1.6s sample is fine; do NOT reuse this length for battery_launch
+    # (planet battery fires roughly every second, would overlap into mush).
+    "missile_launch": (43, "未来主义榴弹发射器"),   # "futuristic grenade launcher"
+    # sentinel_shot backs every orbital weapon (cannon/laser/lightning/etc,
+    # cooldowns 0.55s-8s) — already a natural ~2.3s one-shot cannon report,
+    # no trim needed.
+    "sentinel_shot": (57, "炮击-mcx200705112"),
 }
 
 # explosion / explosion_b fire on EVERY regular enemy kill (AudioManager minGap
@@ -81,14 +90,46 @@ SAFE_REPLACEMENTS = {
 TRIM = {
     "explosion": (0.33, 1.30, 1.05, 0.22, -1.5),
     "explosion_b": (0.0, 1.35, 1.10, 0.22, -1.5),
+    # 未来主义榴弹发射器 is a 13.6s library clip — the launch transient is at the
+    # very start, same heuristic as the explosion trims (no way to confirm the
+    # exact onset without listening; a 1.6s prefix + short fade-out is a safe bet).
+    "missile_launch": (0.0, 1.6, 1.3, 0.3, 0.0),
 }
 # Considered but NOT used (too long to safely reuse without FMOD event trim
 # metadata — see the module docstring): laser-fire (34, 1.9s — borderline, left
 # alone since Beyond's synthesized turret/sentinel lasers are correctly shaped
 # for rapid re-fire and this isn't obviously better), SF-DS Energy Laser (36,
 # 22s), starship-rail-gun (42, 29s), 太空武器激光枪 (47, 3.6s), rocket launch
-# 火箭发射升空 (9, 44.7s), the three 炮击 cannon hits (57/58/70, 2.2-2.8s each —
-# good candidates if you want to revisit missile_launch/battery_launch by hand).
+# 火箭发射升空 (9, 44.7s — a bigger, longer rocket-launch alternative to 43 if
+# you want to try it instead), the other two 炮击 cannon hits (58/70, 2.2-2.8s —
+# alternate takes if 57 isn't quite right for sentinel_shot).
+#
+# Enemy/boss/sentinel *visual* replacement (user asked, 2026-09-15 2nd pass):
+# investigated and NOT done, on purpose. PDTD's enemies/bosses/sentinels are
+# real 3D meshes with UV-mapped materials (see the .png.ab paths under
+# assets/Res/materials/enemy/**  — normal maps, shader inputs, boss diffuse
+# textures baked for a specific 3D mesh's UVs) rendered in Unity's 3D pipeline;
+# Beyond's SimRenderer draws flat 2D sprites (`Art.Enemy(id)` in
+# src/Render/SimRenderer.cs DrawEnemies). Dropping a mesh's UV-mapped diffuse
+# texture onto a flat sprite quad produces visible seams/stretching — it would
+# look broken, not better. The missile texture swap below WORKED specifically
+# because muzzle/trail effects are flat particle billboards even in a 3D game
+# (assets/Res/gameobjects/weapon/missile/texture/supermissile01.png.ab) — that
+# trick doesn't generalize to full character/ship art. A real version of this
+# would need to either render each 3D model to a sprite from Beyond's camera
+# angle (needs a 3D tool — Blender heedless render or similar, not attempted)
+# or hand-pick more flat VFX/accent textures (engine glow, energy auras) to
+# layer onto Beyond's *existing* sprites as an accent pass instead of a full
+# swap. Left for a dedicated follow-up if the user wants to pursue it further.
+#
+# The missile *sprite* extraction lives in the venv-created
+# `pdtd-extract/extract.py`-style workflow, not this file (this file is audio-
+# only) — see docs/ROADMAP.md §6a for the exact steps used
+# (UnityPy.config.FALLBACK_UNITY_VERSION = "6000.0.80f1", load
+# supermissile01.png.ab, export the Texture2D, then a small PIL pass:
+# luminance-as-alpha since the source has a black backing, rotate so the nose
+# points "up" to match this renderer's sprite convention, downscale, save over
+# assets/game/missile.png).
 
 
 def find_fsb5_blob(bank_path: str) -> bytes:

@@ -5,7 +5,7 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.25.0, 2026-09-15.** Update this file when you finish or start
+Last updated: **v0.25.1, 2026-09-15.** Update this file when you finish or start
 anything.
 
 ---
@@ -580,6 +580,102 @@ was reviewed in full and is sound; kept.
 - `SimTest` `ALL CHECKS OK`, 1×≡4× identical — none of this session's changes
   touch anything sim-relevant beyond the enemies/hero-cooldown/xp-mult data
   edits and the module `ApplyEffect` wiring, all already covered by the run.
+
+### v0.25.1 — joystick coordinate bug, Android internet permission, autopilot targeting, real missile art/sound
+User tested v0.25.0 on-device same day; this is the direct bug-report pass.
+- **FIXED the real joystick bug**: "I try to go right and the joystick doesn't
+  go where my thumb is." `VirtualJoystick.EnsureBase()` computed its fixed dock
+  as `Position + (Size - insets)` — but Godot delivers `_gui_input` touch/mouse
+  positions **already local** to the receiving control, so adding `Position`
+  double-offset the dock relative to real touch coordinates. `_Draw` happened
+  to subtract `Position` back out, so the ring *looked* right on screen while
+  the actual drag-direction math was wrong underneath. Harmless on the old
+  left-docked zone (`Position.X` was 0 there — anchored flush to the screen's
+  left edge) but badly wrong once v0.25.0 moved the dock to the right side
+  (`Position.X` ≈ half the screen), which is exactly why steering right broke.
+  Fixed by making `_center`/`_knob` purely local, matching `_gui_input`'s frame
+  — no `Position` term anywhere now. See the comment on the fields in
+  `VirtualJoystick.cs` for the full explanation, so nobody "fixes" it back.
+- **FIXED Android networking being dead since forever**: `export_presets.cfg`
+  had `permissions/internet=false` — this APK has **never** had network access
+  on a real device. This is why login gave "Request failed (0)" (HTTP code 0 =
+  never reached the server), and almost certainly why the in-app update
+  checker has silently never worked either (it fails open/silent by design, so
+  nobody would've noticed). Flipped `permissions/internet` and
+  `access_network_state` to `true`. This one change is probably the single
+  most impactful fix in this patch.
+- **Autopilot retargeting**: was chasing whatever enemy was nearest to the
+  *hero's current position* (could drag the ship far from the planet chasing
+  one distant spawn while ignoring closer threats). Now targets nearest to the
+  **planet** (`Vector2.Zero`), matching "go towards the closest enemy from the
+  planet." With no enemies alive it now **patrols a slow orbit** around the
+  planet instead of sitting still ("at the very least roam around the
+  planet") — deterministic tangential circling with a mild radial correction
+  back toward the orbit radius, no RNG/wall-clock. User's immediate follow-up
+  ("orbit closer than the preview I saw") — tightened the patrol radius from
+  `PlanetRadius + PointDefenseRange*0.85` (≈298) down to `HeroOrbitMin + 20`
+  (≈220), hugging the planet instead of sitting out near point-defense range.
+- **Real missile sprite + sound** (user: "replace the missile animation and
+  sounds"): `assets/game/missile.png` (used by both the hero's own missiles
+  *and* the planet battery's homing shots — both call `Art.Missile`) replaced
+  with a texture pulled from PDTD's own missile VFX
+  (`gameobjects/weapon/missile/texture/supermissile01.png.ab` via UnityPy —
+  reused the fork's working `FALLBACK_UNITY_VERSION = "6000.0.80f1"` config).
+  It's a flat comet/flame billboard (works because muzzle/trail VFX are flat
+  sprites even in a 3D engine), needed a luminance→alpha pass (black backing)
+  and a 90° rotation so the nose points "up" to match this renderer's sprite
+  convention. `missile_launch.ogg` replaced with a real trimmed PDTD sample
+  (sample 43, "未来主义榴弹发射器" / "futuristic grenade launcher", 13.6s source
+  trimmed to a 1.6s one-shot — safe because the hero's Missile Barrage cools
+  down for several seconds, unlike the planet battery). `sentinel_shot.ogg`
+  (backs every orbital weapon) replaced with sample 57 (a real ~2.3s cannon
+  report, no trim needed). Both added to `tools/extract_pdtd_audio.py`'s
+  `SAFE_REPLACEMENTS`/`TRIM` maps for reproducibility.
+  **Missile damage was NOT changed** — same reasoning as the enemy-stats note
+  above: PDTD's "Missile: dmg base 1" is a multiplier in its own weapon
+  economy, not a transplantable absolute number for Beyond's completely
+  different damage scale.
+- **Enemy/boss/sentinel full visual replacement — investigated, NOT done**
+  (user asked to replace all of them with PDTD's). PDTD's characters are real
+  3D meshes with UV-mapped materials (confirmed: the `.png.ab` textures under
+  `assets/Res/materials/enemy/**` are normal maps / shader inputs / boss
+  diffuse textures baked for a specific mesh's UVs, not flat sprites) rendered
+  in Unity's 3D pipeline. `SimRenderer.DrawEnemies` draws flat 2D sprites
+  (`Art.Enemy(id)`). Dropping a mesh's UV-mapped diffuse texture onto a flat
+  quad would show visible seams/stretching — it would look broken, not
+  better. The missile sprite swap above worked specifically because
+  particle/VFX billboards are flat even in 3D engines; that trick doesn't
+  generalize to character/ship art. A real version of this needs either
+  rendering each 3D model to a sprite from this game's camera angle (needs a
+  3D tool — Blender headless render or similar — not attempted) or hand-
+  picking flat accent/VFX textures (engine glow, energy auras — several exist
+  in the bundle, e.g. `meteorite_head_fire.png`, `engine_glow_1.png`) to layer
+  onto Beyond's *existing* sprites instead of a full swap. Full writeup and
+  the exact `.ab` paths found are in `tools/extract_pdtd_audio.py`'s trailing
+  comment block. Left for a dedicated follow-up.
+- **Upgrade cards "same boosts as PDTD, keep my own custom cards" —
+  investigated, NOT implemented.** Pulled PDTD's actual card design
+  (`config/data/skill_upgrade_data`, 208 cards, digested in
+  `~/Work/pdtd-reference/NUMBERS.md` "In-run upgrade cards"): per weapon it's
+  an unlock card + a small family of distinct upgrade **types** — e.g. for
+  Missile: "Power Missile" (+dmg%), "Missile Volley" (+1 count / −dmg%, a real
+  tradeoff card), "Blast Amplifier" (+explosion radius% and +explosion dmg%),
+  "Enhanced Missile" (% chance to upgrade a shot into a x3-damage "super"
+  version), "Probability Boost" (increases that chance). Beyond's
+  `CardDraft.cs` currently only offers one thing per weapon: "+1 level," which
+  bundles all stat growth from `hero_weapons.json`'s fixed per-level curve —
+  there's no branching-type choice at all. Genuinely reproducing PDTD's system
+  means restructuring the draft to offer *multiple distinct upgrade paths per
+  weapon* (not just re-flavoring text), which is a real architecture change
+  to `CardDraft.cs`/`HeroWeapons.cs`, plus rebalancing, plus re-verifying
+  SimTest's bot outcomes still make sense afterward — too large to do safely
+  in the same pass as the bug fixes above. The concrete PDTD examples above
+  are the blueprint for whoever picks this up; Beyond's own card art/names
+  stay untouched either way per the user's ask.
+- `SimTest` `ALL CHECKS OK`, 1×≡4× identical, m01-m06 still won — the
+  autopilot/joystick/permission fixes don't touch anything sim-outcome-
+  relevant (autopilot logic is deterministic and SimTest's scripted bot
+  doesn't use it; the joystick bug was UI-input-only).
 
 ---
 

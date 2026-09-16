@@ -17,13 +17,25 @@ public sealed partial class SimWorld
     /// volley and ship weapons already auto-fire regardless of this toggle.</summary>
     public bool HeroAutopilotOn => _heroAutopilot;
 
-    /// <summary>Deterministic autopilot direction: close to within engagement range of
-    /// the nearest threat, back off if something gets too close, hold otherwise.
-    /// Never overrides manual joystick input — only runs when that's idle.</summary>
+    /// <summary>Deterministic autopilot direction: chase whichever enemy is closest to
+    /// the *planet* (the actual threat to defend against, not just whatever's nearest
+    /// to wherever the ship happens to be drifting), closing to within engagement
+    /// range and backing off if it gets too close. With no enemies alive, patrol a
+    /// slow orbit around the planet instead of sitting still. Never overrides manual
+    /// joystick input — only runs when that's idle.</summary>
     private Vector2 AutopilotDir(Vector2 heroPos)
     {
-        int t = ClosestEnemyTo(heroPos, B.DespawnRadius);
-        if (t < 0) return Vector2.Zero;
+        int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
+        if (t < 0)
+        {
+            float orbitR = B.HeroOrbitMin + 20f;   // hug close to the planet, not out near point-defense range
+            Vector2 tangent = new Vector2(-heroPos.Y, heroPos.X);
+            if (tangent.LengthSquared() < 1f) tangent = Vector2.Right;
+            tangent = tangent.Normalized();
+            float rDiff = orbitR - heroPos.Length();
+            Vector2 radial = heroPos.LengthSquared() > 1f ? -heroPos.Normalized() : Vector2.Zero;
+            return (tangent + radial * Mathf.Clamp(rDiff / 80f, -1f, 1f) * 0.7f).Normalized();
+        }
         Vector2 to = Enemies[t].Pos - heroPos;
         float d = to.Length();
         float standoff = Cfg.Hero.PointDefenseRange * 0.6f;
