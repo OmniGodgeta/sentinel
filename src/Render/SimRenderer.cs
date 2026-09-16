@@ -782,10 +782,11 @@ public sealed partial class SimRenderer : Node2D
         DrawRect(new Rect2(bp, new Vector2(44 * hf, 4)), new Color(0.5f, 0.85f, 1f));
     }
 
-    /// <summary>The player's ship — a heavy capital cruiser in the spirit of a
-    /// Terran battlecruiser: long armoured hull, forward prow gun, a raised bridge,
-    /// side sponsons and a bank of engine nozzles. Beyond's teal/magenta palette,
-    /// drawn from polygons. Nose points along <paramref name="ang"/> (local +X).</summary>
+    /// <summary>The player's ship — an angular strike-corvette: a narrow spear-nosed
+    /// spine hull, swept delta wings with glowing tip pods, twin rear engine
+    /// nacelles held clear of the hull on struts, and a raised glass-canopy
+    /// cockpit. Beyond's teal/magenta palette, drawn from polygons. Nose points
+    /// along <paramref name="ang"/> (local +X).</summary>
     private void DrawShip(Vector2 c, float ang, float scale, float thrust, float gt)
     {
         Vector2 P(float x, float y) => c + new Vector2(x, y).Rotated(ang) * scale;
@@ -797,73 +798,91 @@ public sealed partial class SimRenderer : Node2D
         var mag      = new Color(0.86f, 0.30f, 0.62f);
         var glow     = new Color(0.40f, 0.86f, 1f);
 
-        // ---- engine trail + nozzle wash ----
+        // nacelle anchor points — held out on struts behind the wings, clear of
+        // the spine, so the silhouette reads as twin engines rather than one slab
+        Vector2 NacL(float x, float y) => new(x, y);
+        var nacPos = new[] { NacL(-30, -17f), NacL(-30, 17f) };
+
+        // ---- engine trail + nozzle wash (twin nacelles) ----
         if (thrust > 0.04f)
         {
-            float tl = 30f + thrust * 46f;
-            for (int e = -1; e <= 1; e++)
+            float tl = 28f + thrust * 50f;
+            foreach (var n in nacPos)
             {
-                DrawLine(P(-26, e * 8f), P(-26 - tl, e * 8f), new Color(glow, 0.26f * thrust), 4.5f);
-                DrawLine(P(-26, e * 8f), P(-26 - tl * 1.25f, e * 8f), new Color(1f, 1f, 1f, 0.18f * thrust), 2f);
+                DrawLine(P(n.X, n.Y), P(n.X - tl, n.Y), new Color(glow, 0.28f * thrust), 4.2f);
+                DrawLine(P(n.X, n.Y), P(n.X - tl * 1.3f, n.Y), new Color(1f, 1f, 1f, 0.2f * thrust), 1.8f);
             }
         }
 
-        // ---- side sponsons (under the hull) ----
+        // ---- struts anchoring the nacelles to the hull ----
+        foreach (var n in nacPos)
+            DrawLine(P(-10, n.Y * 0.55f), P(n.X + 6f, n.Y), new Color(edge, 0.4f), 2.2f);
+
+        // ---- swept delta wings ----
         foreach (int s in new[] { -1, 1 })
         {
-            Vector2[] pod = { P(4, s * 11f), P(-10, s * 15f), P(-20, s * 14f), P(-16, s * 10f), P(-2, s * 9f) };
-            DrawColoredPolygon(pod, hullDark);
-            DrawPolyline(new[] { pod[1], pod[2], pod[3] }, new Color(edge, 0.5f), 1.4f);
-            DrawCircle(P(-6, s * 13f), 2.2f, new Color(edge, 0.9f));   // point-defense turret
+            Vector2[] wing = { P(8, s * 6f), P(-6, s * 32f), P(-20, s * 30f), P(-14, s * 9f) };
+            DrawColoredPolygon(wing, hullDark);
+            DrawPolyline(new[] { wing[0], wing[1], wing[2], wing[3], wing[0] }, new Color(edge, 0.6f), 1.4f);
+            // wingtip weapon/marker pod
+            DrawCircle(P(-8, s * 30f), 2.6f, new Color(mag, 0.85f));
+            DrawLine(P(2, s * 8f), P(-4, s * 30f), new Color(mag, 0.35f), 1.2f);   // leading-edge accent
         }
 
-        // ---- rear engine block ----
-        DrawColoredPolygon(new[] { P(-18, -13f), P(-30, -11f), P(-30, 11f), P(-18, 13f) }, hullDark);
+        // ---- twin engine nacelles ----
+        foreach (var n in nacPos)
+        {
+            Vector2[] nac = { P(n.X + 8f, n.Y - 4.5f), P(n.X - 10f, n.Y - 5f), P(n.X - 14f, n.Y), P(n.X - 10f, n.Y + 5f), P(n.X + 8f, n.Y + 4.5f) };
+            DrawColoredPolygon(nac, hullDark);
+            DrawPolyline(new[] { nac[0], nac[1], nac[2], nac[3], nac[4], nac[0] }, new Color(edge, 0.55f), 1.2f);
+        }
 
-        // ---- main hull (long tapered slab) ----
+        // ---- main spine hull (narrow, tapered) ----
         Vector2[] body =
         {
-            P(34, -3f), P(26, -10f), P(-6, -12f), P(-22, -11f),
-            P(-26, 0f),
-            P(-22, 11f), P(-6, 12f), P(26, 10f), P(34, 3f),
+            P(46, 0f), P(30, -6.5f), P(4, -8f), P(-12, -7f),
+            P(-16, 0f),
+            P(-12, 7f), P(4, 8f), P(30, 6.5f),
         };
         DrawColoredPolygon(body, hull);
-        // lit top-quarter panel
-        DrawColoredPolygon(new[] { P(30, -2f), P(24, -8f), P(-4, -9f), P(-18, -8f), P(-16, -1f), P(4, -2f) }, hullLit);
+        // lit dorsal panel
+        DrawColoredPolygon(new[] { P(40, -2f), P(26, -5.5f), P(0, -6.5f), P(-10, -5.5f), P(-8, -1f), P(14, -1.5f) }, hullLit);
         DrawPolyline(new[]
         {
-            body[0], body[1], body[2], body[3], body[4], body[5], body[6], body[7], body[8], body[0],
-        }, new Color(edge, 0.85f), 1.8f);
-        // hull plating seams
-        DrawLine(P(20, -9f), P(20, 9f), new Color(edge, 0.22f), 1f);
-        DrawLine(P(4, -11f), P(4, 11f), new Color(edge, 0.22f), 1f);
-        DrawLine(P(-12, -11f), P(-12, 11f), new Color(edge, 0.22f), 1f);
-        // magenta racing stripe
-        DrawLine(P(30, -5.5f), P(-20, -8.5f), new Color(mag, 0.55f), 1.6f);
+            body[0], body[1], body[2], body[3], body[4], body[5], body[6], body[7], body[0],
+        }, new Color(edge, 0.9f), 1.8f);
+        // spine plating seams / greebles
+        DrawLine(P(24, -6f), P(24, 6f), new Color(edge, 0.22f), 1f);
+        DrawLine(P(8, -7.5f), P(8, 7.5f), new Color(edge, 0.22f), 1f);
+        DrawRect(new Rect2(P(-2, -3f), new Vector2(8, 6)), new Color(hullDark, 0.8f));
+        // magenta spine stripe
+        DrawLine(P(40, -1.5f), P(-10, -1.8f), new Color(mag, 0.6f), 1.6f);
 
-        // ---- armoured prow + forward (Yamato) gun ----
-        DrawColoredPolygon(new[] { P(34, -3f), P(43, 0f), P(34, 3f) }, hullDark);
-        DrawLine(P(38, 0f), P(50, 0f), new Color(0.85f, 0.78f, 0.35f), 3.5f);   // main gun barrel
-        DrawCircle(P(38, 0f), 2.4f, new Color(1f, 0.9f, 0.5f, 0.8f));
+        // ---- spear nose + twin flanking cannons ----
+        DrawColoredPolygon(new[] { P(30, -6.5f), P(48, -1f), P(52, 0f), P(48, 1f), P(30, 6.5f) }, hullDark);
+        DrawLine(P(44, -3.2f), P(58, -3.2f), new Color(0.85f, 0.78f, 0.35f), 2.2f);   // upper cannon
+        DrawLine(P(44, 3.2f), P(58, 3.2f), new Color(0.85f, 0.78f, 0.35f), 2.2f);     // lower cannon
+        DrawLine(P(38, 0f), P(52, 0f), new Color(1f, 0.9f, 0.55f), 3f);               // central spike / main gun
+        DrawCircle(P(52, 0f), 2.2f, new Color(1f, 0.9f, 0.5f, 0.85f));
 
-        // ---- raised bridge / command tower (forward-mid) ----
-        Vector2[] bridge = { P(16, -5f), P(22, -4f), P(21, 4f), P(14, 5f) };
-        DrawColoredPolygon(bridge, hullLit);
-        DrawPolyline(new[] { bridge[0], bridge[1], bridge[2], bridge[3], bridge[0] }, edge, 1.4f);
-        DrawColoredPolygon(new[] { P(20, -2.5f), P(23, 0f), P(20, 2.5f) }, new Color(0.7f, 0.95f, 1f, 0.9f));  // bridge glass
+        // ---- raised glass-canopy cockpit (forward-mid, offset above the spine) ----
+        Vector2[] canopy = { P(20, -4f), P(28, -2f), P(27, 3f), P(19, 4f) };
+        DrawColoredPolygon(canopy, hullLit);
+        DrawPolyline(new[] { canopy[0], canopy[1], canopy[2], canopy[3], canopy[0] }, edge, 1.4f);
+        DrawColoredPolygon(new[] { P(23, -1.5f), P(27, 0.5f), P(23, 2.5f) }, new Color(0.7f, 0.95f, 1f, 0.9f));
 
-        // ---- engine nozzles ----
+        // ---- nacelle nozzle glow ----
         float pulse = 0.72f + 0.28f * Mathf.Sin(gt * 16f);
-        foreach (int e in new[] { -1, 0, 1 })
+        foreach (var n in nacPos)
         {
-            DrawCircle(P(-27, e * 8f), 4.4f * (0.7f + 0.3f * pulse), new Color(glow, 0.85f));
-            DrawCircle(P(-27, e * 8f), 2.0f, Colors.White);
+            DrawCircle(P(n.X - 13f, n.Y), 4.2f * (0.7f + 0.3f * pulse), new Color(glow, 0.85f));
+            DrawCircle(P(n.X - 13f, n.Y), 1.9f, Colors.White);
         }
 
-        // ---- running lights ----
+        // ---- running lights (wingtips) ----
         float blink = Mathf.Sin(gt * 3f) > 0f ? 1f : 0.25f;
-        DrawCircle(P(-2, -12f), 1.7f, new Color(1f, 0.35f, 0.35f, blink));
-        DrawCircle(P(-2, 12f), 1.7f, new Color(0.35f, 1f, 0.45f, blink));
+        DrawCircle(P(-8, -30f), 1.7f, new Color(1f, 0.35f, 0.35f, blink));
+        DrawCircle(P(-8, 30f), 1.7f, new Color(0.35f, 1f, 0.45f, blink));
     }
 
     private void DrawAbilityZones()

@@ -1,7 +1,7 @@
 {
-  "eps_base": 0.24,
+  "eps_base": 0.42,
   "eps_ramp": 1.25,
-  "eps_ramp_curve": 1.3,
+  "eps_ramp_curve": 0.85,
   "level_spawn_factor": 0.06,
   "surge_a": 0.24,
   "surge_b": 0.14,

@@ -260,7 +260,7 @@ public sealed partial class Hud : CanvasLayer
         _draftPanel = new PanelContainer
         {
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = 14, OffsetRight = -14, OffsetTop = -258, OffsetBottom = 258, Visible = false,
+            OffsetLeft = 10, OffsetRight = -10, OffsetTop = -330, OffsetBottom = 330, Visible = false,
         };
         AddChild(_draftPanel);
         var dv = new VBoxContainer();
@@ -651,11 +651,11 @@ public sealed partial class Hud : CanvasLayer
 
             var btn = new Button
             {
-                CustomMinimumSize = new Vector2(140, 440),
+                CustomMinimumSize = new Vector2(150, 470),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
                 ClipContents = true,
-                PivotOffset = new Vector2(70, 220),
+                PivotOffset = new Vector2(75, 235),
                 Scale = new Vector2(0.7f, 0.7f),
                 Modulate = new Color(1, 1, 1, 0f),
             };
@@ -682,7 +682,7 @@ public sealed partial class Hud : CanvasLayer
                 Texture = CardTexture(cardId),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                CustomMinimumSize = new Vector2(0, 292),
+                CustomMinimumSize = new Vector2(0, 310),
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ClipContents = true,
@@ -691,12 +691,12 @@ public sealed partial class Hud : CanvasLayer
 
             var nm = new Label { Text = cardName.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
             nm.AddThemeFontOverride("font", UiTheme.Display);
-            nm.AddThemeFontSizeOverride("font_size", 15);
+            nm.AddThemeFontSizeOverride("font_size", 18);
             nm.AddThemeColorOverride("font_color", col.Lightened(0.3f));
             v.AddChild(nm);
 
             var tag = new Label { Text = subtitle, HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
-            tag.AddThemeFontSizeOverride("font_size", 10);
+            tag.AddThemeFontSizeOverride("font_size", 12);
             tag.AddThemeColorOverride("font_color", new Color(col, 0.7f));
             v.AddChild(tag);
 
@@ -705,7 +705,7 @@ public sealed partial class Hud : CanvasLayer
                 Text = lvl == 0 ? "UNLOCK  ·  NEW SYSTEM" : $"LEVEL {lvl}  →  {lvl + 1}",
                 HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore,
             };
-            lv.AddThemeFontSizeOverride("font_size", 13);
+            lv.AddThemeFontSizeOverride("font_size", 15);
             lv.AddThemeColorOverride("font_color", lvl == 0 ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.8f));
             v.AddChild(lv);
 

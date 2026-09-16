@@ -5,8 +5,77 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.26.2, 2026-09-16.** Update this file when you finish or start
+Last updated: **v0.26.3, 2026-09-16.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — feedback pass: bigger weapon-card draft, sci-fi ship redesign, faster mission open (v0.26.3)
+
+**Session moved to a new (Windows) machine** — repo re-cloned fresh, full
+toolchain (Git, .NET 9 SDK, Godot 4.7.2 mono) installed from scratch; no
+`~/Work/pdtd-reference/` on this box (it never left the old Linux machine and
+isn't part of this repo). Anything that needs to match PDTD's actual assets
+exactly is blocked on that reference — flagged to the user rather than guessed.
+
+User played and reported three things after the machine switch:
+
+- **Draft/upgrade cards had huge dead space.** The weapons-upgrade popup
+  (`Hud.cs`'s `_draftPanel`/`_draftCards`, shown on Commander level-up) was
+  vertically centred with `OffsetTop/Bottom = -258/258` (516px) on a much
+  taller screen — big black voids above and below. First attempt just grew
+  the card `CustomMinimumSize` height a lot while width stayed governed by
+  `ExpandFill` (~unchanged) — this broke the baked-in card-art aspect ratio
+  (`StretchMode.KeepAspectCovered` zoomed in and cropped the title/stat text
+  off the edges, confirmed via a screenshot before shipping it). Fixed
+  properly: panel grown to `-330/330` (660px, +28%), cards fixed at a
+  **ShrinkCenter** vertical size flag (150×470, was 140×440 with
+  force-`ExpandFill` — so they no longer stretch past their own aspect no
+  matter how tall the panel gets) instead of stretching to fill, art window
+  292→310. Bigger popup, fully readable cards, no art cropping.
+  Screenshot-verified via `ShotRunner`/`Shots.tscn` before and after (the
+  broken intermediate version is not in the shipped diff).
+- **Hero ship redesign** (`SimRenderer.DrawShip`) — was a single tapered
+  slab-hull "capital cruiser" look from v0.18.0; user wanted something more
+  distinctly sci-fi. Rebuilt as an angular strike-corvette: narrow spear-nosed
+  spine hull, swept delta wings with glowing magenta wingtip pods, **twin**
+  engine nacelles held out on struts clear of the hull (was one rear engine
+  block with 3 nozzles on the hull itself) with their own trails, a raised
+  glass-canopy cockpit offset above the spine, and twin flanking cannons
+  either side of a central spike gun (was one central barrel). Same
+  teal/magenta palette + running lights + recoil-kick/thrust-trail hookup,
+  render-only — `DrawHero`'s call site, hit/aura/shield-ring radii, and
+  everything in `src/Sim/` untouched. `SimTest` unaffected (render doesn't
+  touch determinism). Screenshot-verified.
+- **Mission open felt slow / "the planet just kills everything."** Traced to
+  `SurvivalDirector`: `data/survival.json`'s `eps_base=0.24` +
+  `eps_ramp_curve=1.3` meant the first enemy didn't arrive for ~4s and the
+  spawn rate stayed genuinely thin for most of the first 60–90s (the
+  documented "gentle open" from v0.9.0) — meanwhile the planet's own
+  battery/turrets (already built in the PREP phase) one- or two-shot the
+  handful of early Skiffs, so there was often nothing left for the player to
+  actually do at the start of a hold. **`eps_base` 0.24→0.42, `eps_ramp_curve`
+  1.3→0.85** — enemies start flowing noticeably sooner and the ramp climbs
+  faster early (still eases per `late_ease_frac`/`late_ease_amount` late in
+  the hold, unchanged). This is a real balance value change, same caveat as
+  always: `SimTest` `ALL CHECKS OK` / `deterministic=ok`, m01–m06 still won,
+  no regression — but it's provisional pending the user's own feel-check, not
+  the last word. Deliberately did **not** nerf the planet's own battery/turret
+  damage to fix this — raising spawn pressure fixes both complaints at once
+  without risking the (already-tuned) base-defense numbers.
+
+**Still open, blocked on missing PDTD reference material (see above)**:
+- User asked for the Shock Orb's animation to match PDTD's exactly, and to
+  replace/fix `sweep_laser` (added in v0.26.0 as PDTD's "Laser") — possibly
+  because it doesn't look right, possibly because it reads as a duplicate of
+  `orbital_laser` (already PDTD's "Beam", continuous lock-on, since v0.21.0/
+  v0.22.0). **Neither started** — both need eyes on PDTD's actual weapon
+  footage/data to get right, which isn't available on this machine. Asked the
+  user how they want to supply it (copy the reference folder over, or
+  screenshots/video) before touching either.
+
+`config/version` bumped 0.26.2→0.26.3 (`project.godot` + `export_presets.cfg`)
+per the usual ritual — not tagged/released this session.
 
 ---
 
