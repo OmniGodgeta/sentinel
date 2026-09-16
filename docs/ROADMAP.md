@@ -5,8 +5,52 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.26.1, 2026-09-16.** Update this file when you finish or start
+Last updated: **v0.26.2, 2026-09-16.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — the ACTUAL root cause of "update always fails" (v0.26.2)
+
+User reported, after both v0.26.0 (in-app download+install code) and v0.26.1
+shipped: "still brings up to github and simply pressing update on the
+downloaded version gets failed... we still have to uninstall and reinstall."
+The v0.26.0 work fixed the *download and hand-to-installer* mechanism, but
+that was never the actual blocker — verified by reading `.github/workflows/build-apk.yml`'s
+"Configure Godot editor settings" step: it ran
+`keytool -genkeypair ... -keystore ~/.android/debug.keystore` **fresh, every
+single CI run, with no caching or persisted file**. Every release APK was
+therefore signed with a brand-new random certificate, and **Android
+unconditionally refuses to install an app update whose signing certificate
+doesn't match the one already on the device** — regardless of whether the
+install is triggered by a browser download, our new in-app FileProvider
+intent, or anything else. No amount of fixing the download/install-intent
+code could ever have worked around this; it's an OS-level signature check
+that happens after the code we control hands off to the system installer.
+
+**Fix**: generated a debug keystore once (from this session's own machine's
+existing `~/.android/debug.keystore`, itself already stable/long-lived
+locally) and **committed it** at `android/debug.keystore` — CI now points
+`export/android/debug_keystore` at that committed file instead of running
+`keytool` at all. Every future CI build signs with the identical certificate,
+forever (until someone deliberately changes it, which would repeat this same
+problem — see the warning in `CLAUDE.md`'s new "Android build: the debug
+keystore MUST be committed and stable" section, read that before touching
+signing again). **Verified**: local `--export-debug Android` export against
+the committed keystore, then `apksigner verify --print-certs` on the
+resulting APK's certificate SHA-256 matches `keytool -list -v`'s fingerprint
+on `android/debug.keystore` exactly, byte-for-byte.
+
+**What this means for the user right now**: this transition (whatever's
+currently installed, signed by an old random CI key, → v0.26.2, signed by the
+new stable key) still needs **one final manual uninstall + reinstall** — no
+way around that, the old and new certs genuinely don't match. From v0.26.2
+onward, every future release should share the same certificate and install
+as a normal in-place update, including through the in-app updater from
+v0.26.0. This is the one thing that still needs the user's on-device
+confirmation — if updating v0.26.2→(next) still fails after a clean install
+of v0.26.2, something else is wrong and this fix didn't fully work; don't
+assume it's solved without that confirmation.
 
 ---
 
@@ -1258,7 +1302,7 @@ SDK + `~/.android/debug.keystore`.
 the release. Pushing to `main` without a tag just makes an artifact. `gh` is
 authed as `OmniGodgeta`.
 
-Current: **v0.26.1**, `application/config/version = "0.26.1"`, APK ~200 MB
+Current: **v0.26.2**, `application/config/version = "0.26.2"`, APK ~200 MB
 (now built via custom Gradle — see `CLAUDE.md`'s Android build note).
 
 ---

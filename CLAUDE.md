@@ -100,8 +100,33 @@ Note the Kotlin/Java source package is `com.godot.game` (Godot's own fixed
 Verified end-to-end locally this session: `godot --headless --path . --export-debug
 Android build/beyond-debug.apk` succeeds, the manifest carries the permission,
 and `com.godot.game.{BeyondApp,UpdateInstaller}` are present in the built
-`classes*.dex` (checked via `strings`). **Not yet verified on a real device**
-— that's the one thing left to confirm (the actual tap-to-install flow).
+`classes*.dex` (checked via `strings`).
+
+## Android build: the debug keystore MUST be committed and stable (v0.26.2 fix)
+
+`android/debug.keystore` is **committed to the repo on purpose** — CI points
+`export/android/debug_keystore` at it instead of generating one with `keytool`
+on every run. This was the actual root cause of "every update needs an
+uninstall + reinstall" (reported even after the v0.26.0/v0.26.1 in-app-updater
+work): a freshly-**generated** debug keystore signs each build with a
+different, random certificate, and Android refuses to install an app update
+whose signing certificate doesn't match what's already on the device — no
+matter how well the download/install-intent code works, the OS-level install
+itself was always going to fail. `git log -p -- android/debug.keystore .github/workflows/build-apk.yml`
+around v0.26.2 has the full before/after. It's a debug key (never used for a
+Play Store release — this app is sideload-only) so committing it is the usual
+debug-key tradeoff, not a production-signing one: fine for this project, but
+don't casually replace/regenerate it once real users have installed builds
+signed with it, since that breaks their update chain the same way (announce a
+"you'll need to reinstall once" if it ever must change).
+**Confirmed working**: exported an APK locally against the committed
+keystore and verified its certificate SHA-256 (`apksigner verify --print-certs`)
+matches `keytool -list -v -keystore android/debug.keystore`'s fingerprint
+exactly. **Not yet verified**: an actual on-device update install (the one
+thing left — should now work in-place from v0.26.2 onward, though the
+v0.26.2 build itself still needs one final manual reinstall since whatever's
+currently on-device was signed with an old CI-random key it can't update
+from).
 
 If a local machine's `export/android/java_sdk_path` (in Godot's
 `editor_settings-4.7.tres`) points at a JRE-only install (no `javac`), the
