@@ -8,9 +8,29 @@ public sealed partial class SimWorld
     private Vector2 _heroMoveDir;          // joystick direction (0 = not driving)
     private EnemyHandle _heroFocus = EnemyHandle.None;
     private float _heroFocusLeft;
+    private bool _heroAutopilot;           // auto-move toward/around threats when the joystick is idle
 
     /// <summary>Position of the tapped focus target, or null.</summary>
     public Vector2? HeroFocusPos => Resolve(in _heroFocus, out int i) ? Enemies[i].Pos : null;
+    /// <summary>Autopilot ON: the hero flies itself toward threats whenever the player
+    /// isn't actively steering. Attacks are unaffected — point-defense, the missile
+    /// volley and ship weapons already auto-fire regardless of this toggle.</summary>
+    public bool HeroAutopilotOn => _heroAutopilot;
+
+    /// <summary>Deterministic autopilot direction: close to within engagement range of
+    /// the nearest threat, back off if something gets too close, hold otherwise.
+    /// Never overrides manual joystick input — only runs when that's idle.</summary>
+    private Vector2 AutopilotDir(Vector2 heroPos)
+    {
+        int t = ClosestEnemyTo(heroPos, B.DespawnRadius);
+        if (t < 0) return Vector2.Zero;
+        Vector2 to = Enemies[t].Pos - heroPos;
+        float d = to.Length();
+        float standoff = Cfg.Hero.PointDefenseRange * 0.6f;
+        if (d > standoff + 24f) return to / d;
+        if (d < standoff - 24f) return -(to / Mathf.Max(d, 0.001f));
+        return Vector2.Zero;
+    }
 
     /// <summary>Free flight: anywhere outside the planet, inside the arena.</summary>
     internal Vector2 ClampHeroPos(Vector2 p)
@@ -69,11 +89,17 @@ public sealed partial class SimWorld
             if (h.OverdriveLeft <= 0f) h.OverdriveVolleyMult = 1f;
         }
 
-        // movement: joystick direction drives it at full speed; otherwise glide to
-        // the last tapped point and hold there. Free flight anywhere in the arena.
+        // movement: joystick direction drives it at full speed (always wins); if idle
+        // and autopilot is on, fly toward/around the nearest threat; otherwise glide
+        // to the last tapped point and hold there. Free flight anywhere in the arena.
         float step = Cfg.Hero.MoveSpeed * Mathf.Max(0.2f, Mods.HeroMoveSpeedMult) * dt;
         if (_heroMoveDir != Vector2.Zero)
             h.Pos += _heroMoveDir * step;
+        else if (_heroAutopilot)
+        {
+            Vector2 auto = AutopilotDir(h.Pos);
+            if (auto != Vector2.Zero) h.Pos += auto * step;
+        }
         else
         {
             Vector2 to = _heroTarget - h.Pos;

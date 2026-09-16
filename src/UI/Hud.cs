@@ -32,6 +32,7 @@ public sealed partial class Hud : CanvasLayer
     private Button _pause = null!;
     private Button _menuOpen = null!;
     private Button _buildToggle = null!;
+    private Button _autopilotBtn = null!;
     private Button _updateBadge = null!;
 
     /// <summary>Build/upgrade panel is showing over the play field (real-time management).</summary>
@@ -74,6 +75,19 @@ public sealed partial class Hud : CanvasLayer
     public override void _Ready()
     {
         Layer = 10;
+
+        // Movement joystick FIRST — Godot gives input priority to the frontmost
+        // (later-added) sibling in an overlap, so every button/panel added below
+        // this one correctly steals its own taps instead of the joystick's big
+        // touch zone swallowing them (this was the "can't press 1x/etc" bug).
+        // Right side, per user preference — thumb rests near the bottom-right.
+        _joystick = new VirtualJoystick
+        {
+            AnchorLeft = 0.45f, AnchorRight = 1f, AnchorTop = 0f, AnchorBottom = 1f,
+            OffsetTop = 230, OffsetBottom = -300,
+        };
+        _joystick.OnMove = d => Root.HeroJoystick(d);
+        AddChild(_joystick);
 
         var top = new VBoxContainer { AnchorRight = 1f, OffsetLeft = 10, OffsetTop = 8, OffsetRight = -10 };
         _topBox = top;
@@ -152,6 +166,12 @@ public sealed partial class Hud : CanvasLayer
         _autoBtn.Pressed += () => Root.RequestToggleAutoFire();
         StyleTopButton(_autoBtn, new Color(0.5f, 0.95f, 0.6f));
         ctl.AddChild(_autoBtn);
+        _autopilotBtn = new Button { Text = "✈", CustomMinimumSize = new Vector2(76, 66), ToggleMode = true };
+        _autopilotBtn.AddThemeFontSizeOverride("font_size", 26);
+        _autopilotBtn.TooltipText = "Autopilot — the ship flies itself toward threats; attacks always auto-fire";
+        _autopilotBtn.Pressed += () => Root.RequestToggleAutopilot();
+        StyleTopButton(_autopilotBtn, new Color(0.55f, 0.75f, 1f));
+        ctl.AddChild(_autopilotBtn);
 
         // boss bar
         _bossBar = new ProgressBar
@@ -187,7 +207,15 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
-        _wavePanel.OffsetTop = -270;   // weapon row + ability bar + hint
+        _wavePanel.OffsetTop = -238;   // weapon row + ability bar + hint
+        // lighter than the default theme panel — a soft backing, not a solid blue box
+        _wavePanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.04f, 0.05f, 0.09f, 0.55f),
+            BorderColor = new Color(UiTheme.Accent, 0.10f),
+            BorderWidthTop = 1,
+            CornerRadiusTopLeft = 14, CornerRadiusTopRight = 14,
+        });
         AddChild(_wavePanel);
         var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         _wavePanel.AddChild(wv);
@@ -208,15 +236,6 @@ public sealed partial class Hud : CanvasLayer
         var hint = new Label { Text = "joystick: fly the ship   ·   tap an enemy: focus fire   ·   ⚒ : build", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
         hint.AddThemeFontSizeOverride("font_size", 14);
         wv.AddChild(hint);
-
-        // transparent movement joystick — the whole left play area is the touch zone
-        _joystick = new VirtualJoystick
-        {
-            AnchorLeft = 0f, AnchorRight = 0.55f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetTop = 150, OffsetBottom = -210,
-        };
-        _joystick.OnMove = d => Root.HeroJoystick(d);
-        AddChild(_joystick);
 
         // big centred targeting prompt (over the play area)
         _reticlePrompt = new Label
@@ -445,6 +464,8 @@ public sealed partial class Hud : CanvasLayer
         _autoBtn.Visible = fighting && !draft && w.HeroWeaponCount > 0;
         if (_autoBtn.ButtonPressed != w.HeroAutoFire) _autoBtn.ButtonPressed = w.HeroAutoFire;
         _autoBtn.Text = w.HeroAutoFire ? "AUTO" : "MANUAL";
+        _autopilotBtn.Visible = fighting && !draft;
+        if (_autopilotBtn.ButtonPressed != w.HeroAutopilotOn) _autopilotBtn.ButtonPressed = w.HeroAutopilotOn;
         _joystick.Visible = fighting && !BuildOpen && !draft;
         if (draft) RefreshDraft(w);
         if (fighting && !BuildOpen && !draft) RefreshWeaponRow(w);
@@ -517,23 +538,35 @@ public sealed partial class Hud : CanvasLayer
         rHdr.AddThemeColorOverride("font_color", won ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.55f));
         _endBody.AddChild(rHdr);
 
-        void Reward(string label, string val, Color col)
+        void Reward(string icon, string label, string val, Color col)
         {
             var row = new HBoxContainer();
-            row.AddThemeConstantOverride("separation", 16);
-            var a = new Label { Text = label, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-            a.AddThemeFontSizeOverride("font_size", 17);
-            var b = new Label { Text = val, HorizontalAlignment = HorizontalAlignment.Right };
+            row.AddThemeConstantOverride("separation", 12);
+            var chip = new PanelContainer { CustomMinimumSize = new Vector2(38, 38) };
+            chip.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+            {
+                BgColor = new Color(col, 0.16f), BorderColor = new Color(col, 0.6f),
+                BorderWidthLeft = 1, BorderWidthRight = 1, BorderWidthTop = 1, BorderWidthBottom = 1,
+                CornerRadiusTopLeft = 9, CornerRadiusTopRight = 9, CornerRadiusBottomLeft = 9, CornerRadiusBottomRight = 9,
+            });
+            var ic = new Label { Text = icon, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            ic.AddThemeFontSizeOverride("font_size", 19);
+            ic.AddThemeColorOverride("font_color", col);
+            chip.AddChild(ic);
+            row.AddChild(chip);
+            var a = new Label { Text = label, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center };
+            a.AddThemeFontSizeOverride("font_size", 18);
+            var b = new Label { Text = val, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
             b.AddThemeFontOverride("font", UiTheme.Display);
-            b.AddThemeFontSizeOverride("font_size", 20);
+            b.AddThemeFontSizeOverride("font_size", 23);
             b.AddThemeColorOverride("font_color", col);
             row.AddChild(a); row.AddChild(b);
             _endBody.AddChild(row);
         }
-        Reward("✦  Experience", $"+{Mathf.FloorToInt(w.XpEarned)}", new Color(0.85f, 0.9f, 1f));
-        Reward("◇  Research Data", $"+{Mathf.FloorToInt(w.ResearchDataEarned)}", UiTheme.Accent);
-        Reward("✷  Sentinel Cores", $"+{w.CoresEarned}", new Color(0.72f, 0.86f, 1f));
-        if (w.AlloyEarned > 0) Reward("❖  Exotic Alloy", $"+{w.AlloyEarned}", new Color(0.95f, 0.78f, 0.42f));
+        Reward("✦", "Experience", $"+{Mathf.FloorToInt(w.XpEarned)}", new Color(0.85f, 0.9f, 1f));
+        Reward("◇", "Research Data", $"+{Mathf.FloorToInt(w.ResearchDataEarned)}", UiTheme.Accent);
+        Reward("✷", "Sentinel Cores", $"+{w.CoresEarned}", new Color(0.72f, 0.86f, 1f));
+        if (w.AlloyEarned > 0) Reward("❖", "Exotic Alloy", $"+{w.AlloyEarned}", new Color(0.95f, 0.78f, 0.42f));
 
         var s = w.Stats;
         float tot = Mathf.Max(1f, s.TotalDamage);
@@ -667,7 +700,7 @@ public sealed partial class Hud : CanvasLayer
     private void RefreshWeaponRow(SimWorld w)
     {
         int n = w.HeroWeaponCount;
-        // (re)build the buttons only when the set of unlocked weapons changes
+        // (re)build the cards only when the set of unlocked weapons changes
         int sig = 0;
         for (int i = 0; i < n; i++) sig = sig * 7 + (w.HeroWeaponLevel(i) > 0 ? 1 : 0);
         if (sig != _weaponRowSig)
@@ -681,15 +714,9 @@ public sealed partial class Hud : CanvasLayer
                 var def = w.Cfg.HeroWeapons[i];
                 var col = HexColor(def.Accent, UiTheme.Accent);
                 int i2 = i;
-                var b = new Button { CustomMinimumSize = new Vector2(112, 62) };
-                b.AddThemeFontSizeOverride("font_size", 14);
-                b.AddThemeStyleboxOverride("normal", CardBox(col, 0.16f));
-                b.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
-                b.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));
-                b.AddThemeColorOverride("font_color", col.Lightened(0.35f));
-                b.TooltipText = def.Name;
-                if (def.AlwaysOn) b.Disabled = true;   // Plasma Field — passive
-                else b.Pressed += () => Root.RequestFireWeapon(i2);
+                var b = new HeroWeaponButton();
+                b.Configure(ShortName(def.Name), def.Kind, col, def.AlwaysOn);
+                if (!def.AlwaysOn) b.OnPress = () => Root.RequestFireWeapon(i2);
                 _weaponRow.AddChild(b);
                 _weaponBtns.Add((i, b));
             }
@@ -700,16 +727,13 @@ public sealed partial class Hud : CanvasLayer
             var def = w.Cfg.HeroWeapons[i];
             int lvl = w.HeroWeaponLevel(i);
             float cd = w.HeroWeaponCooldownLeft(i);
-            string tag = ShortName(def.Name);
-            if (def.AlwaysOn) b.Text = $"{tag}\nLv{lvl} · ON";
-            else if (cd > 0.05f) b.Text = $"{tag}\n{cd:0.0}s";
-            else b.Text = $"{tag}\nLv{lvl}";
-            b.Modulate = (cd > 0.05f && !def.AlwaysOn) ? new Color(1, 1, 1, 0.45f) : Colors.White;
+            float cdMax = def.Cooldown + def.CooldownPerLevel * (lvl - 1);
+            b.SetState(lvl, cd, cdMax);
         }
     }
 
     private int _weaponRowSig = -1;
-    private readonly System.Collections.Generic.List<(int idx, Button btn)> _weaponBtns = new();
+    private readonly System.Collections.Generic.List<(int idx, HeroWeaponButton btn)> _weaponBtns = new();
     private static string ShortName(string n)
     {
         int sp = n.IndexOf(' ');

@@ -66,13 +66,6 @@ public sealed partial class SettingsScreen : CanvasLayer
         var flash = new CheckButton { Text = "Reduce screen flashes", ButtonPressed = o.ReduceFlash };
         flash.Toggled += b => { o.ReduceFlash = b; App.Save.Save(); };
         root.AddChild(flash);
-
-        root.AddChild(new HSeparator());
-        root.AddChild(Lbl("Appearance"));
-        var toShop = new Button { Text = "Hero hulls, worlds & ordnance colours  ›  Shop", CustomMinimumSize = new Vector2(0, 60), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        toShop.AddThemeFontSizeOverride("font_size", 17);
-        toShop.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); App.ShowShop(); };
-        root.AddChild(toShop);
     }
 
     private static Label Lbl(string t)

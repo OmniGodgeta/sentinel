@@ -165,6 +165,41 @@ public sealed class Progression
 
     public int Ranks(string nodeId) => _save.ResearchRanks.TryGetValue(nodeId, out int r) ? r : 0;
 
+    // ---- Planet Modules (data/modules.json) ----
+    public int ModuleSlots => _cfg.Modules.Slots;
+    public int ModuleLevel(string id) => _save.ModuleLevels.TryGetValue(id, out int v) ? v : 0;
+    public bool IsModuleEquipped(string id) => _save.EquippedModules.Contains(id);
+
+    public double ModuleCost(ModuleDef def)
+    {
+        int lvl = ModuleLevel(def.Id);
+        if (lvl >= def.MaxLevel) return -1;
+        return System.Math.Round(def.CostBase * Mathf.Pow(def.CostMult, lvl));
+    }
+
+    public bool BuyModule(ModuleDef def)
+    {
+        int lvl = ModuleLevel(def.Id);
+        if (lvl >= def.MaxLevel) return false;
+        double cost = ModuleCost(def);
+        if (cost < 0 || _save.ResearchData < cost) return false;
+        _save.ResearchData -= cost;
+        _save.ModuleLevels[def.Id] = lvl + 1;
+        _save.Save();
+        return true;
+    }
+
+    /// <summary>Toggle equip state, respecting the slot cap. Returns false only when
+    /// trying to equip past a full loadout — unequipping always succeeds.</summary>
+    public bool ToggleEquipModule(string id)
+    {
+        if (_save.EquippedModules.Contains(id)) { _save.EquippedModules.Remove(id); _save.Save(); return true; }
+        if (_save.EquippedModules.Count >= ModuleSlots) return false;
+        _save.EquippedModules.Add(id);
+        _save.Save();
+        return true;
+    }
+
     /// <summary>Highest ascension tier the player may select: 0 until the whole arc is
     /// cleared at tier 0, then one above the lowest per-mission cleared tier (cap 10).</summary>
     public int AscensionMax
@@ -280,6 +315,16 @@ public sealed class Progression
         // persistent orbital-weapon meta levels (bought on the Sentinels screen)
         foreach (var (id, lvl) in _save.OrbitalMeta) if (lvl > 0) m.OrbitalMeta[id] = lvl;
         m.PlanetShieldLevel = _save.PlanetShieldLevel;
+
+        // equipped Planet Modules — only the slotted ones count, and only at their bought level
+        foreach (var id in _save.EquippedModules)
+        {
+            int lvl = ModuleLevel(id);
+            if (lvl <= 0) continue;
+            var def = _cfg.Modules.Modules.Find(x => x.Id == id);
+            if (def == null) continue;
+            foreach (var (key, per) in def.EffectsPerLevel) m.ApplyEffect(key, per * lvl);
+        }
 
         // level-up cards
         foreach (var id in _save.LevelCards)

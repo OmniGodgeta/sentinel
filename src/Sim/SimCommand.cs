@@ -18,6 +18,7 @@ public enum CommandType
     PickCard,
     StartWave,
     HeroWeapon,      // IntA >= 0 : fire that ship weapon now; IntA < 0 : toggle auto-fire
+    ToggleAutopilot, // hero auto-moves toward/around threats when no joystick input is active
 }
 
 /// <summary>
@@ -49,5 +50,6 @@ public struct SimCommand
     public static SimCommand Card(int cardIndex) => new() { Type = CommandType.PickCard, IntA = cardIndex };
     public static SimCommand FireHeroWeapon(int weaponIndex) => new() { Type = CommandType.HeroWeapon, IntA = weaponIndex };
     public static SimCommand ToggleAutoFire() => new() { Type = CommandType.HeroWeapon, IntA = -1 };
+    public static SimCommand ToggleAutopilot() => new() { Type = CommandType.ToggleAutopilot };
     public static SimCommand Wave() => new() { Type = CommandType.StartWave };
 }

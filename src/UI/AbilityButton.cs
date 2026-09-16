@@ -20,7 +20,7 @@ public sealed partial class AbilityButton : Control
     public void Configure(AbilityDef def)
     {
         _def = def;
-        CustomMinimumSize = new Vector2(112, 126);
+        CustomMinimumSize = new Vector2(100, 110);
         TooltipText = $"{def.Name}\n{def.Role}";
     }
 

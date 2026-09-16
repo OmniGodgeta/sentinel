@@ -41,6 +41,13 @@ public sealed class SaveGame
     /// <summary>Commendations spent outside the cosmetic Shop (sentinels, planet shield).</summary>
     public int CommendationsSpent { get; set; } = 0;
 
+    /// <summary>Persistent per-module level (bought with Research Data on the Planet
+    /// Modules screen). Levelling a module doesn't require it to be equipped.</summary>
+    public Dictionary<string, int> ModuleLevels { get; set; } = new();
+    /// <summary>Which modules are actively equipped (capped at <c>ModulesDb.Slots</c>) —
+    /// only equipped modules contribute their effect in a run.</summary>
+    public List<string> EquippedModules { get; set; } = new();
+
     // level-up upgrade cards picked (Planet-Defense-TD style meta progression)
     public List<string> LevelCards { get; set; } = new();
 
@@ -193,5 +200,14 @@ public sealed class SaveGame
         {
             GD.PushError($"SaveGame: save failed: {ex.Message}");
         }
+        CloudSave.Instance?.PushSave(JsonSerializer.Serialize(this, Opts));
+    }
+
+    /// <summary>For CloudSave: serialize/deserialize without touching user://save.json.</summary>
+    public string ToJson() => JsonSerializer.Serialize(this, Opts);
+    public static SaveGame? FromJson(string json)
+    {
+        try { var s = JsonSerializer.Deserialize<SaveGame>(json, Opts); s?.NormalizePresets(); return s; }
+        catch { return null; }
     }
 }

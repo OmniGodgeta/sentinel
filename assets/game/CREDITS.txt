@@ -20,12 +20,29 @@ The earth.gdshader (equirectangular -> lit sphere) is original to this project.
 Sound effects (assets/audio/)
   Kenney (kenney.nl) — "Impact Sounds", "Interface Sounds", "Digital Audio".
   Licensed CC0 1.0 Universal (public domain).
-  turret_shot / turret_shot_b / sentinel_shot / explosion / explosion_b /
-  explosion_big / missile_launch / battery_launch / planet_hit are synthesised
-  for this project (layered filtered noise + chirp/sweep tones + sub-bass via
-  ffmpeg — see tools/gen_sfx.sh) — original content, no third-party samples.
-  The laser shots (turret_shot / turret_shot_b / sentinel_shot) replaced
-  Kenney's "Sci-Fi Sounds" pack at v0.24.0 for a punchier, more textured zap.
+  turret_shot / turret_shot_b / sentinel_shot / explosion_big / missile_launch /
+  battery_launch / planet_hit are synthesised for this project (layered
+  filtered noise + chirp/sweep tones + sub-bass via ffmpeg — see
+  tools/gen_sfx.sh) — original content, no third-party samples. The laser
+  shots (turret_shot / turret_shot_b / sentinel_shot) replaced Kenney's
+  "Sci-Fi Sounds" pack at v0.24.0 for a punchier, more textured zap.
+  mission_won / mission_lost / card_pick / ability_cast / explosion /
+  explosion_b / shield / ui_click were replaced the same session with real
+  samples pulled out of Planet Defense: Space TD's own FMOD sound bank
+  (CyberJoy Games, com.cyberjoy.prjw5n2 — assets/fmod/SFX.bank, extracted via
+  the `fsb5` library; see tools/extract_pdtd_audio.py for the full pipeline
+  and which of the bank's 79 samples were and weren't safe to reuse — explosion
+  / explosion_b were additionally trimmed from their raw 3.1-3.6s library
+  length down to a punchy ~1.3s one-shot since they fire on every regular
+  enemy kill). Per the user's explicit 2026-09-15 OK to use PDTD's assets in
+  this personal, never-published build (CLAUDE.md §4).
+
+Shield surface texture (assets/game/shield/hex_pattern.png)
+  Extracted from Planet Defense: Space TD's own force-shield material
+  (CyberJoy Games, com.cyberjoy.prjw5n2) via UnityPy, per the user's explicit
+  2026-09-15 OK to use PDTD's assets in this personal, never-published build
+  (see CLAUDE.md §4). Re-processed (luminance -> alpha) so it composites as a
+  translucent hex-line overlay instead of an opaque black square.
 
 Planet skins (assets/game/planets/)
   Kenney (kenney.nl) — "Planets". CC0 1.0 Universal.

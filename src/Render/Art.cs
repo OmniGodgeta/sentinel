@@ -17,6 +17,9 @@ public static class Art
     }
 
     public static Texture2D Ship => Tex("res://assets/game/ship.png");
+    /// <summary>Hex-grid shield surface texture (extracted from Planet Defense TD's own
+    /// force-shield material) — tiled across the Planet Shield dome.</summary>
+    public static Texture2D ShieldHex => Tex("res://assets/game/shield/hex_pattern.png");
 
     private static readonly Dictionary<string, Texture2D> _hull = new();
     /// <summary>Hero hull cosmetic (Shop / Fleet Requisition). "standard" = the default ship.</summary>

@@ -249,7 +249,7 @@ public sealed partial class SimWorld
 
         PlanetIntegrityMax = B.PlanetIntegrity * Mathf.Max(0.2f, Mods.PlanetIntegrityMult);
         PlanetIntegrity = PlanetIntegrityMax;
-        PlanetShieldMax = Mods.PlanetStartShield + PlanetShieldStrength(Mods.PlanetShieldLevel);
+        PlanetShieldMax = (Mods.PlanetStartShield + PlanetShieldStrength(Mods.PlanetShieldLevel)) * Mathf.Max(0.2f, Mods.PlanetShieldMult);
         PlanetShield = PlanetShieldMax;
         Credits = B.StartingCredits + Mods.StartCreditsAdd;
         WaveIndex = 0;
@@ -278,6 +278,13 @@ public sealed partial class SimWorld
         _runLevel = 1;
         ResetHeroWeapons();
         ResetOrbitalWeapons();
+
+        // Survival missions no longer make the player place a turret before the hold
+        // starts — ship/orbital weapon levels (from cards) are the real progression
+        // now, and turrets are still buildable in real-time via the HUD's build
+        // toggle. Jump straight into the fight (BeginWave is idempotent here — it
+        // just re-applies the same reset + flips Phase to Wave).
+        if (Mission.Survival) BeginWave();
     }
 
     public void Enqueue(in SimCommand cmd) => _commands.Enqueue(cmd);
@@ -358,6 +365,9 @@ public sealed partial class SimWorld
             case CommandType.HeroWeapon:
                 if (c.IntA < 0) _heroAutoFire = !_heroAutoFire;
                 else if (Phase == SimPhase.Wave) FireHeroWeapon(c.IntA);
+                break;
+            case CommandType.ToggleAutopilot:
+                _heroAutopilot = !_heroAutopilot;
                 break;
             case CommandType.StartWave:
                 if (Phase == SimPhase.Build && WaveIndex < WaveCount)
@@ -723,8 +733,8 @@ public sealed partial class SimWorld
         else
         {
             Stats.EnemiesKilled++;
-            Credits += e.Bounty;
-            if (Mission.Survival) GainRunXp(e.Bounty);
+            Credits += Mathf.RoundToInt(e.Bounty * Mathf.Max(0.2f, Mods.CreditsGainMult));
+            if (Mission.Survival) GainRunXp(e.Bounty * B.XpKillMult);
 
             // Salvage Beacon: kills inside the field pay bonus RD + XP
             if (SalvageActiveLeft > 0f && e.Pos.DistanceSquaredTo(SalvageAnchor) <= SalvageRadius * SalvageRadius)

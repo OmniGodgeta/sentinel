@@ -215,13 +215,62 @@ public sealed partial class SimRenderer : Node2D
         float pr = b.PlanetRadius;
         float integ = World.PlanetIntegrityMax > 0 ? World.PlanetIntegrity / World.PlanetIntegrityMax : 0f;
 
-        if (World.PlanetShield > 0.5f)
-            DrawArc(Vector2.Zero, pr + 9f, 0, Mathf.Tau, 64, new Color(0.4f, 0.85f, 1f, 0.5f + 0.2f * Mathf.Sin(World.GameTime * 6f)), 3f);
+        // Planet Shield — a proper animated force-dome (PDTD-style), not just a thin
+        // ring: a soft filled bubble, glow rings, a bright rim, and slow rotating
+        // shimmer chords across the surface. Fades out as the shield depletes.
+        if (World.PlanetShieldMax > 0.5f)
+        {
+            float shFrac = Mathf.Clamp(World.PlanetShield / World.PlanetShieldMax, 0f, 1f);
+            if (shFrac > 0.003f)
+            {
+                float rad = pr + 14f;
+                var shieldCol = new Color(0.35f, 0.8f, 1f);
+                float pulse = 0.5f + 0.5f * Mathf.Sin(World.GameTime * 3.2f);
+
+                DrawCircle(Vector2.Zero, rad, new Color(shieldCol, (0.05f + 0.03f * pulse) * shFrac));
+                DrawHexShieldSurface(rad, new Color(shieldCol, (0.30f + 0.15f * pulse) * shFrac));
+                for (int i = 1; i <= 3; i++)
+                    DrawArc(Vector2.Zero, rad + i * 3f, 0, Mathf.Tau, 72, new Color(shieldCol, (0.22f + 0.12f * pulse) / i * shFrac), 2.2f);
+                DrawArc(Vector2.Zero, rad, 0, Mathf.Tau, 80, new Color(shieldCol, (0.75f + 0.25f * pulse) * shFrac), 3.2f);
+
+                const int chords = 8;
+                for (int i = 0; i < chords; i++)
+                {
+                    float a0 = World.GameTime * 0.15f + i * Mathf.Tau / chords;
+                    float a1 = a0 + Mathf.Tau / chords * 0.6f;
+                    DrawArc(Vector2.Zero, rad - 3f, a0, a1, 6, new Color(1f, 1f, 1f, 0.12f * shFrac), 1.3f);
+                }
+            }
+        }
 
         var ic = integ > 0.5f ? new Color(0.4f, 0.95f, 0.55f)
                : integ > 0.25f ? new Color(1f, 0.8f, 0.3f) : new Color(1f, 0.35f, 0.3f);
         DrawArc(Vector2.Zero, pr + 5f, 0, Mathf.Tau, 72, new Color(1, 1, 1, 0.08f), 5f);
         DrawArc(Vector2.Zero, pr + 5f, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * Mathf.Clamp(integ, 0, 1), 80, ic, 5f);
+    }
+
+    /// <summary>Tiles the hex-grid shield texture (pulled from Planet Defense TD's own
+    /// force-shield material — see assets/game/CREDITS.txt) across a circular polygon
+    /// clipped to the dome radius, tinted by <paramref name="tint"/>. Requires the
+    /// renderer's own <c>TextureRepeat</c> enabled (set once in GameRoot) so UVs past
+    /// [0,1] tile instead of clamping.</summary>
+    private void DrawHexShieldSurface(float rad, Color tint)
+    {
+        const int n = 56;
+        var pts = new Vector2[n];
+        var uvs = new Vector2[n];
+        var cols = new Color[n];
+        var tex = Sentinel.Render.Art.ShieldHex;
+        float texSpan = rad * 2f / 3.2f;   // ~3 hex tiles across the dome's diameter
+        for (int i = 0; i < n; i++)
+        {
+            float a = i * Mathf.Tau / n;
+            var p = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * rad;
+            pts[i] = p;
+            uvs[i] = new Vector2(p.X / texSpan + 0.5f, p.Y / texSpan + 0.5f);
+            cols[i] = tint;
+        }
+        DrawPolygon(pts, cols, uvs, tex);
     }
 
     private void DrawTurrets()
@@ -392,12 +441,14 @@ public sealed partial class SimRenderer : Node2D
                         DrawCircle(a.Lerp(b, ph), 3.5f, new Color(0.9f, 1f, 0.8f, 0.8f));
                     }
                 }
-                // the relay stations themselves — small mini-beacons at each node
+                // the relay stations themselves — small mini-beacons at each node,
+                // with a tiny pylon structure at the two ends of the chain
                 for (int k = 0; k < nodeN; k++)
                 {
                     DrawCircle(nodes[k], 8f, new Color(gc, 0.18f));
                     DrawArc(nodes[k], 6f, 0, Mathf.Tau, 12, new Color(gc, 0.85f), 1.8f);
                     DrawCircle(nodes[k], 2.6f, new Color(0.9f, 1f, 0.85f, 0.95f));
+                    if (k == 0 || k == nodeN - 1) DrawRelayStation(nodes[k], gc);
                 }
             }
             else if (fx.Kind == 4) // beam laser — PDTD Beam sentinel: continuous locked-on burn
@@ -439,6 +490,28 @@ public sealed partial class SimRenderer : Node2D
                     }
             }
         }
+    }
+
+    /// <summary>A tiny relay-pylon silhouette (hex base + outward mast + tip light) at
+    /// each end of the Radiation Line chain — distinguishes the two terminal stations
+    /// from the plainer beacon dots at any middle link nodes.</summary>
+    private void DrawRelayStation(Vector2 p, Color gc)
+    {
+        float ang = p.Angle();
+        Vector2 outward = Vector2.FromAngle(ang);
+        Vector2 side = outward.Rotated(Mathf.Pi / 2f);
+
+        var basePts = new Vector2[6];
+        for (int i = 0; i < 6; i++) basePts[i] = p + Vector2.FromAngle(ang + i * Mathf.Tau / 6f) * 9f;
+        DrawColoredPolygon(basePts, new Color(0.08f, 0.09f, 0.12f, 0.92f));
+        var loop = new Vector2[7];
+        basePts.CopyTo(loop, 0); loop[6] = basePts[0];
+        DrawPolyline(loop, new Color(gc, 0.8f), 1.6f);
+
+        Vector2 tip = p + outward * 16f;
+        DrawLine(p, tip, new Color(gc, 0.9f), 2.2f);
+        DrawLine(tip - side * 4f, tip + side * 4f, new Color(gc, 0.85f), 2f);
+        DrawCircle(tip, 2.4f, new Color(1f, 1f, 0.9f, 0.95f));
     }
 
     private void DrawEnemies()

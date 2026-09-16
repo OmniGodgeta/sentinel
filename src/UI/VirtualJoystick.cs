@@ -4,20 +4,25 @@ namespace Sentinel.UI;
 
 /// <summary>
 /// Transparent touch stick. The touch zone is the control's whole rect, but the
-/// base ring is docked at a fixed spot near the bottom-left of that zone and is
+/// base ring is docked at a fixed spot near the bottom-right of that zone and is
 /// always drawn (dim when idle, bright when held) — so the player always knows
 /// where to put their thumb instead of the ring popping up wherever they first
 /// touch. A touch anywhere in the zone still drives it: the knob tracks the
 /// finger, offset from the fixed base and clamped to <see cref="_maxRadius"/>.
 /// Emits a direction (magnitude 0..1) via <see cref="OnMove"/>; zero on release.
+///
+/// IMPORTANT input-priority note: this control must be added to the Hud BEFORE
+/// any overlapping button/panel (Godot gives input priority to the
+/// later-added / frontmost sibling in an overlap). Add this first, then layer
+/// buttons on top, or their taps get swallowed by the joystick zone underneath.
 /// </summary>
 public sealed partial class VirtualJoystick : Control
 {
     public System.Action<Vector2>? OnMove;
 
-    private const float _maxRadius = 96f;
-    private const float _baseInsetX = 150f;   // fixed-base offset from the zone's left edge
-    private const float _baseInsetBottom = 170f;   // fixed-base offset from the zone's bottom edge
+    private const float _maxRadius = 192f;
+    private const float _baseInsetRight = 260f;   // fixed-base offset from the zone's right edge
+    private const float _baseInsetBottom = 300f;  // fixed-base offset from the zone's bottom edge
     private bool _active;
     private int _touchId = -1;
     private Vector2 _center;      // fixed dock position (same coordinate frame as incoming event.Position)
@@ -35,7 +40,7 @@ public sealed partial class VirtualJoystick : Control
     {
         if (_baseReady && Size.Y > 0f) return;
         if (Size.Y <= 0f) return;
-        _center = Position + new Vector2(_baseInsetX, Size.Y - _baseInsetBottom);
+        _center = Position + new Vector2(Size.X - _baseInsetRight, Size.Y - _baseInsetBottom);
         _knob = _center;
         _baseReady = true;
     }
@@ -106,10 +111,10 @@ public sealed partial class VirtualJoystick : Control
         var accent = new Color(0.26f, 0.82f, 0.87f);
         float a = _active ? 1f : 0.4f;   // dim, always-visible dock; brighter while held
         DrawCircle(c, _maxRadius, new Color(accent, 0.06f * a));
-        DrawArc(c, _maxRadius, 0, Mathf.Tau, 40, new Color(accent, 0.35f * a), 2.5f);
-        DrawArc(c, _maxRadius * 0.42f, 0, Mathf.Tau, 28, new Color(accent, 0.18f * a), 1.5f);
-        DrawCircle(k, 30f, new Color(accent, 0.18f * a));
-        DrawCircle(k, 22f, new Color(accent, 0.55f * a));
-        DrawArc(k, 22f, 0, Mathf.Tau, 24, new Color(1, 1, 1, 0.7f * a), 2f);
+        DrawArc(c, _maxRadius, 0, Mathf.Tau, 48, new Color(accent, 0.35f * a), 3.5f);
+        DrawArc(c, _maxRadius * 0.42f, 0, Mathf.Tau, 32, new Color(accent, 0.18f * a), 2f);
+        DrawCircle(k, 58f, new Color(accent, 0.18f * a));
+        DrawCircle(k, 42f, new Color(accent, 0.55f * a));
+        DrawArc(k, 42f, 0, Mathf.Tau, 28, new Color(1, 1, 1, 0.7f * a), 3f);
     }
 }

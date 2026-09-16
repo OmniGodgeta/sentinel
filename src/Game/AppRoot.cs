@@ -25,6 +25,7 @@ public sealed partial class AppRoot : Node
     public override void _Ready()
     {
         Instance = this;
+        AddChild(new CloudSave());
         Cfg = ConfigDb.Load();
         Research = ResearchDb.Load();
         Save = SaveGame.Load();
@@ -35,8 +36,27 @@ public sealed partial class AppRoot : Node
 
         Sentinel.Audio.MusicPlayer.Instance?.PlayMenu();
         var splash = new SplashScreen { App = this };
-        splash.Done += ShowMenu;
+        splash.Done += ShowLogin;
         SwapTo(splash);
+    }
+
+    /// <summary>Login/signup/guest popup, once per launch, right after the splash.</summary>
+    private void ShowLogin()
+    {
+        var login = new LoginScreen { App = this };
+        login.Done += ShowMenu;
+        SwapTo(login);
+    }
+
+    /// <summary>Replace the in-memory save with one pulled from the cloud (login found an
+    /// existing account save) and persist it locally too. Rebuilds derived state.</summary>
+    public void AdoptCloudSave(string json)
+    {
+        var s = SaveGame.FromJson(json);
+        if (s == null) return;
+        Save = s;
+        Save.Save();
+        RefreshProgression();
     }
 
     public void RefreshProgression()
@@ -112,6 +132,7 @@ public sealed partial class AppRoot : Node
     public void ShowShop() => SwapTo(new ShopScreen { App = this });
     public void ShowUpgrades() => SwapTo(new UpgradesScreen { App = this });
     public void ShowSentinels() => SwapTo(new SentinelScreen { App = this });
+    public void ShowModules() => SwapTo(new ModulesScreen { App = this });
     public void ShowProfile() => SwapTo(new ProfileScreen { App = this });
 
     /// <summary>Resolve the equipped ability loadout to unlocked ids + their per-ability effect/cd multipliers.</summary>
@@ -121,6 +142,13 @@ public sealed partial class AppRoot : Node
         Save.Loadout.RemoveAll(a => !Prog.IsAbilityUnlocked(a));
         foreach (var a in Progression.BaseAbilities)
             if (Save.Loadout.Count < slots && !Save.Loadout.Contains(a)) Save.Loadout.Add(a);
+        // Protocols (manual equip) was removed from the menu — every recovered ability
+        // now auto-equips itself as soon as it unlocks, up to the slot count, instead of
+        // requiring a visit to a screen most players never used. First-unlocked-first-
+        // equipped (Cfg.AbilityOrder is a fixed, stable order).
+        foreach (var id in Cfg.AbilityOrder)
+            if (Prog.IsAbilityUnlocked(id) && Save.Loadout.Count < slots && !Save.Loadout.Contains(id))
+                Save.Loadout.Add(id);
         // an empty loadout is fine now — the ship + planet battery are the base kit
         var loadout = Save.Loadout.GetRange(0, System.Math.Min(slots, Save.Loadout.Count)).ToArray();
         var eff = new float[loadout.Length];

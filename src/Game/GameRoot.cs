@@ -85,7 +85,7 @@ public sealed partial class GameRoot : Node2D
         };
         AddChild(_planet);
 
-        _renderer = new SimRenderer { Root = this, World = _world };
+        _renderer = new SimRenderer { Root = this, World = _world, TextureRepeat = CanvasItem.TextureRepeatEnum.Enabled };
         AddChild(_renderer);
 
         _fx = new ScreenFx();
@@ -379,6 +379,7 @@ public sealed partial class GameRoot : Node2D
 
     public void RequestFireWeapon(int weaponIndex) => _world.Enqueue(SimCommand.FireHeroWeapon(weaponIndex));
     public void RequestToggleAutoFire() => _world.Enqueue(SimCommand.ToggleAutoFire());
+    public void RequestToggleAutopilot() => _world.Enqueue(SimCommand.ToggleAutopilot());
 
     public void RequestLaunchWave()
     {

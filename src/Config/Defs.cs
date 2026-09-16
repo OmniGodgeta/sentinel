@@ -23,6 +23,7 @@ public sealed record BalanceDef
     public float ResearchDataMissionClear { get; init; } = 60f;
     public float XpPerWave { get; init; } = 12f;
     public float XpMissionClear { get; init; } = 100f;
+    public float XpKillMult { get; init; } = 1f;   // flat multiplier on the per-kill run-XP grant
     // in-run turret upgrades: level 2 = base*mult, level 3 = base*mult^2
     public float TurretUpgradeCostMult { get; init; } = 0.8f;   // cost of next level = base cost * this * level
     public float TurretUpgradeStatMult { get; init; } = 1.6f;   // dmg/rate scale per level
@@ -164,6 +165,26 @@ public sealed record OrbitalWeaponDef
 public sealed record OrbitalWeaponsDef
 {
     public System.Collections.Generic.List<OrbitalWeaponDef> Weapons { get; init; } = new();
+}
+
+/// <summary>A Planet Module — slot-limited permanent upgrade (data/modules.json).
+/// Levelled with Research Data; only equipped modules (up to ModulesDb.Slots)
+/// contribute their effect in a run. Effect keys are ModifierSet.ApplyEffect keys.</summary>
+public sealed record ModuleDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Text { get; init; } = "";
+    public int MaxLevel { get; init; } = 10;
+    public float CostBase { get; init; } = 40f;
+    public float CostMult { get; init; } = 1.35f;
+    public System.Collections.Generic.Dictionary<string, float> EffectsPerLevel { get; init; } = new();
+}
+
+public sealed record ModulesDb
+{
+    public int Slots { get; init; } = 3;
+    public System.Collections.Generic.List<ModuleDef> Modules { get; init; } = new();
 }
 
 public sealed record TurretFork

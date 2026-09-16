@@ -27,6 +27,8 @@ public sealed class ModifierSet
     public float PlanetRegenPerWaveFrac = 0f;   // fraction of max integrity restored each wave cleared
     public float LeakedDamageMult = 1f;
     public bool  DesperationBonus = false;       // <30% integrity => +20% all damage
+    public float SelfRepairMult = 1f;            // planet passive-regen rate
+    public float PlanetShieldMult = 1f;          // multiplies the whole PlanetShieldMax
 
     // ---- hero ----
     public float HeroHullMult = 1f;
@@ -69,6 +71,8 @@ public sealed class ModifierSet
     // ---- economy / logistics ----
     public float ResearchDataGainMult = 1f;
     public float XpGainMult = 1f;
+    public float CreditsGainMult = 1f;
+    public float SpawnRateMult = 1f;             // survival spawn-director eps multiplier
     public float ExoticAlloyGainMult = 1f;
     public int   StartCreditsAdd = 0;
     public float WaveIncomeMult = 1f;
@@ -117,6 +121,8 @@ public sealed class ModifierSet
             case "planet_regen_per_wave": PlanetRegenPerWaveFrac += v; break;
             case "leaked_damage": LeakedDamageMult += v; break;
             case "desperation": DesperationBonus = true; break;
+            case "self_repair": SelfRepairMult += v; break;
+            case "planet_shield_mult": PlanetShieldMult += v; break;
 
             case "hero_hull": HeroHullMult += v; break;
             case "hero_missile_damage": HeroMissileDamageMult += v; break;
@@ -134,6 +140,8 @@ public sealed class ModifierSet
 
             case "rd_gain": ResearchDataGainMult += v; break;
             case "xp_gain": XpGainMult += v; break;
+            case "credits_gain": CreditsGainMult += v; break;
+            case "spawn_rate": SpawnRateMult += v; break;
             case "alloy_gain": ExoticAlloyGainMult += v; break;
             case "start_credits": StartCreditsAdd += (int)v; break;
             case "wave_income": WaveIncomeMult += v; break;

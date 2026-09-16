@@ -3,7 +3,7 @@
   "move_speed": 330,
   "point_defense_dps": 34,
   "point_defense_range": 210,
-  "volley_cooldown": 6,
+  "volley_cooldown": 6.9,
   "volley_missiles": 4,
   "missile_damage": 50,
   "missile_speed": 340,

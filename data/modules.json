@@ -1,0 +1,24 @@
+{
+  "slots": 3,
+  "modules": [
+    { "id": "plating", "name": "Reinforced Plating", "max_level": 10, "cost_base": 40, "cost_mult": 1.35,
+      "effects_per_level": { "planet_integrity": 0.03 },
+      "text": "Extra planet integrity — a bigger buffer before the hold is lost." },
+
+    { "id": "autorepair", "name": "Auto-Repair Array", "max_level": 10, "cost_base": 40, "cost_mult": 1.35,
+      "effects_per_level": { "self_repair": 0.10 },
+      "text": "Faster passive planet self-repair between hits." },
+
+    { "id": "dampener", "name": "Spawn Dampener", "max_level": 10, "cost_base": 40, "cost_mult": 1.35,
+      "effects_per_level": { "spawn_rate": -0.025 },
+      "text": "Softens the enemy spawn rate — more breathing room in a hold." },
+
+    { "id": "salvage", "name": "Salvage Contract", "max_level": 10, "cost_base": 40, "cost_mult": 1.35,
+      "effects_per_level": { "rd_gain": 0.025, "xp_gain": 0.025, "credits_gain": 0.025 },
+      "text": "Bigger mission rewards — credits, Research Data and XP." },
+
+    { "id": "capacitor", "name": "Shield Capacitor", "max_level": 10, "cost_base": 40, "cost_mult": 1.35,
+      "effects_per_level": { "planet_shield_mult": 0.06 },
+      "text": "Strengthens the planet's shield capacity." }
+  ]
+}
