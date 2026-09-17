@@ -13,6 +13,19 @@ public sealed partial class SimWorld
     private int[] _owLevel = System.Array.Empty<int>();
     private float[] _owCd = System.Array.Empty<float>();
 
+    /// <summary>Upgrade cards taken for each weapon this run. PDTD shows three star pips
+    /// under a sentinel's tile and promotes it on the fourth: picks 1-3 light one, two and
+    /// three stars, and the fourth clears them and raises the level (where the stars turn
+    /// purple). So level = 1 + picks/StarsPerLevel and stars = picks % StarsPerLevel.</summary>
+    private int[] _owPicks = System.Array.Empty<int>();
+
+    /// <summary>Picks per promotion — three lit stars, then the fourth pick levels up.</summary>
+    public const int StarsPerLevel = 4;
+
+    /// <summary>Lit star pips under weapon <paramref name="i"/>'s tile right now (0-3).</summary>
+    public int OrbitalWeaponStars(int i) =>
+        (uint)i < (uint)_owPicks.Length ? _owPicks[i] % StarsPerLevel : 0;
+
     private const float OwOrbit = 2.45f;   // × SentinelOrbitRadius — a clear orbit ring in open space
 
     // active timed field effects (radiation line / shock orb / radiation zone / beam laser /
@@ -111,6 +124,7 @@ public sealed partial class SimWorld
         int n = Cfg.OrbitalWeapons.Count;
         _owLevel = new int[n];
         _owCd = new float[n];
+        _owPicks = new int[n];
         _owEffects.Clear();
         _fxOwBeamLeft = 0f;
 
@@ -124,6 +138,31 @@ public sealed partial class SimWorld
         if ((uint)i >= (uint)_owLevel.Length) return;
         int max = Mathf.Max(1, Cfg.OrbitalWeapons[i].MaxLevel);
         if (_owLevel[i] < max) _owLevel[i]++;
+    }
+
+    /// <summary>Put a weapon into play at level 1 (its "Release a X Sentinel" card).</summary>
+    private void UnlockOrbitalWeapon(int i)
+    {
+        if ((uint)i >= (uint)_owLevel.Length) return;
+        if (_owLevel[i] <= 0) _owLevel[i] = 1;
+    }
+
+    /// <summary>Record an upgrade card taken for weapon <paramref name="i"/>: light the
+    /// next star and, on the fourth, promote it a level and clear them.</summary>
+    private void AddOrbitalStar(int i)
+    {
+        if ((uint)i >= (uint)_owPicks.Length) return;
+        _owPicks[i]++;
+        if (_owPicks[i] % StarsPerLevel == 0) LevelUpOrbitalWeapon(i);
+    }
+
+    /// <summary>Index of the orbital weapon a skill card belongs to, or −1 for cards whose
+    /// Kind isn't an orbital weapon (the planet's missile battery).</summary>
+    public int OrbitalIndexOfKind(string kind)
+    {
+        for (int i = 0; i < Cfg.OrbitalWeapons.Count; i++)
+            if (Cfg.OrbitalWeapons[i].Kind == kind) return i;
+        return -1;
     }
 
     private void StepOrbitalWeapons(float dt)

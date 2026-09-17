@@ -75,7 +75,7 @@ public sealed partial class HeroWeaponButton : Control
         CutFill(frame, ch, new Color(0.05f, 0.07f, 0.11f, 0.98f));
 
         // --- full-bleed art, clipped to the chamfered frame ---
-        var tile = Sentinel.Render.Art.Pdtd("tiles/" + _kind);
+        var tile = Sentinel.Render.Art.Pdtd("tiles/" + TileFor(_kind));
         if (tile != null)
         {
             var poly = CutPoly(Shrink(frame, 2f * k), ch - 1.5f * k);
@@ -127,6 +127,23 @@ public sealed partial class HeroWeaponButton : Control
             DrawRect(new Rect2(x, barY, segW, barH), on ? lit : new Color(0.28f, 0.33f, 0.40f, 0.55f));
         }
     }
+
+    /// <summary>Which `pdtd/tiles/*` art a weapon kind wears.
+    ///
+    /// The orbital kinds already match PDTD's own names, so they pass straight through.
+    /// The ship's weapons and the planet's missile battery are Beyond's own and have no
+    /// PDTD counterpart, so each borrows the closest sentinel's art — otherwise those
+    /// tiles fall back to a drawn glyph and sit in the bar looking like placeholder
+    /// programmer art next to eight real ones.</summary>
+    private static string TileFor(string kind) => kind switch
+    {
+        "missiles" => "missile",        // the planet's missile battery
+        "ion" => "lightning",           // Ion Cannon -> Chain Lightning craft
+        "yamato" => "railgun",          // one huge shot -> the railgun platform
+        "plasma" => "rad_zone",         // a sustained field
+        "shield" => "force_field",      // Shields Boost -> the gravity/shield platform
+        _ => kind,
+    };
 
     private void DrawIcon(Vector2 c, float s, Color col)
     {

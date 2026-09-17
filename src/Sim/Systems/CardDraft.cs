@@ -24,6 +24,26 @@ public sealed partial class SimWorld
     /// PDTD-style percentage buffs and trade-offs rather than a weapon level.</summary>
     public const int BoostCardBase = 200;
 
+    /// <summary>Draft option indices at/above this are PDTD skill cards
+    /// (data/skillcards.json), index − this. These replaced the old
+    /// one-card-per-orbital-weapon "LV 1 → 2" options: a weapon now has a whole menu of
+    /// named upgrades, exactly as in PDTD, and taking one lights a star rather than
+    /// bumping a level directly.</summary>
+    public const int SkillCardBase = 1000;
+
+    /// <summary>Cards taken this run, by skill-card id, so MaxPicks can be enforced.</summary>
+    private readonly Dictionary<string, int> _skillPicks = new();
+
+    /// <summary>Battery upgrade cards taken. The planet's missile battery has no level of
+    /// its own, so its cards' NeedLevel gates read off this instead.</summary>
+    private int _batteryCardsTaken;
+
+    public bool IsSkillCard(int idx) => idx >= SkillCardBase;
+    public Config.SkillCardDef? SkillCard(int idx) =>
+        idx >= SkillCardBase && idx - SkillCardBase < Cfg.SkillCards.Cards.Count
+            ? Cfg.SkillCards.Cards[idx - SkillCardBase] : null;
+    public int SkillCardPicks(string id) => _skillPicks.GetValueOrDefault(id);
+
     private int _pendingDrafts;
     private readonly List<string> _runCards = new();
     private readonly List<int> _draftOptions = new();
@@ -46,7 +66,7 @@ public sealed partial class SimWorld
     public IReadOnlyList<int> DraftOptionIndices => _draftOptions;
     public IReadOnlyList<string> RunCards => _runCards;
 
-    public bool IsBoostCard(int idx) => idx >= BoostCardBase;
+    public bool IsBoostCard(int idx) => idx >= BoostCardBase && idx < SkillCardBase;
     public bool IsOrbitalCard(int idx) => idx >= OrbitalCardBase && idx < BoostCardBase;
     public int CardWeaponIndex(int idx) => idx >= OrbitalCardBase ? idx - OrbitalCardBase : idx;
     public Config.RunCardDef? BoostCard(int idx) =>
@@ -126,10 +146,47 @@ public sealed partial class SimWorld
         int active = 0;
         for (int i = 0; i < ow.Count; i++) if (_owLevel[i] > 0) active++;
         bool roomForNew = active < MaxActiveSentinels;
-        for (int i = 0; i < ow.Count; i++)
+
+        // ---- PDTD skill cards ----
+        var sc = Cfg.SkillCards.Cards;
+        for (int i = 0; i < sc.Count; i++)
         {
-            if (_owLevel[i] == 0 && !roomForNew) continue;
-            Consider(OrbitalCardBase + i, _owLevel[i], ow[i].MaxLevel);
+            var c = sc[i];
+            if (_skillPicks.GetValueOrDefault(c.Id) >= Mathf.Max(1, c.MaxPicks)) continue;
+
+            // "battery" is the planet's own missile battery — always in play, never
+            // unlocked or levelled, so only its upgrade cards are ever offerable.
+            if (c.Kind == "battery")
+            {
+                if (c.Unlock) continue;
+                if (_batteryCardsTaken < c.NeedLevel) continue;
+                pool.Add(SkillCardBase + i);
+                weights.Add(Mathf.Max(1, c.Weight / 100));
+                continue;
+            }
+
+            int w = OrbitalIndexOfKind(c.Kind);
+            if (w < 0) continue;
+            int lvl = _owLevel[w];
+
+            if (c.Unlock)
+            {
+                // only offerable while the weapon is out of play and there's a free slot
+                if (lvl > 0 || !roomForNew) continue;
+                pool.Add(SkillCardBase + i);
+                // PDTD weights unlocks enormously (6000 vs 1000) so a new sentinel is the
+                // obvious early pick; scaled down here to sit alongside Beyond's own
+                // weights rather than swamping them.
+                weights.Add(60);
+                continue;
+            }
+
+            if (lvl <= 0) continue;                              // weapon not in play
+            if (lvl < c.NeedLevel) continue;                     // level gate
+            if (lvl - 1 < c.NeedStar) continue;                  // promotions gate
+            if (lvl >= Mathf.Max(1, ow[w].MaxLevel)) continue;   // maxed
+            pool.Add(SkillCardBase + i);
+            weights.Add(Mathf.Max(1, c.Weight / 100));
         }
 
         // boost cards — offered from the second draft on, so the opening picks still
@@ -166,7 +223,28 @@ public sealed partial class SimWorld
     {
         if (!_draftOptions.Contains(cardIdx)) return;
 
-        if (IsBoostCard(cardIdx))
+        if (IsSkillCard(cardIdx))
+        {
+            var c = SkillCard(cardIdx);
+            if (c != null)
+            {
+                foreach (var (key, v) in c.Effects) Mods.ApplyEffect(key, v);
+                _skillPicks[c.Id] = _skillPicks.GetValueOrDefault(c.Id) + 1;
+                _runCards.Add("skill:" + c.Id);
+
+                if (c.Kind == "battery") _batteryCardsTaken++;
+                else
+                {
+                    int w = OrbitalIndexOfKind(c.Kind);
+                    if (w >= 0)
+                    {
+                        if (c.Unlock) UnlockOrbitalWeapon(w);
+                        else AddOrbitalStar(w);
+                    }
+                }
+            }
+        }
+        else if (IsBoostCard(cardIdx))
         {
             var bc = BoostCard(cardIdx);
             if (bc != null)

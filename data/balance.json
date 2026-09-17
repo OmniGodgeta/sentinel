@@ -23,5 +23,7 @@
   "battery_salvo": 5,
   "battery_missile_speed": 176,
   "battery_range": 760,
-  "siege_orbit_deg": 7
+  "siege_orbit_deg": 7,
+  "run_xp_per_level": 26,
+  "run_xp_curve": 1.5
 }

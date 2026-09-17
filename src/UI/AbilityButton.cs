@@ -75,9 +75,22 @@ public sealed partial class AbilityButton : Control
         var bcol = new Color(role, _ready ? 0.95f : 0.55f);
         DrawCornerBrackets(Shrink(frame, 4f * k), 10f * k, bcol);
 
-        // ---- glyph ----
+        // ---- art ----
+        // PDTD's alloy cartridges, one per ability kind. These used to be procedural
+        // vector glyphs, which read as placeholder art sitting next to eight real
+        // sentinel tiles in the same bar.
         var gc = sz * new Vector2(0.5f, 0.44f);
-        DrawIcon(gc, Mathf.Min(sz.X, sz.Y) * 0.24f, new Color(role.Lightened(0.15f), _ready ? 1f : 0.7f));
+        var art = Sentinel.Render.Art.Pdtd("alloy/" + AlloyFor(_def.Kind));
+        if (art != null)
+        {
+            var ts = art.GetSize();
+            float want = Mathf.Min(sz.X, sz.Y) * 0.62f;
+            float isc = want / Mathf.Max(ts.X, ts.Y);
+            DrawSetTransform(gc, 0f, new Vector2(isc, isc));
+            DrawTexture(art, -ts * 0.5f, new Color(1f, 1f, 1f, _ready ? 1f : 0.65f));
+            DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+        }
+        else DrawIcon(gc, Mathf.Min(sz.X, sz.Y) * 0.24f, new Color(role.Lightened(0.15f), _ready ? 1f : 0.7f));
 
         // ---- cooldown wipe (dark curtain drops from the top) ----
         if (_cd > 0.01f)
@@ -106,6 +119,25 @@ public sealed partial class AbilityButton : Control
         DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 7f * k), _def.Name.ToUpperInvariant(),
                    HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(14 * k), new Color(role.Lightened(0.3f), 0.9f));
     }
+
+    /// <summary>Which PDTD alloy cartridge an ability kind wears. Beyond's abilities have
+    /// no PDTD counterpart, so each takes the cartridge of the sentinel whose damage type
+    /// it matches — the set is visually uniform, so this reads as a coherent icon family
+    /// rather than eleven unrelated pictures.</summary>
+    private static string AlloyFor(string kind) => kind switch
+    {
+        "lance" => "beam_laser",      // sustained single-target beam
+        "nova" => "space_bomb",       // planet-wide shockwave
+        "slow" => "rad_zone",         // a lingering field
+        "snare" => "force_field",     // gravity
+        "ion" => "lightning",         // chain EMP
+        "barrier" => "force_field",
+        "pointdef" => "laser",        // interceptor lasers
+        "repair" => "waterdrop",
+        "overdrive" => "railgun",     // raw rate-of-fire
+        "drones" => "missile",
+        _ => "missile",
+    };
 
     // ---- chamfered-rect helpers (the card frame shape) ----
     private static Vector2[] CutPoly(Rect2 r, float c)

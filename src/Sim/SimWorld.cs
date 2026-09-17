@@ -175,6 +175,8 @@ public sealed partial class SimWorld
         Rng = new DetRandom(mission.Seed);
         _draftRng = new DetRandom(mission.Seed ^ 0x9E3779B97F4A7C15UL);
         _runCards.Clear();
+        _skillPicks.Clear();
+        _batteryCardsTaken = 0;
         _draftOptions.Clear();
         _pendingDrafts = 0;
         _bossPicksLeft = 0;

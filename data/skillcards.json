@@ -26,8 +26,10 @@
    "need_star": 0,
    "weight": 1000,
    "effects": {
-    "ow:battery:damage": 0.6
-   }
+    "battery_damage": 0.6,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000102",
@@ -41,9 +43,11 @@
    "need_star": 0,
    "weight": 1000,
    "effects": {
-    "ow:battery:damage": -0.2,
-    "ow:battery:count": 3.0
-   }
+    "battery_damage": -0.2,
+    "battery_salvo": 3.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000103",
@@ -57,8 +61,10 @@
    "need_star": 0,
    "weight": 1000,
    "effects": {
-    "ow:battery:explosion_radius": 0.3
-   }
+    "battery_splash": 0.3,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000104",
@@ -68,7 +74,7 @@
    "text": "Each missile has a 30% chance to upgrade into a super missile, which deals x3 damage and explosion range +20%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -85,7 +91,7 @@
    "text": "Chance to upgrade into super missile +30%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 12,
+   "need_level": 6,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -101,7 +107,7 @@
    "text": "Super missile deals x5 damage and explosion range +30%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 32,
+   "need_level": 16,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -122,8 +128,10 @@
    "need_star": 0,
    "weight": 1000,
    "effects": {
-    "ow:battery:count": 2.0
-   }
+    "battery_salvo": 2.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000108",
@@ -137,8 +145,10 @@
    "need_star": 1,
    "weight": 1000,
    "effects": {
-    "ow:battery:count": 2.0
-   }
+    "battery_salvo": 2.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000109",
@@ -152,8 +162,9 @@
    "need_star": 2,
    "weight": 1000,
    "effects": {
-    "ow:battery:duration_flat": 1.0
-   }
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000110",
@@ -163,12 +174,14 @@
    "text": "Continuously launch Missiles during the cooldown",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 52,
+   "need_level": 26,
    "need_star": 1,
    "weight": 1000,
    "effects": {
-    "ow:battery:count": 4.0
-   }
+    "battery_salvo": 4.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000111",
@@ -178,12 +191,14 @@
    "text": "Missile cooldown speed +30%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 42,
+   "need_level": 21,
    "need_star": 1,
    "weight": 1000,
    "effects": {
-    "ow:battery:rate": 0.3
-   }
+    "battery_rate": 0.3,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000131",
@@ -197,9 +212,11 @@
    "need_star": 1,
    "weight": 1000,
    "effects": {
-    "ow:battery:count": 12.0,
-    "trait:battery:launchSpiralMissilesEnable": 1.0
-   }
+    "battery_salvo": 12.0,
+    "trait:battery:launchSpiralMissilesEnable": 1.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000132",
@@ -225,7 +242,7 @@
    "text": "Missile explosion release submunitions cause additional explosion DMG within explosion range",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 62,
+   "need_level": 31,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -245,8 +262,10 @@
    "need_star": 0,
    "weight": 1000,
    "effects": {
-    "ow:battery:count": 4.0
-   }
+    "battery_salvo": 4.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000135",
@@ -272,7 +291,7 @@
    "text": "Each Missile hit leaves 1 Space-Landmine(s)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 82,
+   "need_level": 41,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -292,8 +311,10 @@
    "need_star": 2,
    "weight": 1000,
    "effects": {
-    "ow:battery:count": 2.0
-   }
+    "battery_salvo": 2.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000153",
@@ -303,12 +324,14 @@
    "text": "Missile splits off 2 small Railgun bullet on impact enemy",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 72,
+   "need_level": 36,
    "need_star": 1,
    "weight": 1000,
    "effects": {
-    "ow:battery:count": 2.0
-   }
+    "battery_salvo": 2.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "battery_1000154",
@@ -318,14 +341,14 @@
    "text": "Missile has a 30% chance to inflict [B:VoltaicStun] on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 92,
+   "need_level": 46,
    "need_star": 2,
    "weight": 1000,
    "effects": {
-    "ow:battery:stun_chance": 0.3,
-    "ow:battery:stun_duration_flat": 1.5,
-    "trait:battery:inflictStunOnHit": 1.0
-   }
+    "trait:battery:inflictStunOnHit": 1.0,
+    "ow:battery:damage": 0.25
+   },
+   "approx": true
   },
   {
    "id": "waterdrop_1000200",
@@ -443,7 +466,7 @@
    "text": "Waterdrop cause explosion on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -459,7 +482,7 @@
    "text": "Waterdrop explosion DMG +20% for each hit(MAX:200%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -475,7 +498,7 @@
    "text": "Waterdrop explosion range +20% for each hit(MAX:200%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 14,
+   "need_level": 7,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -555,7 +578,7 @@
    "text": "Every enemy killed by Waterdrop, Waterdrop's cooldown speed +20% (MAX:200%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 18,
+   "need_level": 9,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -571,7 +594,7 @@
    "text": "For each hit, Waterdrop size +5%(MAX: 100%), DMG +15% (MAX: 300%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 26,
+   "need_level": 13,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -621,7 +644,7 @@
    "text": "Waterdrop leave a Radiation Link every other flight path, lasts 3s",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -745,7 +768,7 @@
    "text": "Each Laser releases 2 additional Deflected Laser",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -761,7 +784,7 @@
    "text": "Deflected Laser width +30%, DMG+50%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -776,7 +799,7 @@
    "text": "Double Deflected Laser, width +30%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 10,
+   "need_level": 5,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -856,7 +879,7 @@
    "text": "Refracted Laser release 2 additional Deflected Laser",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 14,
+   "need_level": 7,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -889,7 +912,7 @@
    "text": "Enemies hit by all Laser has a 4% chance to be teleported back a certain distance",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -922,7 +945,7 @@
    "text": "Laser inflict [B:VoltaicStun] on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 26,
+   "need_level": 13,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1042,7 +1065,7 @@
    "text": "Beam dealing increasing DMG to the same target(MAX:200%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -1058,7 +1081,7 @@
    "text": "When Beams switch targets, DMG continue to increase",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1074,7 +1097,7 @@
    "text": "DMG increase cap raised to 400%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 10,
+   "need_level": 5,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1152,7 +1175,7 @@
    "text": "Beam refraction on hit +2 Damage +30%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 18,
+   "need_level": 9,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1183,7 +1206,7 @@
    "text": "Beam cause explosion that dealing Gravity damage on hit",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1214,7 +1237,7 @@
    "text": "Continuously launch small waterdrops targeting Beam hit target",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 26,
+   "need_level": 13,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1334,7 +1357,7 @@
    "text": "Radiation Lines rotate slowly after connected",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -1351,7 +1374,7 @@
    "text": "Radiation Lines' rotate speed +100%, inflict [B:slow01] on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1367,7 +1390,7 @@
    "text": "Radiation Lines leave a radiation trail during rotate",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 10,
+   "need_level": 5,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1432,7 +1455,7 @@
    "text": "For every 10 hit dealt by Radiation Line, Radiation Line DMG +20%(MAX:240%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 14,
+   "need_level": 7,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1465,7 +1488,7 @@
    "text": "Radiation Link endpoints will release small chain lightnings every 2.5s",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 18,
+   "need_level": 9,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1481,7 +1504,7 @@
    "text": "Radiation Link endpoints generate a small force field",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1602,7 +1625,7 @@
    "text": "Radiation Zone generates 2 satellite radiation zones surrounding it",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -1617,7 +1640,7 @@
    "text": "Satellite radiation zones +2",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1632,7 +1655,7 @@
    "text": "Satellite radiation zone's size and DMG scale with the current number of enemies in contact, per enemy: Size +20% (MAX: 100%), DMG 40% (MAX: 200%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 10,
+   "need_level": 5,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1649,7 +1672,7 @@
    "text": "Radiation Zone absorb small radiation zone on contact, size +20%(MAX: 100%), DMG +40%(MAX: 200%) for each original small radiation zones absorbed in",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 14,
+   "need_level": 7,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1746,7 +1769,7 @@
    "text": "For every 2 hits dealt by Radiation Zone, launch 1 small missile",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1763,7 +1786,7 @@
    "text": "Each time a Waterdrop impacts an enemy within a Radiation Zone, the Zone's size +10%(MAX: 50%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 26,
+   "need_level": 13,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1839,7 +1862,7 @@
    "text": "Space Bomb explosion inflict [B:stun01] on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -1855,7 +1878,7 @@
    "text": "Duration of [B:stun01] inflicted by Space Bomb explosion +100%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -1871,7 +1894,7 @@
    "text": "Space Bomb trigger an additional explosion when inflict [B:stun01] on enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 10,
+   "need_level": 5,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -1977,7 +2000,7 @@
    "text": "The number of Space-Landmine x2",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 14,
+   "need_level": 7,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2024,7 +2047,7 @@
    "text": "Space Bomb DMG +100%, pull enemies towards the center before explosion",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 26,
+   "need_level": 13,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -2043,7 +2066,7 @@
    "text": "For each hit by Space Bomb, the next Space Bomb explosion range +10%(MAX: 50%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 18,
+   "need_level": 9,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2181,7 +2204,7 @@
    "text": "Enemies hit by Force Field has a 4% chance to be teleported back a certain distance",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -2198,7 +2221,7 @@
    "text": "Enemies hit by Force Field has a 2% chance to be transported back to start point",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2215,7 +2238,7 @@
    "text": "Teleportation from Force Field deals 3% of the target's MAX HP as DMG (MAX: 60000 x ATK)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 14,
+   "need_level": 7,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -2299,7 +2322,7 @@
    "text": "For every 5 attack, Force Field deals an additional explosion DMG",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 18,
+   "need_level": 9,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2332,7 +2355,7 @@
    "text": "Release a rotating laser inside the Force Field",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2348,7 +2371,7 @@
    "text": "Release an additional Force Field",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 26,
+   "need_level": 13,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -2422,7 +2445,7 @@
    "text": "Chain Lightning inflict [B:VoltaicStun] on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -2438,7 +2461,7 @@
    "text": "Duration of [B:VoltaicStun] caused by Chain Lightning +100%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2453,7 +2476,7 @@
    "text": "When the enemy is affected by [B:VoltaicStun], each attack on the enemy will trigger a small lightning effect on a nearby enemy(MIN interval: 0.5s)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 10,
+   "need_level": 5,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -2560,7 +2583,7 @@
    "text": "Small Chain Lightning path deals damage continuously",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 14,
+   "need_level": 7,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2591,7 +2614,7 @@
    "text": "Each Chain Lightning hit will leaves 2 space-landmine",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 18,
+   "need_level": 9,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2624,7 +2647,7 @@
    "text": "Chain Lightning has a 40% chance to inflict [B:Irradiated] on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -2700,7 +2723,7 @@
    "text": "Ball Lightning strikes explode on hit",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 2,
+   "need_level": 1,
    "need_star": 0,
    "weight": 1000,
    "effects": {
@@ -2716,7 +2739,7 @@
    "text": "Ball Lightning strikes' explosion inflicts [B:Overload] on hit enemies",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 6,
+   "need_level": 3,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2732,7 +2755,7 @@
    "text": "Ball Lightning strikes' explosion range +50%, DMG +60%",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 10,
+   "need_level": 5,
    "need_star": 2,
    "weight": 1000,
    "effects": {
@@ -2792,7 +2815,7 @@
    "text": "For each enemy killed, Ball Lightning's cooldown speed +5%(MAX: 100%)",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 18,
+   "need_level": 9,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2884,7 +2907,7 @@
    "text": "Ball Lightning is accompanied by a small force field",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 22,
+   "need_level": 11,
    "need_star": 1,
    "weight": 1000,
    "effects": {
@@ -2900,7 +2923,7 @@
    "text": "Waterdrop: Each Ball Lightning strike releases a small waterdrop with a durability of 2",
    "unlock": false,
    "max_picks": 1,
-   "need_level": 26,
+   "need_level": 13,
    "need_star": 2,
    "weight": 1000,
    "effects": {

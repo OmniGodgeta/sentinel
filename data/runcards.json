@@ -9,7 +9,8 @@
    "text": "All sentinels deal +60% damage.",
    "effects": {
     "orbital_weapon_damage": 0.6
-   }
+   },
+   "art": "tiles/railgun"
   },
   {
    "id": "boost_ow_rate",
@@ -19,7 +20,8 @@
    "text": "All sentinels fire 35% faster.",
    "effects": {
     "orbital_weapon_rate": 0.35
-   }
+   },
+   "art": "tiles/laser"
   },
   {
    "id": "boost_ow_radius",
@@ -29,7 +31,8 @@
    "text": "Sentinel blast, beam and zone radius +40%.",
    "effects": {
     "orbital_weapon_radius": 0.4
-   }
+   },
+   "art": "tiles/rad_zone"
   },
   {
    "id": "boost_radlink_add",
@@ -41,7 +44,8 @@
    "effects": {
     "rad_link_extra": 1,
     "rad_line_damage": -0.2
-   }
+   },
+   "art": "tiles/rad_line"
   },
   {
    "id": "boost_laser_refract",
@@ -52,7 +56,8 @@
    "text": "The ship laser refracts to +5 more enemies (damage falls off per bounce).",
    "effects": {
     "hero_laser_refract": 5
-   }
+   },
+   "art": "tiles/laser"
   },
   {
    "id": "boost_yamato_charge",
@@ -63,7 +68,8 @@
    "text": "Yamato Cannon charges 30% faster.",
    "effects": {
     "hero_yamato_charge": 0.3
-   }
+   },
+   "art": "tiles/railgun"
   },
   {
    "id": "boost_battery_dmg",
@@ -73,7 +79,8 @@
    "text": "Planet missile battery damage +60%.",
    "effects": {
     "battery_damage": 0.6
-   }
+   },
+   "art": "tiles/missile"
   },
   {
    "id": "boost_battery_salvo",
@@ -83,7 +90,8 @@
    "text": "The battery fires +2 missiles per salvo.",
    "effects": {
     "battery_salvo": 2
-   }
+   },
+   "art": "tiles/missile"
   },
   {
    "id": "boost_hero_missile",
@@ -93,7 +101,8 @@
    "text": "Missile Barrage damage +60%.",
    "effects": {
     "hero_missile_damage": 0.6
-   }
+   },
+   "art": "tiles/missile"
   },
   {
    "id": "boost_planet_hull",
@@ -103,7 +112,8 @@
    "text": "Planet integrity +25%.",
    "effects": {
     "planet_integrity": 0.25
-   }
+   },
+   "art": "tiles/force_field"
   },
   {
    "id": "boost_shield",
@@ -113,7 +123,8 @@
    "text": "Planet Shield capacity +50%.",
    "effects": {
     "planet_shield_mult": 0.5
-   }
+   },
+   "art": "tiles/force_field"
   }
  ],
  "radline_note": "Radiation Link behaviour (rotate / end-burst / endpoint lasers) is gated on the weapons LEVEL in data/orbital_weapons.json (rotate_level, burst_level, node_shot_level), mirroring PDTD, whose own cards for these carry needLevel 2/0/0 and are drafted per-weapon. They were briefly boost cards here; four extra always-eligible boost cards measurably crowded weapon levelling out of the draft (SimTest endless fell from wave 41 to 5), so they move back to level gates until the per-weapon skill-card draft lands."

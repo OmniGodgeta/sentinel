@@ -675,18 +675,36 @@ public sealed partial class Hud : CanvasLayer
     /// <summary>PDTD's own illustration for a weapon, where the game ships one. The seven
     /// skill glyphs cover the weapons PDTD and Beyond share by name; the techpoint emblems
     /// cover the rest of the sentinel roster.</summary>
+    /// <summary>Card art, by weapon/card id. Everything points at `pdtd/tiles/*` — the
+    /// craft composited over its own sky plate, which is how PDTD builds its card art.
+    ///
+    /// This replaced a mix of `skillicon/` (only seven of eleven weapons had one) and
+    /// `techpoint/` emblems (flat badges, not illustrations). Shock Orb, Orbital
+    /// Lightning, Radiation Zone and Force Field were on the emblem fallback, which is
+    /// what "these cards are missing their art" meant. The tiles cover all eleven.</summary>
     private static readonly System.Collections.Generic.Dictionary<string, string> PdtdCardArt = new()
     {
-        ["radiation_line"] = "skillicon/radiation_line",
-        ["waterdrop"] = "skillicon/waterdrop",
-        ["laser"] = "skillicon/laser",
-        ["beam"] = "skillicon/beam",
-        ["space_bomb"] = "skillicon/space_bomb",
-        ["missile_barrage"] = "skillicon/missile",
-        ["shock_orb"] = "techpoint/balllightning",
-        ["orbital_lightning"] = "techpoint/chainlightning",
-        ["radiation_zone"] = "techpoint/radiationzone",
-        ["force_field"] = "techpoint/gravitynova",
+        // orbital sentinels (data/orbital_weapons.json ids -> tiles keyed by Kind)
+        ["radiation_line"] = "tiles/rad_line",
+        ["radiation_zone"] = "tiles/rad_zone",
+        ["waterdrop"] = "tiles/waterdrop",
+        ["laser"] = "tiles/laser",
+        ["beam"] = "tiles/beam_laser",
+        ["space_bomb"] = "tiles/space_bomb",
+        ["force_field"] = "tiles/force_field",
+        ["shock_orb"] = "tiles/shock_orb",              // PDTD's Ball Lightning craft
+        ["orbital_lightning"] = "tiles/lightning",      // PDTD's Chain Lightning craft
+
+        // the ship's own weapons and the planet battery — no PDTD counterpart, so each
+        // borrows the closest sentinel's art rather than showing nothing
+        ["missile_barrage"] = "tiles/missile",
+        ["laser_volley"] = "tiles/laser",
+        ["ion_cannon"] = "tiles/lightning",
+        ["yamato_cannon"] = "tiles/railgun",
+        ["plasma_field"] = "tiles/rad_zone",
+        ["planet_shield"] = "tiles/force_field",
+        ["shields_boost"] = "tiles/force_field",
+        ["battery"] = "tiles/missile",
     };
 
     /// <summary>What goes in a card's art window. PDTD's own art when there is some,
@@ -830,6 +848,7 @@ public sealed partial class Hud : CanvasLayer
         foreach (int idx in w.DraftOptionIndices)
         {
             int myPos = cardPos++;
+            bool skill = w.IsSkillCard(idx);
             bool boost = w.IsBoostCard(idx);
             bool orbital = w.IsOrbitalCard(idx);
             int wi = w.CardWeaponIndex(idx);
@@ -837,13 +856,33 @@ public sealed partial class Hud : CanvasLayer
             int lvl;
             string subtitle;
             string boostText = "";
-            if (boost)
+            int stars = 0, starMax = 0;
+            string artOverride = "";   // boost cards name their own art (RunCardDef.Art)
+            if (skill)
+            {
+                // PDTD's own card: its title, its text, and the sentinel's star row.
+                var c = w.SkillCard(idx)!;
+                cardName = c.Title;
+                boostText = c.Text;
+                int owi = w.OrbitalIndexOfKind(c.Kind);
+                cardId = owi >= 0 ? w.Cfg.OrbitalWeapons[owi].Id : c.Kind;
+                accent = owi >= 0 ? w.Cfg.OrbitalWeapons[owi].Accent : "#f0a020";
+                lvl = c.Unlock ? 0 : (owi >= 0 ? w.OrbitalWeaponLevel(owi) : 1);
+                subtitle = c.Unlock ? "NEW SENTINEL" : c.Weapon.ToUpperInvariant();
+                if (!c.Unlock && owi >= 0)
+                {
+                    stars = w.OrbitalWeaponStars(owi);
+                    starMax = Sentinel.Sim.SimWorld.StarsPerLevel - 1;
+                }
+            }
+            else if (boost)
             {
                 var bc = w.BoostCard(idx);
                 cardId = bc?.Id ?? "boost"; cardName = bc?.Name ?? "Boost"; accent = bc?.Accent ?? "#4fd6de";
                 lvl = 0;
                 subtitle = "BOOST";
                 boostText = bc?.Text ?? "";
+                artOverride = bc?.Art ?? "";
             }
             else if (orbital)
             {
@@ -926,10 +965,12 @@ public sealed partial class Hud : CanvasLayer
                 // to fill would cut the badge in half. Everything else (PDTD's own
                 // full-bleed skill art, and the crops out of this project's card jpgs) is
                 // a picture meant to fill the window.
-                bool emblem = PdtdCardArt.TryGetValue(cardId, out string? ap) && ap.StartsWith("techpoint/");
+                bool emblem = artOverride.Length == 0
+                              && PdtdCardArt.TryGetValue(cardId, out string? ap)
+                              && ap.StartsWith("techpoint/");
                 var window = new TextureRect
                 {
-                    Texture = CardArtTexture(cardId),
+                    Texture = artOverride.Length > 0 ? Render.Art.Pdtd(artOverride) : CardArtTexture(cardId),
                     ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                     StretchMode = emblem ? TextureRect.StretchModeEnum.KeepAspectCentered
                                          : TextureRect.StretchModeEnum.KeepAspectCovered,
@@ -1006,6 +1047,46 @@ public sealed partial class Hud : CanvasLayer
             lv.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(16 * k));
             lv.AddThemeColorOverride("font_color", lvl == 0 && !boost ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.85f));
             v.AddChild(lv);
+
+            // Star row — PDTD shows three pips under a sentinel and promotes it on the
+            // fourth pick. Above level 1 the pips go purple, which is how PDTD marks a
+            // sentinel that has already been promoted at least once.
+            if (starMax > 0)
+            {
+                var starRow = new HBoxContainer
+                {
+                    Alignment = BoxContainer.AlignmentMode.Center,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                };
+                starRow.AddThemeConstantOverride("separation", Mathf.RoundToInt(4 * k));
+                v.AddChild(starRow);
+
+                var pip = Render.Art.Pdtd("cardui/star_1");
+                var lit = lvl > 1 ? new Color(0.76f, 0.52f, 1f) : new Color(1f, 0.93f, 0.62f);
+                for (int s = 0; s < starMax; s++)
+                {
+                    bool on = s < stars;
+                    if (pip != null)
+                    {
+                        starRow.AddChild(new TextureRect
+                        {
+                            Texture = pip,
+                            CustomMinimumSize = new Vector2(20 * k, 20 * k),
+                            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                            MouseFilter = Control.MouseFilterEnum.Ignore,
+                            Modulate = on ? lit : new Color(0.45f, 0.5f, 0.58f, 0.55f),
+                        });
+                    }
+                    else
+                    {
+                        var sl = new Label { Text = on ? "★" : "☆", MouseFilter = Control.MouseFilterEnum.Ignore };
+                        sl.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(18 * k));
+                        sl.AddThemeColorOverride("font_color", on ? lit : new Color(1, 1, 1, 0.3f));
+                        starRow.AddChild(sl);
+                    }
+                }
+            }
 
             _draftCards.AddChild(btn);
 

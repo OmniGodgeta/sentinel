@@ -22,7 +22,17 @@ public sealed partial class SimWorld
     public int RunLevel => _runLevel;
     public float RunXp => _runXp;
     /// <summary>cumulative XP for the start of a level — L1 = 0.</summary>
-    private static float XpForRunLevel(int n) => n <= 1 ? 0f : 120f * Mathf.Pow(n - 1, 1.5f);
+    /// <summary>XP needed to reach commander level <paramref name="n"/> in a run. Each
+    /// level hands out one draft, so this curve is what sets how many cards a run gives
+    /// you.
+    ///
+    /// It was flattened hard when the draft moved to PDTD's skill cards: a weapon now
+    /// levels every <see cref="SimWorld.StarsPerLevel"/> picks instead of on every pick,
+    /// so at the old rate a run ended with its sentinels four levels shallower than
+    /// before and endless collapsed from wave 41 to 6 in SimTest. Quadrupling the number
+    /// of drafts restores the old power curve while giving PDTD's card variety —
+    /// which is also how PDTD itself plays, promoting you constantly.</summary>
+    private float XpForRunLevel(int n) => n <= 1 ? 0f : B.RunXpPerLevel * Mathf.Pow(n - 1, B.RunXpCurve);
     public float RunXpFloor => XpForRunLevel(_runLevel);
     public float RunXpCeil => XpForRunLevel(_runLevel + 1);
 

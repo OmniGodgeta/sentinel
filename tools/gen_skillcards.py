@@ -129,11 +129,38 @@ def fill(desc, card):
     return out.replace("--", "-").replace("\n", " ").strip()
 
 
+# PDTD's "Missile" is the planet's own missile battery, which in Beyond is NOT an
+# orbital weapon — it lives in PlanetDefenses.cs and is driven by its own long-standing
+# global effect keys. Map its per-weapon stats onto those instead of ow:battery:*, which
+# nothing reads.
+BATTERY_KEYS = {
+    "damage": "battery_damage",
+    "rate": "battery_rate",
+    "count": "battery_salvo",
+    "explosion_radius": "battery_splash",
+    "radius": "battery_splash",
+}
+
+# PDTD gates its late cards on weapon levels up to 22; Beyond's orbital weapons cap at
+# 12 (data/orbital_weapons.json max_level), so a straight copy would leave a third of
+# every weapon's card list permanently unreachable. PDTD's level scale is finer than
+# Beyond's, so halving it preserves the ORDER the cards unlock in, which is the part
+# that matters, while fitting the range Beyond actually reaches.
+LEVEL_SCALE = 0.5
+
+
 def effects_for(card, kind):
     """Map one PDTD card's stat block onto Beyond per-weapon effect keys."""
     eff = {}
 
     def put(stat, v):
+        if kind == "battery":
+            k = BATTERY_KEYS.get(stat)
+            if k is None:
+                return            # no battery equivalent — drop rather than write a dead key
+            # battery_salvo is a whole-missile count, not a fraction
+            eff[k] = round(eff.get(k, 0.0) + v, 4)
+            return
         k = f"ow:{kind}:{stat}"
         eff[k] = round(eff.get(k, 0.0) + v, 4)
 
@@ -191,7 +218,7 @@ def main():
             "text": fill(c["desc"], c),
             "unlock": is_unlock,
             "max_picks": c["selectableTimes"] or 1,
-            "need_level": c["needLevel"],
+            "need_level": int(round(c["needLevel"] * LEVEL_SCALE)),
             "need_star": c["depSuperStar"],
             "weight": c["weight"],
             "effects": eff,
