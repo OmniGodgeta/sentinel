@@ -72,17 +72,15 @@ public sealed partial class CodexScreen : CanvasLayer
 
             if (!seen.Contains(e.Id)) { hiddenInCat++; continue; }
 
-            var panel = new PanelContainer();
             var col = new VBoxContainer();
             col.AddThemeConstantOverride("separation", 2);
-            panel.AddChild(col);
             var nm = new Label { Text = e.Title };
             nm.AddThemeFontSizeOverride("font_size", 22);
             col.AddChild(nm);
             var tx = new Label { Text = e.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.75f) };
             tx.AddThemeFontSizeOverride("font_size", 22);
             col.AddChild(tx);
-            list.AddChild(panel);
+            list.AddChild(ArtCard.Wrap(col, CategoryAccent(e.Category), CategoryEmblem(e.Category)));
         }
         FlushHidden();
 
@@ -90,6 +88,26 @@ public sealed partial class CodexScreen : CanvasLayer
         foreach (var e in all) if (seen.Contains(e.Id)) found++;
         title.Text = $"  CODEX   ·   {found}/{total}";
     }
+
+    /// <summary>Colour + watermark per codex category, so a long list reads by section
+    /// at a glance instead of as one undifferentiated column of text.</summary>
+    private static Color CategoryAccent(string cat) => cat switch
+    {
+        "world" => new Color(0.55f, 0.80f, 0.98f),
+        "enemy" => new Color(0.98f, 0.50f, 0.45f),
+        "turret" => new Color(0.98f, 0.78f, 0.40f),
+        "ability" => new Color(0.72f, 0.60f, 0.98f),
+        _ => new Color(0.60f, 0.68f, 0.80f),
+    };
+
+    private static string CategoryEmblem(string cat) => cat switch
+    {
+        "world" => "techpoint/gravitynova",
+        "enemy" => "techpoint/chainlightning",
+        "turret" => "techpoint/railgun",
+        "ability" => "techpoint/balllightning",
+        _ => "techpoint/random",
+    };
 
     private static List<Config.CodexEntry> Sorted(IReadOnlyList<Config.CodexEntry> src)
     {

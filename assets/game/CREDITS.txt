@@ -125,3 +125,40 @@ Upgrade-card art (assets/game/cards/*.jpg)
 Fonts (assets/fonts/)
   Orbitron by Matt McInerney, Exo 2 by Natanael Gama — Google Fonts.
   SIL Open Font License 1.1.
+
+Planet Defense: Space TD — UI sprites (added 2026-09-17, v0.30.0)
+  Extracted by tools/extract_pdtd_sprites.py from the same XAPK the audio and
+  enemy art came from. Copyrighted, used under CLAUDE.md §4's standing user
+  exception (sideload-only personal build, never published). All of this would
+  need to come out before any public release.
+
+  pdtd/cardui/*        — PDTD's skill-card chrome: slot_background (back plate),
+    slot_front_{normal,super,relic,ultimate} (the per-rarity front plates, each
+    with a transparent art window), the matching outlines, slot_light_* (glow),
+    slot_selected, and icon_star_normal_1..5 (the hex star pips). This is what
+    the in-run draft cards are now built from.
+  pdtd/skillicon/*     — the seven weapon glyphs (missile, droplet, laser,
+    focusedbeam, radiationline, railgun, dimensionalgrenade) plus the
+    damage-type and attribute icons. NOTE the weapon seven are full-bleed card
+    illustrations and are deliberately NOT run through the luminance-as-alpha
+    fix; the attribute icons are true cut-out glyphs with real alpha. Neither
+    group wants it — see the extractor's docstring.
+  pdtd/techpoint/*     — the twelve per-weapon tech-point emblems. Used as the
+    watermark behind Research and Codex rows and as card art for the sentinels
+    PDTD has no flat glyph for.
+  pdtd/rarity/*        — itembg_{common,fine,rare,epic,legendary,supreme,
+    ultimate} quality plates, item outline/star/slot. Behind item drops.
+  pdtd/loot/*          — silver/gold key, chest, coin, exp, research core,
+    techpoint, shield capacitor/integrator, rebuild core, crystal, medal.
+  enemies/miniboss_siege_warden.png — PDTD's wind_cruiser_boss hull, the
+    mini-boss added this version. Same flat-sprite situation as the v0.25.2
+    enemy art.
+
+  cards/waterdrop.jpg and cards/force_field.jpg were rebuilt by
+  tools/gen_pdtd_cards.py out of the card chrome above plus PDTD's own droplet
+  art / Force Field platform render. They were the last two procedural-gradient
+  placeholders; they are no longer original work and would need replacing along
+  with everything else here before any public release.
+
+  Audio re-picked this version (same bank, same exception): missile_launch <-
+  sample 43, battery_launch <- 58, explosion_big <- 44.

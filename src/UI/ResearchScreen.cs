@@ -105,10 +105,8 @@ public sealed partial class ResearchScreen : CanvasLayer
     private Control NodeRow(ResearchNode node, Progression p)
     {
         var s = App.Save;
-        var panel = new PanelContainer();
         var row = new VBoxContainer();
         row.AddThemeConstantOverride("separation", 2);
-        panel.AddChild(row);
 
         int ranks = p.Ranks(node.Id);
         bool cap = node.IsCapstone;
@@ -149,8 +147,30 @@ public sealed partial class ResearchScreen : CanvasLayer
             r.AddThemeFontSizeOverride("font_size", 21);
             actionRow.AddChild(r);
         }
-        return panel;
+        // Accent + a faint branch emblem behind the row — these used to be unstyled
+        // panels, which read as flat grey text slabs.
+        return ArtCard.Wrap(row, BranchAccent(node.Branch), BranchEmblem(node.Branch),
+                            dim: ranks >= node.RankCount && !cap);
     }
+
+    /// <summary>Each research branch's colour and the PDTD emblem used as its watermark.</summary>
+    private static Color BranchAccent(string branch) => branch switch
+    {
+        "armaments" => new Color(0.95f, 0.55f, 0.35f),
+        "fortification" => new Color(0.42f, 0.78f, 0.95f),
+        "fleet" => new Color(0.55f, 0.85f, 0.55f),
+        "sentinel" => new Color(0.75f, 0.55f, 0.98f),
+        _ => new Color(0.98f, 0.82f, 0.40f),
+    };
+
+    private static string BranchEmblem(string branch) => branch switch
+    {
+        "armaments" => "techpoint/missile",
+        "fortification" => "techpoint/gravitynova",
+        "fleet" => "techpoint/beam",
+        "sentinel" => "techpoint/radiationlink",
+        _ => "techpoint/random",
+    };
 
     private static Label Note(string t)
     {

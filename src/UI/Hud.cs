@@ -35,7 +35,6 @@ public sealed partial class Hud : CanvasLayer
     private int _speedNow = 1;
     private Button _pause = null!;
     private Button _menuOpen = null!;
-    private Button _buildToggle = null!;
     private Button _updateBadge = null!;
 
     /// <summary>Build/upgrade panel is showing over the play field (real-time management).</summary>
@@ -44,10 +43,7 @@ public sealed partial class Hud : CanvasLayer
     private readonly System.Collections.Generic.List<PanelContainer> _panels = new();
 
     private PanelContainer _buildPanel = null!;
-    private Label _slotLabel = null!;
     private Label _wavePreview = null!;
-    private HBoxContainer _turretRow = null!;
-    private HBoxContainer _upgradeRow = null!;
     private Button _launch = null!;
 
     private PanelContainer _wavePanel = null!;
@@ -61,10 +57,12 @@ public sealed partial class Hud : CanvasLayer
     private bool _lastAutoFire, _lastAutopilotOn;
 
     private ColorRect _draftDim = null!;
+    private CenterContainer _draftCenter = null!;
     private PanelContainer _draftPanel = null!;
     private HBoxContainer _draftCards = null!;
     private Label _draftHeader = null!;
     private readonly System.Collections.Generic.Dictionary<string, Texture2D> _cardTex = new();
+    private readonly System.Collections.Generic.Dictionary<string, Texture2D?> _cardArt = new();
 
     private ColorRect _endDim = null!;
     private PanelContainer _endCard = null!;
@@ -75,7 +73,10 @@ public sealed partial class Hud : CanvasLayer
     private Label _banner = null!;
     private float _bannerTime;
 
-    private int _selectedSlot = -1;
+    private HBoxContainer _dropToast = null!;
+    private TextureRect _dropPlate = null!, _dropIcon = null!;
+    private Label _dropName = null!, _dropText = null!;
+    private int _dropShown = -1;
 
     public override void _Ready()
     {
@@ -165,15 +166,9 @@ public sealed partial class Hud : CanvasLayer
         _speedMain.Pressed += () => ToggleSpeedMenu(!_speedMenu.Visible);
         StyleTopButton(_speedMain, UiTheme.Accent);
         ctl.AddChild(_speedMain);
-        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(120, 104), ToggleMode = true };
-        _buildToggle.AddThemeFontSizeOverride("font_size", 40);
-        _buildToggle.TooltipText = "Build / upgrade turrets";
-        StyleTopButton(_buildToggle, new Color(0.95f, 0.7f, 0.3f));
-        ctl.AddChild(_buildToggle);
         // Single master AUTO toggle — drives both ship weapon auto-fire AND autopilot
         // movement together (used to be two separate buttons, ✈ + AUTO, which read as
-        // unclear/redundant since both are "automate the commander"; ⚒ stays separate
-        // since it just opens the build panel, it isn't automation at all).
+        // unclear/redundant since both are "automate the commander").
         _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(140, 104), ToggleMode = true, ButtonPressed = true };
         _autoBtn.AddThemeFontSizeOverride("font_size", 26);
         _autoBtn.TooltipText = "Auto mode — the ship auto-fires its weapons and autopilots toward threats. Tap to switch to manual (steer with the joystick, tap an enemy to focus-fire).";
@@ -225,23 +220,13 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- build panel ----
         _buildPanel = MakeBottomPanel();
-        _buildPanel.OffsetTop = -640;   // turret/upgrade buttons are now 248x152 (2x) — the
-                                         // default -298 panel was sized for the old 124x76 ones
+        _buildPanel.OffsetTop = -300;   // just the prep blurb + BEGIN DEFENSE now
         AddChild(_buildPanel);
         var bv = new VBoxContainer();
         _buildPanel.AddChild(bv);
         _wavePreview = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.85f, 0.5f) };
         _wavePreview.AddThemeFontSizeOverride("font_size", 34);
         bv.AddChild(_wavePreview);
-        _slotLabel = new Label { Text = "① tap an empty slot around the planet", HorizontalAlignment = HorizontalAlignment.Center };
-        _slotLabel.AddThemeFontSizeOverride("font_size", 34);
-        bv.AddChild(_slotLabel);
-        _turretRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        _turretRow.AddThemeConstantOverride("separation", 8);
-        bv.AddChild(_turretRow);
-        _upgradeRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        _upgradeRow.AddThemeConstantOverride("separation", 8);
-        bv.AddChild(_upgradeRow);
         _launch = new Button { Text = "▶   BEGIN DEFENSE", CustomMinimumSize = new Vector2(0, 124) };
         _launch.AddThemeFontSizeOverride("font_size", 44);
         _launch.AddThemeColorOverride("font_color", new Color(0.6f, 1f, 0.7f));
@@ -301,18 +286,26 @@ public sealed partial class Hud : CanvasLayer
         _draftDim.MouseFilter = Control.MouseFilterEnum.Stop;   // eat taps behind the popup
         AddChild(_draftDim);
 
-        _draftPanel = new PanelContainer
-        {
-            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = 10, OffsetRight = -10, OffsetTop = -420, OffsetBottom = 420, Visible = false,
-        };
-        AddChild(_draftPanel);
+        // A CenterContainer over the whole screen keeps the popup centred on both axes
+        // whatever size it ends up; the panel itself shrinks to its content rather than
+        // being pinned to fixed offsets (which used to push the card row off-screen to
+        // the right as soon as the draft offered four options).
+        var draftCenter = new CenterContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+        draftCenter.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        AddChild(draftCenter);
+        _draftPanel = new PanelContainer();
+        draftCenter.AddChild(_draftPanel);
+        _draftCenter = draftCenter;
         var dv = new VBoxContainer();
         dv.AddThemeConstantOverride("separation", 12);
         _draftPanel.AddChild(dv);
-        _draftHeader = new Label { Text = "WEAPONS UPGRADE", HorizontalAlignment = HorizontalAlignment.Center };
+        _draftHeader = new Label
+        {
+            Text = "WEAPONS UPGRADE", HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+        };
         _draftHeader.AddThemeFontOverride("font", UiTheme.Display);
-        _draftHeader.AddThemeFontSizeOverride("font_size", 44);
+        _draftHeader.AddThemeFontSizeOverride("font_size", 36);
         _draftHeader.AddThemeColorOverride("font_color", UiTheme.Accent);
         dv.AddChild(_draftHeader);
         _draftCards = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
@@ -339,6 +332,48 @@ public sealed partial class Hud : CanvasLayer
         _banner = new Label { AnchorRight = 1f, OffsetTop = 156, HorizontalAlignment = HorizontalAlignment.Center };
         _banner.AddThemeFontSizeOverride("font_size", 64);
         AddChild(_banner);
+
+        // ---- item drop toast ----
+        // Sits just under the banner line. PDTD's own rarity plate is the backdrop and the
+        // loot icon rides on top of it, so a drop reads at a glance by colour alone.
+        _dropToast = new HBoxContainer
+        {
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -300, OffsetRight = 300,
+            OffsetTop = 250, Alignment = BoxContainer.AlignmentMode.Center,
+            Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _dropToast.AddThemeConstantOverride("separation", 12);
+        AddChild(_dropToast);
+
+        _dropPlate = new TextureRect
+        {
+            CustomMinimumSize = new Vector2(84, 84), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _dropIcon = new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _dropIcon.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        _dropIcon.OffsetLeft = 12; _dropIcon.OffsetRight = -12;
+        _dropIcon.OffsetTop = 12; _dropIcon.OffsetBottom = -12;
+        _dropPlate.AddChild(_dropIcon);
+        _dropToast.AddChild(_dropPlate);
+
+        var dropCol = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        dropCol.AddThemeConstantOverride("separation", 0);
+        _dropToast.AddChild(dropCol);
+        _dropName = new Label { MouseFilter = Control.MouseFilterEnum.Ignore };
+        _dropName.AddThemeFontOverride("font", UiTheme.Display);
+        _dropName.AddThemeFontSizeOverride("font_size", 32);
+        dropCol.AddChild(_dropName);
+        _dropText = new Label { MouseFilter = Control.MouseFilterEnum.Ignore };
+        _dropText.AddThemeFontSizeOverride("font_size", 24);
+        _dropText.Modulate = new Color(1, 1, 1, 0.85f);
+        dropCol.AddChild(_dropText);
 
         // ---- pause / leave menu ----
         _pauseMenu = new PanelContainer
@@ -369,7 +404,6 @@ public sealed partial class Hud : CanvasLayer
         foreach (var n in new Control[] { _topBox, _buildPanel, _wavePanel, _draftPanel, _endCard, _pauseMenu })
             n.Theme = UiTheme.Instance;
 
-        RebuildTurretButtons();
     }
 
     private PanelContainer MakeBottomPanel()
@@ -401,29 +435,9 @@ public sealed partial class Hud : CanvasLayer
         if (_banner != null) _banner.OffsetTop = top + 194;
     }
 
-    private void RebuildTurretButtons()
-    {
-        foreach (Node c in _turretRow.GetChildren()) c.QueueFree();
-        var unlocked = Root.World.Mods.UnlockedTurrets;
-        foreach (var id in Root.World.Cfg.TurretOrder)
-        {
-            if (unlocked.Count > 0 && !unlocked.Contains(id)) continue;
-            var def = Root.World.Cfg.Turret(id);
-            var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(248, 152) };
-            btn.AddThemeFontSizeOverride("font_size", 30);
-            btn.Pressed += () => { if (_selectedSlot >= 0) Root.RequestBuild(_selectedSlot, id); };
-            _turretRow.AddChild(btn);
-        }
-    }
 
     // ---- called by GameRoot ----
     public void SyncSpeed(int s) => UpdateSpeedButtons(s);
-
-    public void SelectSlot(int slot)
-    {
-        _selectedSlot = slot;
-        GetRenderer().SelectedSlot = slot;
-    }
 
     public void ShowReticlePrompt(string abilityName) => _reticlePrompt.Text = $"▽  TAP A TARGET  ▽\n{abilityName}";
     public void ClearReticlePrompt() => _reticlePrompt.Text = "";
@@ -481,8 +495,7 @@ public sealed partial class Hud : CanvasLayer
         bool draft = w.HasPendingDraft && !ended;
         bool prep = w.Phase == SimPhase.Build && !draft;
         bool fighting = w.Phase == SimPhase.Wave && !ended;
-        if (prep || draft) _buildToggle.ButtonPressed = false;
-        BuildOpen = !ended && !draft && (prep || (fighting && _buildToggle.ButtonPressed));
+        BuildOpen = !ended && !draft && prep;
 
         string phaseStr;
         if (w.IsSurvival && fighting)
@@ -513,9 +526,8 @@ public sealed partial class Hud : CanvasLayer
         }
         _endCard.Visible = ended;
         _endDim.Visible = ended;
-        _draftPanel.Visible = draft;
+        _draftCenter.Visible = draft;
         _draftDim.Visible = draft;
-        _buildToggle.Visible = fighting && !draft;
         _autoBtn.Visible = fighting && !draft;
         // the merged button reflects auto-fire's on/off state; autopilot is tracked
         // alongside it (not shown separately) purely so the Pressed handler above knows
@@ -538,9 +550,8 @@ public sealed partial class Hud : CanvasLayer
             _launch.Disabled = false;
             _launch.Text = w.IsSurvival ? "▶   BEGIN DEFENSE" : $"▶  LAUNCH WAVE {w.WaveIndex + 1}";
             _wavePreview.Text = w.IsSurvival
-                ? (prep ? "Place your turrets — the hold begins when you're ready." : "")
+                ? (prep ? "The hold begins when you're ready." : "")
                 : "NEXT: " + w.NextWavePreview();
-            RefreshSlotPanel(w);
         }
 
         if (fighting && !BuildOpen && !draft)
@@ -557,6 +568,8 @@ public sealed partial class Hud : CanvasLayer
                 btn.SetState(abil[i].CooldownLeft, def.Cooldown, abil[i].ActiveLeft, armed == i);
             }
         }
+
+        RefreshDropToast(w, fighting && !draft);
 
         if (!ended) _endBuilt = false;
         else if (!_endBuilt) { _endBuilt = true; BuildEndCard(w); }
@@ -659,6 +672,53 @@ public sealed partial class Hud : CanvasLayer
         return t;
     }
 
+    /// <summary>PDTD's own illustration for a weapon, where the game ships one. The seven
+    /// skill glyphs cover the weapons PDTD and Beyond share by name; the techpoint emblems
+    /// cover the rest of the sentinel roster.</summary>
+    private static readonly System.Collections.Generic.Dictionary<string, string> PdtdCardArt = new()
+    {
+        ["radiation_line"] = "skillicon/radiation_line",
+        ["waterdrop"] = "skillicon/waterdrop",
+        ["laser"] = "skillicon/laser",
+        ["beam"] = "skillicon/beam",
+        ["space_bomb"] = "skillicon/space_bomb",
+        ["missile_barrage"] = "skillicon/missile",
+        ["shock_orb"] = "techpoint/balllightning",
+        ["orbital_lightning"] = "techpoint/chainlightning",
+        ["radiation_zone"] = "techpoint/radiationzone",
+        ["force_field"] = "techpoint/gravitynova",
+    };
+
+    /// <summary>What goes in a card's art window. PDTD's own art when there is some,
+    /// otherwise the illustration cropped out of this project's generated card jpg — the
+    /// jpg already carries its own painted frame, so dropping the whole thing into PDTD's
+    /// frame would nest one border inside another. These crop bounds match where the
+    /// illustration sits in every card in assets/game/cards/.</summary>
+    private Texture2D? CardArtTexture(string id)
+    {
+        if (_cardArt.TryGetValue(id, out var cached)) return cached;
+
+        Texture2D? tex = null;
+        if (PdtdCardArt.TryGetValue(id, out string? pdtdPath))
+            tex = Render.Art.Pdtd(pdtdPath);
+
+        if (tex == null)
+        {
+            var full = CardTexture(id);
+            if (full != null)
+            {
+                var sz = full.GetSize();
+                tex = new AtlasTexture
+                {
+                    Atlas = full,
+                    Region = new Rect2(sz.X * 0.07f, sz.Y * 0.17f, sz.X * 0.86f, sz.Y * 0.42f),
+                };
+            }
+        }
+        _cardArt[id] = tex;
+        return tex;
+    }
+
     private static Color HexColor(string hex, Color fallback)
     {
         try { return new Color(hex); } catch { return fallback; }
@@ -667,16 +727,37 @@ public sealed partial class Hud : CanvasLayer
     private int _draftShownHash = -1;
     private void RefreshDraft(SimWorld w)
     {
-        _draftHeader.Text = $"WEAPONS UPGRADE   ·   COMMANDER LEVEL {w.RunLevel}";
+        // A mini-boss payout deals its whole hand face-up and may let you take several,
+        // so it gets its own header telling you how many picks are left.
+        _draftHeader.Text = w.IsBossReward
+            ? $"MINI-BOSS SPOILS  ·  TAKE {w.BossRewardPicksLeft}"
+            : $"WEAPONS UPGRADE  ·  LEVEL {w.RunLevel}";
+        _draftHeader.AddThemeColorOverride("font_color", w.IsBossReward ? new Color(1f, 0.78f, 0.32f) : UiTheme.Accent);
 
         int hash = 17;
         foreach (int i in w.DraftOptionIndices) hash = hash * 31 + i;
         hash = hash * 31 + w.RunCards.Count;
+        hash = hash * 31 + w.BossRewardPicksLeft;
         if (hash == _draftShownHash) return;
         _draftShownHash = hash;
         Sentinel.Audio.AudioManager.Instance?.Play("card_reveal");
 
         foreach (Node c in _draftCards.GetChildren()) c.QueueFree();
+
+        // Size the cards to the screen rather than to a fixed 220x690 — with four
+        // options that fixed width overflowed a phone's width and the HBox, which can't
+        // shrink below its children's minimum size, pushed the right-hand cards off the
+        // display entirely. Work out what each card may occupy from the actual viewport.
+        int n = Mathf.Max(1, w.DraftOptionIndices.Count);
+        var vp = GetViewport().GetVisibleRect().Size;
+        const float sep = 14f, sideMargin = 28f;
+        float cardW = Mathf.Clamp((vp.X - sideMargin - sep * (n - 1)) / n, 120f, 260f);
+        // keep the card's portrait proportions, but never taller than the space left
+        // under the header inside the dimmed screen
+        float cardH = Mathf.Min(cardW * 3.14f, vp.Y - 260f);
+        float artH = cardH * 0.63f;
+        float k = cardW / 220f;   // font scale, so text shrinks with the card
+
         int cardPos = 0;
         foreach (int idx in w.DraftOptionIndices)
         {
@@ -701,32 +782,53 @@ public sealed partial class Hud : CanvasLayer
                 var o = w.Cfg.OrbitalWeapons[wi];
                 cardId = o.Id; cardName = o.Name; accent = o.Accent;
                 lvl = w.OrbitalWeaponLevel(wi);
-                subtitle = "ORBITAL WEAPON";
+                subtitle = "SENTINEL";
             }
             else
             {
                 var hh = w.Cfg.HeroWeapons[wi];
                 cardId = hh.Id; cardName = hh.Name; accent = hh.Accent;
                 lvl = w.HeroWeaponLevel(wi);
-                subtitle = "SHIP WEAPON";
+                subtitle = "SHIP";
             }
             var col = HexColor(accent, UiTheme.Accent);
             int i2 = idx;
 
             var btn = new Button
             {
-                CustomMinimumSize = new Vector2(220, 690),
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                CustomMinimumSize = new Vector2(cardW, cardH),
+                SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
                 SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
                 ClipContents = true,
-                PivotOffset = new Vector2(75, 235),
+                PivotOffset = new Vector2(cardW * 0.5f, cardH * 0.5f),
                 Scale = new Vector2(0.7f, 0.7f),
                 Modulate = new Color(1, 1, 1, 0f),
             };
-            btn.AddThemeStyleboxOverride("normal", CardBox(col, 0.12f));
-            btn.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
-            btn.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));
-            btn.AddThemeStyleboxOverride("focus", CardBox(col, 0.30f));
+            // Tier picks which of PDTD's card frames to wear: a plain level-up gets the
+            // teal "normal" plate, unlocking a brand-new system gets the purple "super"
+            // one, and a boost card gets the gold "ultimate" one — the same escalation
+            // PDTD uses for its own skill cards.
+            string tier = boost ? "ultimate" : (lvl == 0 ? "super" : "normal");
+            var plate = Render.Art.Pdtd("cardui/card_back");
+            var front = Render.Art.Pdtd($"cardui/card_front_{tier}");
+            var outline = Render.Art.Pdtd($"cardui/card_outline_{tier}");
+            bool pdtdFrame = plate != null && front != null && outline != null;
+
+            if (!pdtdFrame)
+            {
+                // PDTD art not extracted — fall back to the drawn frame
+                btn.AddThemeStyleboxOverride("normal", CardBox(col, 0.12f));
+                btn.AddThemeStyleboxOverride("hover", CardBox(col, 0.30f));
+                btn.AddThemeStyleboxOverride("pressed", CardBox(col, 0.40f));
+                btn.AddThemeStyleboxOverride("focus", CardBox(col, 0.30f));
+            }
+            else
+            {
+                var blank = new StyleBoxEmpty();
+                foreach (string st in new[] { "normal", "hover", "pressed", "focus" })
+                    btn.AddThemeStyleboxOverride(st, blank);
+            }
+
             btn.Pressed += () =>
             {
                 // a quick confirm punch before the popup clears and the sim resumes
@@ -735,43 +837,101 @@ public sealed partial class Hud : CanvasLayer
                 Root.RequestPickCard(i2); _draftShownHash = -1;
             };
 
+            // --- layers, back to front: plate, art, frame, outline ---
+            // The frame's own art window is transparent, so the illustration is placed
+            // where that window sits (12.5%-57.6% of the card's height, measured off
+            // card_front_normal's alpha) and simply shows through it.
+            if (pdtdFrame)
+            {
+                var backRect = new TextureRect
+                {
+                    Texture = plate, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.Scale,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                };
+                backRect.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+                btn.AddChild(backRect);
+
+                // The techpoint emblems are badges on transparent backing — cropping them
+                // to fill would cut the badge in half. Everything else (PDTD's own
+                // full-bleed skill art, and the crops out of this project's card jpgs) is
+                // a picture meant to fill the window.
+                bool emblem = PdtdCardArt.TryGetValue(cardId, out string? ap) && ap.StartsWith("techpoint/");
+                var window = new TextureRect
+                {
+                    Texture = CardArtTexture(cardId),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = emblem ? TextureRect.StretchModeEnum.KeepAspectCentered
+                                         : TextureRect.StretchModeEnum.KeepAspectCovered,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                    ClipContents = true,
+                    // Inset to the frame's inner window — full-bleed art was spilling a
+                    // few pixels past the card's rounded edge onto its neighbour.
+                    AnchorLeft = 0.045f, AnchorRight = 0.955f, AnchorTop = 0.125f, AnchorBottom = 0.576f,
+                };
+                btn.AddChild(window);
+
+                foreach (var lay in new[] { front, outline })
+                {
+                    var r = new TextureRect
+                    {
+                        Texture = lay, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                        StretchMode = TextureRect.StretchModeEnum.Scale,
+                        MouseFilter = Control.MouseFilterEnum.Ignore,
+                    };
+                    r.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+                    btn.AddChild(r);
+                }
+            }
+
+            // --- text, in the frame's lower band ---
             var v = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
             v.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-            v.OffsetLeft = 6; v.OffsetRight = -6; v.OffsetTop = 6; v.OffsetBottom = -6;
+            v.OffsetLeft = 8; v.OffsetRight = -8;
+            v.OffsetTop = pdtdFrame ? cardH * 0.60f : 6f;
+            v.OffsetBottom = pdtdFrame ? -cardH * 0.05f : -6f;
             v.AddThemeConstantOverride("separation", 6);
             btn.AddChild(v);
 
-            var art = new TextureRect
+            if (!pdtdFrame)
             {
-                Texture = CardTexture(cardId),
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                CustomMinimumSize = new Vector2(0, 450),
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                ClipContents = true,
-            };
-            v.AddChild(art);
+                var art = new TextureRect
+                {
+                    Texture = CardTexture(cardId),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                    CustomMinimumSize = new Vector2(0, artH),
+                    SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                    ClipContents = true,
+                };
+                v.AddChild(art);
+            }
 
-            var nm = new Label { Text = cardName.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
+            var nm = new Label { Text = cardName.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore, AutowrapMode = TextServer.AutowrapMode.WordSmart };
             nm.AddThemeFontOverride("font", UiTheme.Display);
-            nm.AddThemeFontSizeOverride("font_size", 36);
+            nm.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(27 * k));
             nm.AddThemeColorOverride("font_color", col.Lightened(0.3f));
             v.AddChild(nm);
 
-            var tag = new Label { Text = subtitle, HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
-            tag.AddThemeFontSizeOverride("font_size", 24);
+            var tag = new Label
+            {
+                Text = subtitle, HorizontalAlignment = HorizontalAlignment.Center,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            };
+            tag.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(17 * k));
             tag.AddThemeColorOverride("font_color", new Color(col, 0.7f));
             v.AddChild(tag);
 
             var lv = new Label
             {
                 // boost cards state their effect instead of a level step
-                Text = boost ? boostText : (lvl == 0 ? "UNLOCK  ·  NEW SYSTEM" : $"LEVEL {lvl}  →  {lvl + 1}"),
+                Text = boost ? boostText : (lvl == 0 ? "UNLOCK" : $"LV {lvl} → {lvl + 1}"),
                 HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore,
-                AutowrapMode = boost ? TextServer.AutowrapMode.WordSmart : TextServer.AutowrapMode.Off,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
             };
-            lv.AddThemeFontSizeOverride("font_size", boost ? 21 : 30);
+            lv.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt((boost ? 16 : 21) * k));
             lv.AddThemeColorOverride("font_color", lvl == 0 && !boost ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.85f));
             v.AddChild(lv);
 
@@ -898,41 +1058,35 @@ public sealed partial class Hud : CanvasLayer
         ContentMarginLeft = 4, ContentMarginRight = 4, ContentMarginTop = 4, ContentMarginBottom = 4,
     };
 
-    private void RefreshSlotPanel(SimWorld w)
+
+    /// <summary>Show the last item that dropped for a couple of seconds, on PDTD's own
+    /// rarity plate. Fades out rather than snapping away.</summary>
+    private void RefreshDropToast(SimWorld w, bool showable)
     {
-        foreach (Node c in _upgradeRow.GetChildren()) c.QueueFree();
-        int s = _selectedSlot;
-        if (s < 0 || s >= w.TurretView.Length) { _slotLabel.Text = "Tap a turret slot"; return; }
-
-        var t = w.TurretView[s];
-        if (!t.Built) { _slotLabel.Text = $"Slot {s + 1}: empty — pick a turret"; return; }
-
-        var def = w.TurretDefs[t.DefIndex];
-        _slotLabel.Text = $"Slot {s + 1}: {def.Name}  L{t.Level}" + (t.Fork >= 0 ? $" · {def.Forks[t.Fork].Name}" : "");
-
-        if (t.Level < 3)
+        const float hold = 2.6f, fade = 0.6f;
+        int idx = w.LastItemDrop;
+        if (!showable || idx < 0 || idx >= w.Cfg.Items.Items.Count || w.LastItemDropAge > hold + fade)
         {
-            int cost = w.TurretUpgradeCost(s);
-            var up = new Button { Text = $"Upgrade → L{t.Level + 1}\n${cost}", CustomMinimumSize = new Vector2(328, 132) };
-            up.AddThemeFontSizeOverride("font_size", 32);
-            up.Disabled = cost < 0 || w.Credits < cost;
-            up.Pressed += () => Root.RequestUpgrade(s);
-            _upgradeRow.AddChild(up);
+            _dropToast.Visible = false;
+            return;
         }
-        else if (t.Fork < 0 && def.Forks.Count >= 2)
+
+        if (idx != _dropShown)
         {
-            for (int f = 0; f < def.Forks.Count; f++)
-            {
-                int fi = f;
-                var fb = new Button { Text = def.Forks[f].Name, CustomMinimumSize = new Vector2(328, 132) };
-                fb.AddThemeFontSizeOverride("font_size", 32);
-                fb.Pressed += () => Root.RequestFork(s, fi);
-                _upgradeRow.AddChild(fb);
-            }
+            _dropShown = idx;
+            var item = w.Cfg.Items.Items[idx];
+            var rar = w.Cfg.Items.Rarity(item.Rarity);
+            _dropPlate.Texture = Render.Art.Pdtd($"rarity/{item.Rarity}");
+            _dropIcon.Texture = Render.Art.Pdtd($"loot/{item.Icon}");
+            _dropName.Text = item.Name.ToUpperInvariant();
+            _dropText.Text = item.Text;
+            var col = HexColor(rar?.Color ?? "#9aa4b2", UiTheme.Accent);
+            _dropName.AddThemeColorOverride("font_color", col.Lightened(0.25f));
         }
-        var sell = new Button { Text = "Sell", CustomMinimumSize = new Vector2(184, 120) };
-        sell.Pressed += () => Root.RequestSell(s);
-        _upgradeRow.AddChild(sell);
+
+        _dropToast.Visible = true;
+        float a = w.LastItemDropAge <= hold ? 1f : 1f - (w.LastItemDropAge - hold) / fade;
+        _dropToast.Modulate = new Color(1, 1, 1, Mathf.Clamp(a, 0f, 1f));
     }
 
     private static string Pct(float v, float tot) => $"{Mathf.RoundToInt(v / tot * 100f)}%";

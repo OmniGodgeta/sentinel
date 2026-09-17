@@ -14,7 +14,6 @@ public sealed partial class SimRenderer : Node2D
 {
     public GameRoot Root = null!;
     public SimWorld World = null!;
-    public int SelectedSlot = -1;
 
     private enum FxKind : byte { Muzzle, Tracer, Spark, Boom, Shock, Lightning, Text, CastRing, Warp, Smoke, AquaBolt }
     private struct Fx
@@ -321,14 +320,11 @@ public sealed partial class SimRenderer : Node2D
         for (int i = 0; i < turrets.Length; i++)
         {
             ref readonly var t = ref turrets[i];
-            bool sel = i == SelectedSlot;
-            if (!t.Built)
-            {
-                float rr = sel ? 14f : 10f;
-                DrawArc(t.Pos, rr, 0, Mathf.Tau, 18, sel ? new Color(1f, 0.9f, 0.4f) : new Color(1, 1, 1, 0.18f), sel ? 2.5f : 1.5f);
-                if (sel) DrawCircle(t.Pos, 3f, new Color(1f, 0.9f, 0.4f));
-                continue;
-            }
+            // Empty slots draw nothing — the turret build flow was removed (PDTD has no
+            // ground-turret slots; the planet's defence is the missile battery plus the
+            // orbital sentinel roster), so the old ring of placement markers around the
+            // planet was just visual noise.
+            if (!t.Built) continue;
 
             var def = World.TurretDefs[t.DefIndex];
             var col = Color.FromHsv(def.Color, 0.55f, 1f);
@@ -380,7 +376,6 @@ public sealed partial class SimRenderer : Node2D
                 DrawLine(t.Pos + new Vector2(-8, -8), t.Pos + new Vector2(8, 8), new Color(1f, 0.35f, 0.35f), 3.5f);
                 DrawLine(t.Pos + new Vector2(8, -8), t.Pos + new Vector2(-8, 8), new Color(1f, 0.35f, 0.35f), 3.5f);
             }
-            if (sel) DrawArc(t.Pos, 25f, 0, Mathf.Tau, 24, new Color(1f, 0.9f, 0.4f), 2.5f);
         }
     }
 
@@ -664,7 +659,10 @@ public sealed partial class SimRenderer : Node2D
             var tint = boss ? new Color(1f, 1f, 1f) : Tint(def.Id);
             var tex = Art.Enemy(boss ? "boss_threshing_gate" : def.Id);
 
-            float sizePx = (boss ? e.Radius * 2.8f : e.Radius * 3.3f) + 10f;
+            // Sprites are drawn well wider than the sim radius on purpose (PDTD's art is
+            // generous the same way); bumped 2026-09-16 alongside the camera zoom-out so
+            // enemies read bigger on screen, not merely the same size in a wider view.
+            float sizePx = (boss ? e.Radius * 3.6f : e.Radius * 4.3f) + 12f;
             float rot = e.Vel.LengthSquared() > 1f ? e.Vel.Angle() + Mathf.Pi / 2f : e.Pos.Angle() + Mathf.Pi / 2f;
 
             // procedural idle motion — a slow lateral wobble (phase seeded off the
@@ -708,6 +706,40 @@ public sealed partial class SimRenderer : Node2D
             // No per-enemy health ring — matches PDTD's own look (no floating hp bars on
             // regular enemies; damage reads through hit sparks/kill bursts instead). The
             // boss's own top-of-screen bar (Hud.cs's _bossBar) is unrelated and unaffected.
+            //
+            // Mini-bosses are the exception: PDTD's multi-bar elites carry a stack of
+            // segments over the model, and that's the read the player needs to judge
+            // whether one is nearly down. Segments empty right to left.
+            if (def.HpSegments > 1) DrawSegmentedHpBar(in e, def, sizePx);
+        }
+    }
+
+    /// <summary>The multi-bar health readout above a mini-boss. `HpSegments` bars, each
+    /// worth 1/N of the hull, draining right to left; the one currently taking damage
+    /// shows a partial fill.</summary>
+    private void DrawSegmentedHpBar(in Sentinel.Sim.Enemy e, Config.EnemyDef def, float sizePx)
+    {
+        int segs = Mathf.Clamp(def.HpSegments, 2, 10);
+        float frac = e.MaxHp > 0f ? Mathf.Clamp(e.Hp / e.MaxHp, 0f, 1f) : 0f;
+
+        const float segH = 7f, gap = 2f;
+        float totalW = Mathf.Max(64f, sizePx * 0.95f);
+        float segW = (totalW - gap * (segs - 1)) / segs;
+        float x0 = e.Pos.X - totalW * 0.5f;
+        float y = e.Pos.Y - sizePx * 0.5f - 16f;
+
+        // how much of the whole bar each segment holds, in "segments" units
+        float filled = frac * segs;
+        var full = new Color(1f, 0.42f, 0.30f);
+        var empty = new Color(1f, 1f, 1f, 0.14f);
+
+        for (int k = 0; k < segs; k++)
+        {
+            var box = new Rect2(x0 + k * (segW + gap), y, segW, segH);
+            DrawRect(box, empty);
+            float f = Mathf.Clamp(filled - k, 0f, 1f);
+            if (f > 0f) DrawRect(new Rect2(box.Position, new Vector2(segW * f, segH)), full);
+            DrawRect(box, new Color(0, 0, 0, 0.55f), filled: false, width: 1f);
         }
     }
 

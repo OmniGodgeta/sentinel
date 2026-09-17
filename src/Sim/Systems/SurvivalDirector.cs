@@ -14,6 +14,7 @@ public sealed partial class SimWorld
     private int _survRewardMark;        // whole minutes already paid out
     private float _survSpawnAccum;      // fractional enemies owed
     private bool _survBossSpawned;
+    private float _survNextMiniBoss;    // PhaseTimer (seconds) the next mini-boss is due at
 
     // in-run "commander level" — climbs from kill XP; each level pops an upgrade card
     private float _runXp;
@@ -81,7 +82,9 @@ public sealed partial class SimWorld
         foreach (var (id, frac) in src)
         {
             if (!_enemyDefIndex.TryGetValue(id, out int di)) continue;
-            if (_missionEnemyDefs[di].Class == "boss") continue;   // boss is handled separately
+            // bosses and mini-bosses are both scheduled separately, never rolled into
+            // the ordinary weighted spawn stream
+            if (_missionEnemyDefs[di].Class is "boss" or "miniboss") continue;
             var (w, c) = SurvThreat(id);
             _survRoster.Add(new SurvRosterEntry { DefIndex = di, Weight = w, UnlockFrac = frac, Cost = c });
         }
@@ -164,6 +167,22 @@ public sealed partial class SimWorld
             SpawnSurvivalEnemy(ramp);
         }
         if (_aliveThisWave >= softCap) _survSpawnAccum = Mathf.Min(_survSpawnAccum, 4f);
+
+        // Mini-bosses on a repeating timer through the hold — the first one far enough in
+        // that the player has a couple of weapons up, then every MiniBossEverySeconds.
+        if (Cfg.Survival.MiniBossEverySeconds > 0f && PhaseTimer >= _survNextMiniBoss
+            && _enemyDefIndex.TryGetValue(Cfg.Survival.MiniBossEnemy, out int mdi))
+        {
+            _survNextMiniBoss = PhaseTimer + Cfg.Survival.MiniBossEverySeconds;
+            float ma = Rng.NextAngle();
+            Vector2 mp = new Vector2(Mathf.Cos(ma), Mathf.Sin(ma)) * B.SpawnRadius;
+            int mi = SpawnEnemy(mdi, mp);
+            if (mi >= 0)
+            {
+                Enemies[mi].Vel = (-mp).Normalized() * EnemyDefAt(mdi).Speed;
+                _aliveThisWave++;
+            }
+        }
 
         // one boss, once, in the last stretch of a timed hold
         if (!_survBossSpawned && Mission.Boss.Length > 0 && Mission.Duration > 0f

@@ -177,6 +177,9 @@ public sealed partial class SimWorld
         _runCards.Clear();
         _draftOptions.Clear();
         _pendingDrafts = 0;
+        _bossPicksLeft = 0;
+        _bossCascadeChance = 0f;
+        ResetItemDrops();
 
         _endless = mission.Endless;
 
@@ -195,6 +198,10 @@ public sealed partial class SimWorld
         foreach (var id in mission.EndlessRoster) Resolve(id);
         foreach (var id in mission.Roster.Keys) Resolve(id);
         if (mission.Boss.Length > 0) Resolve(mission.Boss);
+        // The mini-boss is scheduled by the survival director rather than authored into a
+        // mission's roster, so nothing above would pull it in — resolve it explicitly or
+        // SpawnEnemy never has a def index to spawn it from.
+        if (Cfg.Survival.MiniBossEnemy.Length > 0) Resolve(Cfg.Survival.MiniBossEnemy);
         _missionEnemyDefs = used.ToArray();
         BuildSurvivalRoster();
 
@@ -275,6 +282,7 @@ public sealed partial class SimWorld
         _survRewardMark = 0;
         _survSpawnAccum = 0f;
         _survBossSpawned = false;
+        _survNextMiniBoss = Cfg.Survival.MiniBossFirstSeconds;
         _runXp = 0f;
         _runLevel = 1;
         ResetHeroWeapons();
@@ -321,6 +329,7 @@ public sealed partial class SimWorld
                 StepTurrets();
                 StepProjectiles();
                 StepAbilities();
+                StepItemDrops(SimClock.TickDelta);
                 CheckWaveEnd();
                 break;
         }
@@ -563,6 +572,8 @@ public sealed partial class SimWorld
             _survRewardMark = 0;
             _survSpawnAccum = 0f;
             _survBossSpawned = false;
+            _survNextMiniBoss = Cfg.Survival.MiniBossFirstSeconds;
+        _survNextMiniBoss = Cfg.Survival.MiniBossFirstSeconds;
         _runXp = 0f;
         _runLevel = 1;
             ResetHeroWeapons();
@@ -695,8 +706,11 @@ public sealed partial class SimWorld
         e.Gen = nextGen;
         e.DefIndex = missionEnemyDefIndex;
         e.Pos = pos;
-        e.Hp = def.MaxHp * sc;
-        e.MaxHp = def.MaxHp * sc;
+        // A mini-boss's HpSegments is both the number of bars drawn above it and a plain
+        // multiplier on the hull, so "five bars" really is five times the health.
+        float hp = def.MaxHp * sc * Mathf.Max(1, def.HpSegments);
+        e.Hp = hp;
+        e.MaxHp = hp;
         e.Shield = (def.ShieldHp + (def.ShieldHp > 0f ? _ascShieldAdd : 0f)) * DifficultyScale;
         e.MaxShield = e.Shield;
         e.Armor = def.Armor + _ascArmorAdd;
@@ -712,6 +726,7 @@ public sealed partial class SimWorld
         e.BlinkTimer = def.BlinkInterval;
         e.MechanicTimer = def.MechanicInterval;
         if (def.Class == "boss") _bossHandle = new EnemyHandle { Index = idx, Gen = e.Gen };
+        if (def.Class == "miniboss") Events.Push(SimEventKind.BossSpawned, pos, e.Radius);
         Events.Push(SimEventKind.EnemySpawned, pos, e.Radius);
         return idx;
     }
@@ -744,6 +759,16 @@ public sealed partial class SimWorld
                 XpEarned += e.Bounty * SalvageBonusFrac * 0.5f;
             }
 
+            // A mini-boss pays out a hand of face-up upgrade cards instead of a single
+            // draft — see OpenBossReward.
+            if (def.Class == "miniboss")
+            {
+                Stats.BossesKilled++;
+                CoresEarned += Mathf.Max(0, def.CoreDrop);
+                AlloyEarned += def.AlloyDrop;
+                OpenBossReward(def.CardReward, def.CardCascadeChance);
+            }
+
             if (def.Class == "boss")
             {
                 Stats.BossesKilled++;
@@ -752,6 +777,7 @@ public sealed partial class SimWorld
                 _bossHandle = EnemyHandle.None;
                 Events.Push(SimEventKind.MissionWon, e.Pos); // banner cue; actual win is wave-end
             }
+            RollItemDrop(def.Class, e.Pos);
             Events.Push(SimEventKind.EnemyKilled, e.Pos, e.Radius);
         }
     }

@@ -99,6 +99,19 @@ public static class Art
         return t;
     }
 
+    private static readonly Dictionary<string, Texture2D> _pdtd = new();
+    /// <summary>Any PDTD UI sprite by "folder/name", e.g. "loot/silver_key",
+    /// "rarity/epic", "cardui/card_front_normal", "techpoint/waterdrop".
+    /// Null when that sprite hasn't been extracted (callers fall back to drawn art).</summary>
+    public static Texture2D? Pdtd(string path)
+    {
+        if (_pdtd.TryGetValue(path, out var t)) return t;
+        string p = $"res://assets/game/pdtd/{path}.png";
+        t = ResourceLoader.Exists(p) ? GD.Load<Texture2D>(p) : null!;
+        _pdtd[path] = t;
+        return t;
+    }
+
     public static ShaderMaterial EarthMaterial()
     {
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://assets/game/earth.gdshader") };

@@ -5,6 +5,8 @@ namespace Sentinel.Sim;
 public sealed partial class SimWorld
 {
     private const float MissileTurnRate = 5.5f;
+    /// <summary>How far a guided round looks for a new target when it has no lock.</summary>
+    private const float MissileSeekRadius = 520f;
 
     private void StepProjectiles()
     {
@@ -47,13 +49,21 @@ public sealed partial class SimWorld
                 }
                 else if (!p.Target.IsNone)
                 {
-                    int nn = ClosestEnemyTo(p.Pos, 460f);
+                    int nn = ClosestEnemyTo(p.Pos, MissileSeekRadius);
                     p.Target = nn >= 0 ? HandleOf(nn) : EnemyHandle.None;
                 }
             }
             else if (p.SpeedMax > 0f && p.Vel.LengthSquared() > 1e-4f)
             {
-                // guided round with no lock (volley overflow) — still light the motor, hold heading
+                // Guided round flying with no lock — either volley overflow (the salvo had
+                // more missiles than there were enemies to assign) or its target died and
+                // nothing was in re-acquire range at the time. Keep hunting every tick
+                // instead of cruising off into empty space: any enemy that wanders into
+                // seek range becomes the new target and the homing branch takes over next
+                // tick. Without this a commander salvo fired at a thin field would send
+                // most of its missiles straight past enemies that drifted into their path.
+                int nn = ClosestEnemyTo(p.Pos, MissileSeekRadius);
+                if (nn >= 0) p.Target = HandleOf(nn);
                 float speed = Mathf.MoveToward(p.Vel.Length(), p.SpeedMax, p.Accel * dt);
                 p.Vel = p.Vel.Normalized() * speed;
             }

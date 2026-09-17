@@ -71,11 +71,22 @@ SAFE_REPLACEMENTS = {
     "explosion_b": (78, "electric-impact"),
     "shield": (74, "能量护盾解除音效"),     # "energy shield release"
     "ui_click": (69, "click"),
-    # added 2026-09-15 (2nd pass): missile_launch is the hero's own Missile
-    # Barrage volley (~6-15s cooldown depending on level) — infrequent enough
-    # that a 1.6s sample is fine; do NOT reuse this length for battery_launch
-    # (planet battery fires roughly every second, would overlap into mush).
-    "missile_launch": (9, "火箭发射升空"),          # PDTD's real rocket-launch clip
+    # missile_launch / battery_launch / explosion_big — REDONE 2026-09-16 after the
+    # user said they disliked every missile sound. The old missile_launch was sample 9
+    # (火箭发射升空, a 44.7s real rocket-launch field recording) trimmed 0.00-1.25s.
+    # Measuring its RMS envelope shows why that sounded so bad: the clip ramps up from
+    # digital silence and doesn't peak until 2.30s, so the 1.25s trim captured only the
+    # low ignition rumble and NO transient at all — a missile launch with no attack.
+    # These three are picked by measured onset instead of by name:
+    #   43 未来主义榴弹发射器 "futuristic grenade launcher" — transient at 0.06s, peak
+    #      -9.6 dB, clean decay. A crisp launcher thump, the right shape for a salvo.
+    #   58 炮击 artillery report — onset 0.12s, peak -3.7 dB at 0.28s. Heavier and
+    #      shorter than 43, which suits the planet battery's ~1s fire rate.
+    #   44 hit-low-gravity-absorber (cinematic) — full -2.8 dB transient at 0.02s with
+    #      a big tail. The impact weight the old explosion_big lacked.
+    "missile_launch": (43, "未来主义榴弹发射器"),   # hero Missile Barrage salvo
+    "battery_launch": (58, "炮击-mcx200705111"),    # planet missile battery, ~1s cadence
+    "explosion_big": (44, "hit-low-gravity-absorber"),  # missile impact
     # sentinel_shot backs every orbital weapon except the ones broken out below
     # (cooldowns 0.55s-8s) — already a natural ~2.3s one-shot cannon report,
     # no trim needed.
@@ -115,10 +126,17 @@ SAFE_REPLACEMENTS = {
 TRIM = {
     "explosion": (0.33, 1.30, 1.05, 0.22, -1.5),
     "explosion_b": (0.0, 1.35, 1.10, 0.22, -1.5),
-    # 未来主义榴弹发射器 is a 13.6s library clip — the launch transient is at the
-    # very start, same heuristic as the explosion trims (no way to confirm the
-    # exact onset without listening; a 1.6s prefix + short fade-out is a safe bet).
-    "missile_launch": (0.0, 1.25, 0.95, 0.3, 0.0),
+    # Onsets below are measured from each clip's RMS envelope (20ms hop), not guessed.
+    # 未来主义榴弹发射器: transient at 0.06s — start just ahead of it and keep only the
+    # thump plus its first decay, so a salvo of missiles reads as distinct launches.
+    "missile_launch": (0.04, 0.55, 0.40, 0.15, 0.0),
+    # 炮击-mcx200705111: onset 0.12s, peak 0.28s. Trimmed tight — the battery fires
+    # about once a second, so anything longer stacks into mush (the standing rule
+    # noted above for why battery_launch can't reuse a long clip).
+    "battery_launch": (0.10, 0.52, 0.36, 0.16, -1.0),
+    # hit-low-gravity-absorber: the transient IS the first frame; keep a full second of
+    # tail so a missile hit lands heavier than a plain enemy-kill explosion.
+    "explosion_big": (0.0, 1.10, 0.80, 0.30, 0.0),
     # electric-shock-97989 is a 9.7s library clip — same "transient's at the start"
     # heuristic, trimmed to a punchy ~1.2s crackle for shock_orb's min ~3.2s cooldown.
     "ball_lightning_fire": (0.0, 1.2, 0.9, 0.3, 0.0),

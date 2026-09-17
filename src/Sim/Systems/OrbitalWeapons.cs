@@ -36,7 +36,16 @@ public sealed partial class SimWorld
         public float StartTime;      // rad_line: GameTime this effect was cast
     }
 
-    private const float RadLineRing = 0.62f;      // × DespawnRadius — where the relay stations sit
+    /// <summary>× DespawnRadius — the radius the relay stations orbit at.
+    /// Was 0.62 (r≈558) which is why the weapon read as doing no damage at all: that far
+    /// out enemies are still fanned across the full 360°, so a base two-node link — a
+    /// single 64° chord — sat in front of maybe a sixth of them, and each one crossed its
+    /// 24px width in a fraction of a second. Pulled in to the convergence zone just
+    /// outside the planet, where every attacker has to funnel through regardless of the
+    /// bearing it spawned on, which is where PDTD puts its Radiation Link too.</summary>
+    private const float RadLineRing = 0.26f;
+    /// <summary>Half-width of the damaging beam between two relay stations.</summary>
+    private const float RadLineBeamHalfWidth = 30f;
 
     /// <summary>The arc (degrees) the whole relay chain spans for a given node count — PDTD's
     /// Radiation Link levels up by extending/connecting more links until they nearly ring the
@@ -319,8 +328,15 @@ public sealed partial class SimWorld
                         Vector2 rel = en.Pos - a;
                         float along = rel.Dot(dir);
                         if (along < 0f || along > len) continue;
-                        if ((rel - dir * along).Length() > 24f + en.Radius) continue;
+                        if ((rel - dir * along).Length() > RadLineBeamHalfWidth + en.Radius) continue;
                         DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital, shieldMult: 0f);
+                        // "Irradiated": crossing the corridor leaves lingering radiation
+                        // damage, as in PDTD. Without this the whole weapon's output was
+                        // however much it could land during a fraction-of-a-second
+                        // crossing, which rounded to nothing on anything but a trash mob.
+                        ref var vic = ref Enemies[e];
+                        vic.BurnDps = Mathf.Max(vic.BurnDps, fx.Dps * 0.5f);
+                        vic.BurnLeft = Mathf.Max(vic.BurnLeft, 3f);
                     }
                 }
             }

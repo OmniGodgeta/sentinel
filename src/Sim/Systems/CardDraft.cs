@@ -29,6 +29,19 @@ public sealed partial class SimWorld
     private readonly List<int> _draftOptions = new();
     private DetRandom _draftRng;
 
+    // ---- mini-boss payout ----
+    // A mini-boss deals a whole hand face-up instead of the usual pick-one-of-four. You
+    // take one, and each card taken rolls for the hand to stay open so you can end up
+    // with anywhere from one to the whole hand.
+    private int _bossPicksLeft;
+    private float _bossCascadeChance;
+
+    /// <summary>The draft on screen is a mini-boss payout — every card is face-up and you
+    /// may get to take more than one.</summary>
+    public bool IsBossReward => _bossPicksLeft > 0;
+    /// <summary>How many more cards this payout will let you take (≥1 while open).</summary>
+    public int BossRewardPicksLeft => _bossPicksLeft;
+
     public bool HasPendingDraft => _pendingDrafts > 0 && _draftOptions.Count > 0;
     public IReadOnlyList<int> DraftOptionIndices => _draftOptions;
     public IReadOnlyList<string> RunCards => _runCards;
@@ -57,7 +70,24 @@ public sealed partial class SimWorld
         if (_draftOptions.Count == 0) GenerateDraftOptions();
     }
 
-    private void GenerateDraftOptions()
+    /// <summary>Deal a mini-boss's payout: <paramref name="cards"/> options face-up, the
+    /// first pick guaranteed and each one after that gated on a
+    /// <paramref name="cascadeChance"/> roll.</summary>
+    private void OpenBossReward(int cards, float cascadeChance)
+    {
+        if (cards <= 0) return;
+        // Don't stomp a payout that's already on screen — stack the picks onto it instead,
+        // which is what happens if two mini-bosses die within a frame of each other.
+        _bossCascadeChance = Mathf.Clamp(cascadeChance, 0f, 0.95f);
+        if (_bossPicksLeft > 0) { _bossPicksLeft++; return; }
+
+        _bossPicksLeft = 1;
+        _pendingDrafts++;
+        _draftOptions.Clear();
+        GenerateDraftOptions(Mathf.Clamp(cards, 1, 6));
+    }
+
+    private void GenerateDraftOptions(int want = 4)
     {
         _draftOptions.Clear();
 
@@ -102,7 +132,7 @@ public sealed partial class SimWorld
 
         if (pool.Count == 0) { _pendingDrafts = 0; return; }
 
-        int want = Mathf.Min(4, pool.Count);
+        want = Mathf.Min(want, pool.Count);
         for (int n = 0; n < want && pool.Count > 0; n++)
         {
             int total = 0;
@@ -139,6 +169,23 @@ public sealed partial class SimWorld
         {
             LevelUpHeroWeapon(cardIdx);
             _runCards.Add(Cfg.HeroWeapons[cardIdx].Id);
+        }
+
+        if (_bossPicksLeft > 0)
+        {
+            // Taking a card from the payout burns a pick, then rolls to add another.
+            // The remaining cards stay on the table, so a cascade is drawn from the same
+            // hand rather than a freshly generated one.
+            _bossPicksLeft--;
+            if (_draftRng.NextFloat() < _bossCascadeChance) _bossPicksLeft++;
+
+            _draftOptions.Remove(cardIdx);
+            if (_bossPicksLeft > 0 && _draftOptions.Count > 0)
+            {
+                Events.Push(SimEventKind.AbilityCast, Vector2.Zero, 0f, -3);
+                return;                       // hand stays up for the next pick
+            }
+            _bossPicksLeft = 0;
         }
 
         _pendingDrafts = Mathf.Max(0, _pendingDrafts - 1);

@@ -43,7 +43,8 @@ public sealed partial class SimWorld
             StepEnemyBehaviour(ref e, def, i, dt);
 
             // --- motion ---
-            float speed = e.BaseSpeed * Mathf.Clamp(e.SlowFactor, 0.05f, 1f);
+            float slow = Mathf.Clamp(e.SlowFactor, 0.05f, 1f);
+            float speed = e.BaseSpeed * slow;
             e.SlowFactor = 1f; // consumed; control abilities re-apply each tick
 
             if (!e.Standoff)
@@ -52,6 +53,16 @@ public sealed partial class SimWorld
                 float len = dir.Length();
                 if (len > 0.001f) dir /= len;
                 e.Pos += dir * speed * dt;
+
+                // Mini-bosses sweep around the planet as they close rather than charging
+                // straight down the radius. The tangential step is an angular rate, so the
+                // sweep looks the same whether it's far out or nearly on top of the planet
+                // (a fixed linear speed would crawl at range and whip around up close).
+                if (def.OrbitSpeedDeg != 0f && len > 0.001f)
+                {
+                    float ang = Mathf.DegToRad(def.OrbitSpeedDeg) * dt * slow;
+                    e.Pos = e.Pos.Rotated(ang);
+                }
             }
             // pull impulses (gravity snare / graviton) accumulated this tick
             if (e.PullX != 0f || e.PullY != 0f)

@@ -31,6 +31,7 @@ public sealed class ConfigDb
     public ModulesDb Modules { get; private set; } = new();
     public ChipsDb Chips { get; private set; } = new();
     public RunCardsDb RunCards { get; private set; } = new();
+    public ItemsDb Items { get; private set; } = new();
 
     private readonly Dictionary<string, TurretDef> _turrets = new();
     private readonly Dictionary<string, EnemyDef> _enemies = new();
@@ -70,6 +71,7 @@ public sealed class ConfigDb
         db.Modules = ReadOne<ModulesDb>("res://data/modules.json") ?? new ModulesDb();
         db.Chips = ReadOne<ChipsDb>("res://data/chips.json") ?? new ChipsDb();
         db.RunCards = ReadOne<RunCardsDb>("res://data/runcards.json") ?? new RunCardsDb();
+        db.Items = ReadOne<ItemsDb>("res://data/items.json") ?? new ItemsDb();
 
         foreach (var t in ReadList<TurretDef>("res://data/turrets.json"))
         {

@@ -1,0 +1,58 @@
+{
+  "_note": "In-run item drops. An enemy kill rolls drop_chance (elites/bosses use their own, much higher chance); on a hit, a rarity is picked by weight and then an item of that rarity at random. Effects go straight into the run's ModifierSet, same keys the boost cards and research nodes use, and last until the run ends. Rarity weights ARE the drop percentages — rarer items are both less likely and stronger.",
+
+  "drop_chance": 0.022,
+  "miniboss_drop_chance": 1.0,
+  "boss_drop_chance": 1.0,
+
+  "rarities": [
+    { "id": "common",    "name": "Common",    "weight": 56, "color": "#9aa4b2" },
+    { "id": "fine",      "name": "Fine",      "weight": 25, "color": "#46d17a" },
+    { "id": "rare",      "name": "Rare",      "weight": 12, "color": "#5ba4f5" },
+    { "id": "epic",      "name": "Epic",      "weight": 5,  "color": "#b57cf0" },
+    { "id": "legendary", "name": "Legendary", "weight": 2,  "color": "#f0a93a" }
+  ],
+
+  "items": [
+    { "id": "scrap_plating", "name": "Scrap Plating", "rarity": "common", "icon": "shield_capacitor",
+      "text": "+6% planet integrity", "effects": { "planet_integrity": 0.06 } },
+    { "id": "spare_cells", "name": "Spare Cells", "rarity": "common", "icon": "coin",
+      "text": "+8% orbital weapon damage", "effects": { "orbital_weapon_damage": 0.08 } },
+    { "id": "coolant_flask", "name": "Coolant Flask", "rarity": "common", "icon": "crystal",
+      "text": "+7% sentinel fire rate", "effects": { "orbital_weapon_rate": 0.07 } },
+    { "id": "salvage_tag", "name": "Salvage Tag", "rarity": "common", "icon": "medal",
+      "text": "+12% credits", "effects": { "credits_gain": 0.12 } },
+    { "id": "thruster_shim", "name": "Thruster Shim", "rarity": "common", "icon": "rebuild_core",
+      "text": "+8% commander speed", "effects": { "hero_move_speed": 0.08 } },
+
+    { "id": "guidance_chip", "name": "Guidance Chip", "rarity": "fine", "icon": "techpoint",
+      "text": "+14% missile damage", "effects": { "hero_missile_damage": 0.14 } },
+    { "id": "focusing_lens", "name": "Focusing Lens", "rarity": "fine", "icon": "research_core",
+      "text": "+15% orbital weapon damage", "effects": { "orbital_weapon_damage": 0.15 } },
+    { "id": "field_expander", "name": "Field Expander", "rarity": "fine", "icon": "shield_integrator",
+      "text": "+16% sentinel radius", "effects": { "orbital_weapon_radius": 0.16 } },
+    { "id": "study_notes", "name": "Study Notes", "rarity": "fine", "icon": "exp",
+      "text": "+18% commander XP", "effects": { "xp_gain": 0.18 } },
+
+    { "id": "isotope_core", "name": "Isotope Core", "rarity": "rare", "icon": "research_core",
+      "text": "+35% radiation line damage", "effects": { "rad_line_damage": 0.35 } },
+    { "id": "salvo_rack", "name": "Salvo Rack", "rarity": "rare", "icon": "techpoint",
+      "text": "+1 battery missile per salvo", "effects": { "battery_salvo": 1 } },
+    { "id": "hardened_hull", "name": "Hardened Hull", "rarity": "rare", "icon": "shield_capacitor",
+      "text": "−12% planet damage taken", "effects": { "planet_damage_taken": -0.12 } },
+    { "id": "overclock_ring", "name": "Overclock Ring", "rarity": "rare", "icon": "crystal",
+      "text": "+18% sentinel fire rate", "effects": { "orbital_weapon_rate": 0.18 } },
+
+    { "id": "prism_array", "name": "Prism Array", "rarity": "epic", "icon": "research_core",
+      "text": "Ship laser refracts to +3 more enemies", "effects": { "hero_laser_refract": 3 } },
+    { "id": "relay_node", "name": "Relay Node", "rarity": "epic", "icon": "techpoint",
+      "text": "+1 radiation link", "effects": { "rad_link_extra": 1 } },
+    { "id": "capacitor_bank", "name": "Capacitor Bank", "rarity": "epic", "icon": "shield_integrator",
+      "text": "+25% Yamato charge rate", "effects": { "hero_yamato_charge": 0.25 } },
+
+    { "id": "singularity_shard", "name": "Singularity Shard", "rarity": "legendary", "icon": "crystal",
+      "text": "+40% orbital weapon damage", "effects": { "orbital_weapon_damage": 0.40 } },
+    { "id": "aegis_lattice", "name": "Aegis Lattice", "rarity": "legendary", "icon": "shield_capacitor",
+      "text": "+25% integrity and self-repair", "effects": { "planet_integrity": 0.25, "self_repair": 0.003 } }
+  ]
+}

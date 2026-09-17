@@ -5,8 +5,79 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.29.0, 2026-09-17.** Update this file when you finish or start
+Last updated: **v0.30.0, 2026-09-17.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — mini-boss, item drops, PDTD card frames (v0.30.0)
+
+**Mini-boss.** `miniboss_siege_warden` (class `miniboss`, `data/enemies.json`) — a
+multi-bar elite on a repeating timer through every hold (`miniboss_first_seconds` /
+`miniboss_every_seconds` in `data/survival.json`). New `EnemyDef` fields drive it:
+`HpSegments` is both the number of bars drawn over it *and* a plain multiplier on its
+hull, so five bars really is five times the health; `OrbitSpeedDeg` adds a tangential
+sweep so it circles the planet while closing instead of charging straight in; it stops at
+`standoff_range` and shells the planet rather than ramming. `SimRenderer.DrawSegmentedHpBar`
+draws the stacked bars. Art is PDTD's `wind_cruiser_boss` hull.
+
+**Mini-boss payout — a face-up hand with cascade draws.** `OpenBossReward(cards, chance)`
+in `CardDraft.cs` deals five options face-up; taking one burns a pick and rolls
+`card_cascade_chance` to add another, drawing from the *same* remaining hand, so a kill
+yields anywhere from one card to the whole hand. `SimWorld.IsBossReward` /
+`BossRewardPicksLeft` let the HUD retitle the popup and count the picks down.
+
+**In-run item drops by rarity** (`data/items.json`, `src/Sim/Systems/ItemDrops.cs`).
+Every kill rolls `drop_chance`; mini-bosses and bosses always drop. A hit picks a rarity by
+weight (those weights *are* the published drop percentages: common 56 / fine 25 / rare 12 /
+epic 5 / legendary 2) then an item of that rarity, and applies its effects to the run's
+ModifierSet through the same `ApplyEffect` keys the boost cards use. 18 items authored.
+The HUD toast draws them on PDTD's own rarity plate.
+
+**PDTD's actual card chrome on the draft cards.** New `tools/extract_pdtd_sprites.py`
+pulls 64 UI sprites out of the Unity bundles — the skill-card frame set (back plate, the
+normal/super/relic/ultimate front plates, outlines, glow, star pips), the seven weapon
+glyphs, damage-type and attribute icons, the twelve per-weapon techpoint emblems, the
+seven item-quality plates, and the loot icons. Draft cards are now layered plate → art →
+front → outline, with the art sitting in the frame's own transparent window (measured at
+12.5%–57.6% of card height off `card_front_normal`'s alpha). Tier picks the frame: teal
+for a level-up, purple for unlocking a new system, gold for a boost card.
+
+**Waterdrop and Force Field finally have real card art** (`tools/gen_pdtd_cards.py`) —
+composed from the same PDTD chrome at full 784x1168, with PDTD's own droplet art and
+Force Field platform render. These were the last two procedural-gradient placeholders.
+
+**Research and Codex rows no longer read as grey slabs.** Both were bare unstyled
+`PanelContainer`s; new shared `UI/ArtCard.cs` gives each row an accent border and a large
+faint techpoint emblem bleeding off its right edge, keyed by research branch / codex
+category.
+
+**Fixes and tuning this pass**
+- *Radiation Line did no damage.* Its relay ring sat at `0.62 x DespawnRadius` (r≈558),
+  where attackers are still fanned across the full 360°, so the base two-node link — one
+  64° chord — stood in front of maybe a sixth of them and each crossed its 24px width in a
+  fraction of a second. Ring pulled in to `0.26` (r≈234), the convergence zone every
+  attacker must funnel through, beam widened, and a crossing now applies an "Irradiated"
+  burn DoT (PDTD's own behaviour) so the damage doesn't have to all land during the
+  crossing itself.
+- *Missile sounds, all of them, replaced.* The old `missile_launch` was sample 9
+  (火箭发射升空, a 44.7s rocket-launch field recording) trimmed 0.00–1.25s; its RMS envelope
+  ramps from silence and doesn't peak until 2.30s, so that trim captured pure rumble and
+  **no transient**. Re-picked by measured onset instead: launch ← 43 (grenade launcher,
+  transient at 0.06s), battery ← 58 (artillery report), impact ← 44 (cinematic hit).
+- *Commander missiles now re-acquire.* A volley with more missiles than targets left the
+  overflow permanently unguided — the re-acquire branch only ran for rounds that already
+  had a lock. Guided rounds with no target now sweep for one every tick.
+- *Draft popup fits the screen.* Cards were a fixed 220x690 in an `HBoxContainer`, which
+  can't shrink below its children, so a four-card draft pushed the right-hand cards off a
+  phone entirely. The popup is centred in a `CenterContainer` and cards are sized from the
+  live viewport.
+- *Turret build flow removed* — the ⚒ button, the "tap a turret slot" panel and the ring
+  of empty slot markers. PDTD has no ground turrets; the planet's defence is the missile
+  battery plus the sentinel roster. The prep screen keeps only BEGIN DEFENSE.
+- *Difficulty +1.4x* — spawn rate and the concurrent soft cap both scaled (`survival.json`).
+- *Camera zoomed out* (fit `1.05 x SpawnRadius`, was 0.92) with enemy sprites scaled up to
+  match, so they read bigger on screen in a wider view.
 
 ---
 

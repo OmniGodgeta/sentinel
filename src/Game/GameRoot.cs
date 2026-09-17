@@ -137,7 +137,11 @@ public sealed partial class GameRoot : Node2D
         // the game is a portrait column; on a wide window it's centred and letterboxed
         float designW = Mathf.Min(vp.X, vp.Y * 0.62f);
         float availH = Mathf.Max(200f, vp.Y - TopReserve - BottomReserve);
-        float fitRadius = _world.B.SpawnRadius * 0.92f;
+        // Fit slightly MORE than the spawn ring so the play field reads as open space
+        // rather than a tight bowl — 0.92 cropped the corners of the spawn ring and made
+        // everything feel zoomed in. Enemy sprites are scaled up in DrawEnemies to
+        // compensate, so they end up bigger on screen despite the wider view.
+        float fitRadius = _world.B.SpawnRadius * 1.05f;
         float sx = (designW * 0.98f) / (2f * fitRadius);
         float sy = availH / (2f * fitRadius);
         WorldScale = Mathf.Clamp(Mathf.Min(sx, sy), 0.12f, 1.4f);
@@ -350,9 +354,6 @@ public sealed partial class GameRoot : Node2D
             }
             else if (_hud.BuildOpen)
             {
-                // real-time base management (survival): a tap picks the nearest slot
-                int slot = NearestSlot(w, 110f);
-                if (slot >= 0) _hud.SelectSlot(slot);
             }
             else
             {
@@ -362,9 +363,6 @@ public sealed partial class GameRoot : Node2D
         }
         else if (_world.Phase == SimPhase.Build)
         {
-            // tap near a slot selects it (HUD shows the build buttons)
-            int slot = NearestSlot(ScreenToWorld(pos), 90f);
-            if (slot >= 0) _hud.SelectSlot(slot);
         }
     }
 

@@ -31,3 +31,4 @@ telemetry/*.jsonl
 # dev screenshot artifacts
 /docs/*.png
 /docs/*.png.import
+__pycache__/

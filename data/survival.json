@@ -1,13 +1,13 @@
 {
-  "eps_base": 0.42,
-  "eps_ramp": 1.25,
+  "eps_base": 0.588,
+  "eps_ramp": 1.75,
   "eps_ramp_curve": 0.85,
-  "level_spawn_factor": 0.06,
+  "level_spawn_factor": 0.084,
   "surge_a": 0.24,
   "surge_b": 0.14,
-  "soft_cap_base": 22,
-  "soft_cap_ramp": 40,
-  "soft_cap_per_level": 2,
+  "soft_cap_base": 31,
+  "soft_cap_ramp": 56,
+  "soft_cap_per_level": 3,
   "boss_time_frac": 0.86,
   "pincer_chance": 0.22,
   "scale_level_factor": 0.09,
@@ -20,5 +20,8 @@
   "reward_rd_mult": 3.6,
   "reward_xp_mult": 3.6,
   "reward_credits_mult": 1.9,
-  "core_every_n_minutes": 2
+  "core_every_n_minutes": 2,
+  "miniboss_enemy": "miniboss_siege_warden",
+  "miniboss_first_seconds": 75.0,
+  "miniboss_every_seconds": 105.0
 }

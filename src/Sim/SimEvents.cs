@@ -21,6 +21,8 @@ public enum SimEventKind : byte
     HeroWeaponFired,  // Pos = ship, PosB = aim, A = radius/len, I = weapon index
     HeroShieldPop,    // Pos = ship, A = shield pool
     EnemySpawned,
+    BossSpawned,      // Pos = spawn point, A = radius — mini-boss/boss arrival cue
+    ItemDropped,      // Pos = where it fell, I = index into Cfg.Items.Items
     WaveCleared,
     MissionWon,
     MissionLost,

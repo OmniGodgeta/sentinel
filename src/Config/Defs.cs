@@ -58,6 +58,11 @@ public sealed record SurvivalDef
     public float SoftCapRamp { get; init; } = 95f;        // added by the end
     public int SoftCapPerLevel { get; init; } = 2;
     public float BossTimeFrac { get; init; } = 0.82f;     // when the survival boss enters
+    // mini-bosses: multi-bar elites on a repeating timer through the hold, each paying
+    // out a face-up hand of upgrade cards when killed
+    public string MiniBossEnemy { get; init; } = "";
+    public float MiniBossFirstSeconds { get; init; } = 75f;
+    public float MiniBossEverySeconds { get; init; }      // 0 = none
     public float PincerChance { get; init; } = 0.28f;     // odds a spawn joins a tight bearing
     public float ScaleLevelFactor { get; init; } = 0.075f;// enemy stat scale per mission Level
     public float ScaleRamp { get; init; } = 0.70f;        // enemy stat scale added by the end
@@ -231,6 +236,40 @@ public sealed record RunCardsDb
     public System.Collections.Generic.List<RunCardDef> Cards { get; init; } = new();
 }
 
+// ---- in-run item drops (data/items.json) ----
+
+public sealed record ItemRarityDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    /// <summary>Relative odds of this rarity when a drop lands — these weights ARE the
+    /// per-rarity drop percentages the design calls for.</summary>
+    public int Weight { get; init; } = 1;
+    public string Color { get; init; } = "#9aa4b2";
+}
+
+public sealed record ItemDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Text { get; init; } = "";
+    public string Rarity { get; init; } = "common";
+    /// <summary>Name under assets/game/pdtd/loot/ to draw on the pickup toast.</summary>
+    public string Icon { get; init; } = "coin";
+    public System.Collections.Generic.Dictionary<string, float> Effects { get; init; } = new();
+}
+
+public sealed record ItemsDb
+{
+    public float DropChance { get; init; } = 0.02f;
+    public float MinibossDropChance { get; init; } = 1f;
+    public float BossDropChance { get; init; } = 1f;
+    public System.Collections.Generic.List<ItemRarityDef> Rarities { get; init; } = new();
+    public System.Collections.Generic.List<ItemDef> Items { get; init; } = new();
+
+    public ItemRarityDef? Rarity(string id) => Rarities.Find(r => r.Id == id);
+}
+
 public sealed record ChipsDb
 {
     public int EquipSlots { get; init; } = 4;
@@ -335,6 +374,18 @@ public sealed record EnemyDef
     public float AuraRadius { get; init; }
     public float AuraHealPerSecond { get; init; }
     public float AuraShieldPerSecond { get; init; }
+    // mini-boss (class "miniboss"): a multi-bar elite that spirals in around the planet
+    /// <summary>Number of HP bars stacked above it. Also multiplies MaxHp — five
+    /// segments literally means five times the hull, as in PDTD's multi-bar elites.</summary>
+    public int HpSegments { get; init; } = 1;
+    /// <summary>Degrees/second it sweeps around the planet while closing in. 0 = the
+    /// default straight-line charge every other enemy does.</summary>
+    public float OrbitSpeedDeg { get; init; }
+    /// <summary>Cards dealt face-up when it dies (0 = no card payout).</summary>
+    public int CardReward { get; init; }
+    /// <summary>Chance, per card taken, that the payout deals another one.</summary>
+    public float CardCascadeChance { get; init; }
+
     // boss
     public string BossMechanic { get; init; } = "";    // threshing_gate | ...
     public float MechanicInterval { get; init; } = 8f;
