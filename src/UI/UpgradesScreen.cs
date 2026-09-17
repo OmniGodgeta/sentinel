@@ -504,16 +504,136 @@ public sealed partial class UpgradesScreen : CanvasLayer
 
     // ------------------------------------------------------- shield / ship / research ----
 
+    /// <summary>Force Shield — PDTD's page is a big level readout with the two stats it
+    /// grants and one Enhance button, over a list of level-gated techs.</summary>
     private void BuildShield()
     {
-        _body.AddChild(Dim("The Planet Shield soaks damage before the crust does. Levels are permanent."));
-        Jump("Open Sentinels & Planet Shield", () => App.ShowSentinels());
+        var s = App.Save;
+        int lvl = s.PlanetShieldLevel;
+        int comm = 60 * (lvl + 1);
+        int alloy = lvl + 1 <= 4 ? 0 : (lvl + 1 - 4) * 3;
+        bool can = App.Shop.Balance >= comm && s.ExoticAlloy >= alloy;
+
+        var panel = new PanelContainer();
+        var accent = new Color(0.35f, 0.62f, 1f);
+        panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(accent, 0.10f), BorderColor = new Color(accent, 0.55f),
+            BorderWidthLeft = 4, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10,
+            CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
+            ContentMarginLeft = 16, ContentMarginRight = 16, ContentMarginTop = 14, ContentMarginBottom = 14,
+        });
+        _body.AddChild(panel);
+        var col = new VBoxContainer();
+        col.AddThemeConstantOverride("separation", 6);
+        panel.AddChild(col);
+
+        var big = new Label { Text = $"Lv.{lvl}", HorizontalAlignment = HorizontalAlignment.Center };
+        big.AddThemeFontOverride("font", UiTheme.Display);
+        big.AddThemeFontSizeOverride("font_size", 42);
+        big.AddThemeColorOverride("font_color", accent.Lightened(0.3f));
+        col.AddChild(big);
+
+        col.AddChild(StatRow("Force Shield HP", $"{lvl * 45}", $"+45"));
+        col.AddChild(StatRow("Damage soaked before the crust", $"{Mathf.Min(90, lvl * 3)}%", "+3%"));
+
+        var buy = new Button
+        {
+            Text = alloy > 0 ? $"Enhance   ✦ {comm} + ❖ {alloy}" : $"Enhance   ✦ {comm}",
+            CustomMinimumSize = new Vector2(0, 78), Disabled = !can,
+        };
+        buy.AddThemeFontSizeOverride("font_size", 20);
+        if (can) UiTheme.StylePrimary(buy);
+        buy.Pressed += () =>
+        {
+            s.CommendationsSpent += comm;
+            s.ExoticAlloy -= alloy;
+            s.PlanetShieldLevel++;
+            s.Save();
+            Sentinel.Audio.AudioManager.Instance?.Confirm();
+            Rebuild();
+        };
+        col.AddChild(buy);
+
+        _body.AddChild(Dim("The Force Shield soaks damage before the planet's integrity does. "
+                         + "Levels are permanent and apply to every run."));
     }
 
+    /// <summary>MotherShip — the ship's own weapons, each with its persistent level.</summary>
     private void BuildShip()
     {
-        _body.AddChild(Dim("The commander's hull, its weapons, and the protocols it carries."));
-        Jump("Open Sentinels & ship weapons", () => App.ShowSentinels());
+        _body.AddChild(Dim("The commander's ship and what it carries. Weapon levels here are "
+                         + "permanent; the in-run draft raises them again for that run only."));
+
+        foreach (var def in App.Cfg.HeroWeapons)
+        {
+            var accent = HexColor(def.Accent, UiTheme.Accent);
+            var p = new PanelContainer();
+            p.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+            {
+                BgColor = new Color(accent, 0.08f), BorderColor = new Color(accent, 0.5f),
+                BorderWidthLeft = 4, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+                CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+                ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 10, ContentMarginBottom = 10,
+            });
+            _body.AddChild(p);
+
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", 12);
+            p.AddChild(row);
+
+            var art = Render.Art.Pdtd("tiles/" + ShipTile(def.Kind));
+            if (art != null)
+                row.AddChild(new TextureRect
+                {
+                    Texture = art, CustomMinimumSize = new Vector2(84, 84),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                    ClipContents = true,
+                });
+
+            var col2 = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            col2.AddThemeConstantOverride("separation", 3);
+            row.AddChild(col2);
+            var nm = new Label { Text = def.Name.ToUpperInvariant() };
+            nm.AddThemeFontOverride("font", UiTheme.Display);
+            nm.AddThemeFontSizeOverride("font_size", 20);
+            nm.AddThemeColorOverride("font_color", accent.Lightened(0.28f));
+            col2.AddChild(nm);
+            var tx = new Label { Text = def.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.62f) };
+            tx.AddThemeFontSizeOverride("font_size", 15);
+            col2.AddChild(tx);
+        }
+
+        Jump("Sentinels & Planet Shield (per-weapon meta levels)", () => App.ShowSentinels());
+    }
+
+    private static string ShipTile(string kind) => kind switch
+    {
+        "missiles" => "missile",
+        "ion" => "lightning",
+        "yamato" => "railgun",
+        "plasma" => "rad_zone",
+        "shield" => "force_field",
+        _ => kind,
+    };
+
+    private static Control StatRow(string label, string value, string step)
+    {
+        var r = new HBoxContainer();
+        var a = new Label { Text = label, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        a.AddThemeFontSizeOverride("font_size", 17);
+        a.Modulate = new Color(1, 1, 1, 0.7f);
+        r.AddChild(a);
+        var b = new Label { Text = value };
+        b.AddThemeFontSizeOverride("font_size", 18);
+        r.AddChild(b);
+        var c = new Label { Text = "   " + step };
+        c.AddThemeFontSizeOverride("font_size", 17);
+        c.AddThemeColorOverride("font_color", new Color(0.45f, 0.95f, 0.6f));
+        r.AddChild(c);
+        return r;
     }
 
     private void BuildResearch()
