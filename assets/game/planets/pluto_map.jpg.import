@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c7mpukavp7hm0"
-path="res://.godot/imported/mars_map.png-d78a22c0e921e1645dac641e4a3c55df.ctex"
+uid="uid://qdo28dcakdpe"
+path="res://.godot/imported/pluto_map.jpg-df0b7b708b5a501a4bf0b3b718d34d7b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game/planets/mars_map.png"
-dest_files=["res://.godot/imported/mars_map.png-d78a22c0e921e1645dac641e4a3c55df.ctex"]
+source_file="res://assets/game/planets/pluto_map.jpg"
+dest_files=["res://.godot/imported/pluto_map.jpg-df0b7b708b5a501a4bf0b3b718d34d7b.ctex"]
 
 [params]
 

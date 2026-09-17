@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bxr6nxb5k4vvs"
-path="res://.godot/imported/titan_map.png-1b82b31140997dd1174fe945f351df46.ctex"
+uid="uid://cbekdf767rgat"
+path="res://.godot/imported/titan_map.jpg-be9c3729afc2187eddf6daf7c2229c40.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game/planets/titan_map.png"
-dest_files=["res://.godot/imported/titan_map.png-1b82b31140997dd1174fe945f351df46.ctex"]
+source_file="res://assets/game/planets/titan_map.jpg"
+dest_files=["res://.godot/imported/titan_map.jpg-be9c3729afc2187eddf6daf7c2229c40.ctex"]
 
 [params]
 

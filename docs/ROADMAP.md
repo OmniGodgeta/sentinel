@@ -2178,3 +2178,31 @@ with PDTD's own titles and text — "Power Link", "Extended Reach", "Link Burst"
 - Equipped-module slot strip along the top of the Upgrades body (PDTD shows six with
   T-badges and enhancement bars).
 - Research as a hex tech tree rather than a list.
+
+## v0.34.0 — releases actually publish; Upgrades tabs render inline
+
+**The reason no new version was visible on GitHub.** v0.31.2, v0.32.0 and v0.33.0 all
+built successfully but their releases sat as invisible DRAFTS. `softprops/action-gh-release`
+creates a release as a draft, uploads the asset, then publishes — and the ~200MB APK
+upload kept dying with "Error saving asset", so the publish step never ran. Drafts are
+invisible in the releases list *and* skipped by `/releases/latest`, so the in-app updater
+correctly reported nothing newer than v0.31.1. That is also why the updater "still did
+nothing": there was genuinely nothing to fetch.
+
+Replaced with an explicit `gh` step that creates the release **published up front**,
+uploads with four retries, and then verifies `isDraft=false` with the asset attached —
+so a green run always means an installable release, and a failed upload leaves a visible
+release to retry into rather than a hidden draft. The three stranded drafts were deleted
+and their tags removed; this release supersedes them.
+
+- **APK shrunk ~9MB**: the five planet maps shipped as 2048x1024 PNGs (11.4MB total).
+  They're opaque photographic maps, so JPEG at q88 is visually identical on a sphere and
+  a fifth the size (1.8MB).
+- **Upgrades sub-tabs render inline** instead of handing off to separate screens: the
+  equipped module slot strip is pinned above the body on every page (as PDTD does), Chip
+  shows equipped slots plus a tappable chip grid with Quick Merge, and Module shows each
+  module's tier badge, level, upgrade cost and equip state.
+
+### Still open
+- Research as a hex tech tree rather than a list.
+- Force Shield / MotherShip tabs still hand off to the Sentinels screen.

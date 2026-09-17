@@ -178,20 +178,364 @@ public sealed partial class UpgradesScreen : CanvasLayer
         }
 
         foreach (Node c in _body.GetChildren()) c.QueueFree();
+
+        // PDTD keeps the equipped module slots pinned above the tab contents on every
+        // page of this screen, so you can always see what's actually fitted while you
+        // shop for upgrades. Same here.
+        BuildSlotStrip();
+
         switch (_cat + "/" + _tab)
         {
             case "planet/ultimate": BuildUltimate(); break;
             case "planet/skins": BuildSkins(); break;
-            case "planet/research": Jump("Open the Research tree", () => App.ShowResearch()); break;
-            case "chip/chips": Jump("Open the Armory (chips, chests, fusing)", () => App.ShowChips()); break;
+            case "planet/research": BuildResearch(); break;
+            case "chip/chips": BuildChips(); break;
             case "chip/modules":
-            case "cosmic/modules": Jump("Open Planet Modules", () => App.ShowModules()); break;
+            case "cosmic/modules": BuildModules(); break;
             case "chip/items": BuildItems(); break;
-            case "shield/upgrade": Jump("Open Sentinels & Planet Shield", () => App.ShowSentinels()); break;
-            case "ship/weapons": Jump("Open Sentinels & ship weapons", () => App.ShowSentinels()); break;
+            case "shield/upgrade": BuildShield(); break;
+            case "ship/weapons": BuildShip(); break;
             case "ship/abilities": Jump("Open Protocols", () => App.ShowAbilities()); break;
             default: BuildItems(); break;
         }
+    }
+
+    // -------------------------------------------------------------- slot strip ----
+
+    /// <summary>The six equipped module slots, as PDTD pins them above the tab body:
+    /// tier badge, the module's art, and its level.</summary>
+    private void BuildSlotStrip()
+    {
+        var p = App.Prog;
+        var strip = new GridContainer { Columns = 3, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        strip.AddThemeConstantOverride("h_separation", 6);
+        strip.AddThemeConstantOverride("v_separation", 6);
+        _body.AddChild(strip);
+
+        var mods = App.Cfg.Modules.Modules;
+        for (int i = 0; i < App.Cfg.Modules.Slots; i++)
+        {
+            var def = i < mods.Count ? mods[i] : null;
+            int lvl = def == null ? 0 : p.ModuleLevel(def.Id);
+            int tier = Sentinel.Meta.Progression.ModuleTier(lvl);
+            var accent = TierColor(tier);
+
+            var cell = new PanelContainer { CustomMinimumSize = new Vector2(0, 92) };
+            cell.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+            {
+                BgColor = new Color(accent, lvl > 0 ? 0.13f : 0.05f),
+                BorderColor = new Color(accent, lvl > 0 ? 0.75f : 0.3f),
+                BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+                CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+                ContentMarginLeft = 8, ContentMarginRight = 8, ContentMarginTop = 6, ContentMarginBottom = 6,
+            });
+            strip.AddChild(cell);
+
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", 8);
+            cell.AddChild(row);
+
+            var art = Render.Art.Pdtd("module/" + ModuleArt(i));
+            if (art != null)
+                row.AddChild(new TextureRect
+                {
+                    Texture = art, CustomMinimumSize = new Vector2(58, 58),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                    Modulate = new Color(1, 1, 1, lvl > 0 ? 1f : 0.4f),
+                });
+
+            var col = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            col.AddThemeConstantOverride("separation", 1);
+            row.AddChild(col);
+            var badge = new Label { Text = tier == 0 ? "—" : $"◈ T{tier}" };
+            badge.AddThemeFontOverride("font", UiTheme.Display);
+            badge.AddThemeFontSizeOverride("font_size", 16);
+            badge.AddThemeColorOverride("font_color", accent.Lightened(0.3f));
+            col.AddChild(badge);
+            var nm = new Label { Text = def?.Name ?? "empty", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+            nm.AddThemeFontSizeOverride("font_size", 12);
+            nm.Modulate = new Color(1, 1, 1, 0.6f);
+            col.AddChild(nm);
+            var lv = new Label { Text = lvl > 0 ? $"Lv.{lvl}" : "—" };
+            lv.AddThemeFontSizeOverride("font_size", 15);
+            col.AddChild(lv);
+        }
+    }
+
+    private static Color TierColor(int tier) => tier switch
+    {
+        0 => new Color(0.45f, 0.48f, 0.56f),
+        1 => new Color(0.42f, 0.78f, 0.95f),
+        2 => new Color(0.72f, 0.45f, 0.95f),
+        _ => new Color(0.98f, 0.78f, 0.30f),
+    };
+
+    /// <summary>PDTD's six equipment families, in slot order, for the strip's art.</summary>
+    private static string ModuleArt(int slot) => slot switch
+    {
+        0 => "art_weapon",
+        1 => "art_shield",
+        2 => "art_engine",
+        3 => "art_reactor",
+        4 => "art_radar",
+        _ => "art_quantacore",
+    };
+
+    // -------------------------------------------------------------------- chips ----
+
+    private void BuildChips()
+    {
+        var vault = App.Chips;
+
+        _body.AddChild(Header("EQUIPPED"));
+        var slots = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        slots.AddThemeConstantOverride("separation", 8);
+        _body.AddChild(slots);
+        for (int i = 0; i < App.Cfg.Chips.EquipSlots; i++)
+        {
+            string? k = i < App.Save.EquippedChips.Count ? App.Save.EquippedChips[i] : null;
+            slots.AddChild(EquippedChipCell(k));
+        }
+
+        var head = new HBoxContainer();
+        _body.AddChild(head);
+        var h = Header("CHIP");
+        h.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        head.AddChild(h);
+        var qm = new Button { Text = "⚡ Quick Merge", CustomMinimumSize = new Vector2(190, 62) };
+        qm.AddThemeFontSizeOverride("font_size", 17);
+        qm.Pressed += () => { vault.QuickMergeAll(); Sentinel.Audio.AudioManager.Instance?.Click(); Rebuild(); };
+        head.AddChild(qm);
+
+        var grid = new GridContainer { Columns = 6, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        grid.AddThemeConstantOverride("h_separation", 6);
+        grid.AddThemeConstantOverride("v_separation", 6);
+        _body.AddChild(grid);
+
+        bool any = false;
+        foreach (var def in vault.Archetypes)
+            foreach (var td in vault.Tiers)
+            {
+                int n = vault.Count(def.Id, td.Tier);
+                if (n <= 0) continue;
+                any = true;
+                grid.AddChild(ChipCell(def, td, n));
+            }
+        if (!any) _body.AddChild(Dim("No chips yet — open a chest in the Armory."));
+
+        var toArmory = new Button { Text = "🗝  Armory — chests and fusing", CustomMinimumSize = new Vector2(0, 76) };
+        toArmory.AddThemeFontSizeOverride("font_size", 20);
+        UiTheme.StylePrimary(toArmory);
+        toArmory.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Confirm(); App.ShowChips(); };
+        _body.AddChild(toArmory);
+    }
+
+    private Control EquippedChipCell(string? key)
+    {
+        var holder = new PanelContainer { CustomMinimumSize = new Vector2(96, 96) };
+        Config.ChipDef? def = null; Config.ChipTierDef? td = null;
+        if (key != null)
+        {
+            var parts = key.Split(':');
+            if (parts.Length == 2 && int.TryParse(parts[1], out int tier))
+            {
+                def = App.Cfg.Chips.Chips.Find(x => x.Id == parts[0]);
+                td = App.Chips.TierDef(tier);
+            }
+        }
+        var accent = td != null ? HexColor(td.Color, UiTheme.Accent) : new Color(0.4f, 0.45f, 0.55f);
+        holder.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(accent, def != null ? 0.14f : 0.04f),
+            BorderColor = new Color(accent, def != null ? 0.8f : 0.3f),
+            BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 4, ContentMarginRight = 4, ContentMarginTop = 4, ContentMarginBottom = 4,
+        });
+        if (def != null && td != null)
+        {
+            var b = new Button { Flat = true, TooltipText = $"{def.Name} · {td.Name}\ntap to unequip" };
+            b.Pressed += () => { App.Chips.Unequip(def.Id, td.Tier); Rebuild(); };
+            holder.AddChild(b);
+            var plate = ChipScreen.ChipPlate(def, td, 78);
+            plate.MouseFilter = Control.MouseFilterEnum.Ignore;
+            holder.AddChild(plate);
+        }
+        else
+        {
+            var l = new Label
+            {
+                Text = "empty", HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center, Modulate = new Color(1, 1, 1, 0.35f),
+            };
+            l.AddThemeFontSizeOverride("font_size", 14);
+            holder.AddChild(l);
+        }
+        return holder;
+    }
+
+    private Control ChipCell(Config.ChipDef def, Config.ChipTierDef td, int count)
+    {
+        var accent = HexColor(td.Color, UiTheme.Accent);
+        bool equipped = App.Chips.IsEquipped(def.Id, td.Tier);
+        var p = new PanelContainer { CustomMinimumSize = new Vector2(0, 104) };
+        p.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(accent, equipped ? 0.18f : 0.07f),
+            BorderColor = new Color(accent, equipped ? 0.95f : 0.45f),
+            BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 3, ContentMarginRight = 3, ContentMarginTop = 3, ContentMarginBottom = 3,
+        });
+
+        var b = new Button
+        {
+            Flat = true,
+            TooltipText = $"{def.Name}\n{td.Name} · {def.Text} +{def.EffectPerTier * td.Tier * 100f:0}%\n"
+                        + (equipped ? "tap to unequip" : "tap to equip"),
+        };
+        b.Pressed += () =>
+        {
+            if (equipped) App.Chips.Unequip(def.Id, td.Tier);
+            else App.Chips.Equip(def.Id, td.Tier);
+            Sentinel.Audio.AudioManager.Instance?.Click();
+            Rebuild();
+        };
+        p.AddChild(b);
+
+        var plate = ChipScreen.ChipPlate(def, td, 74);
+        plate.MouseFilter = Control.MouseFilterEnum.Ignore;
+        p.AddChild(plate);
+
+        var cnt = new Label
+        {
+            Text = $"{count}", HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom, MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        cnt.AddThemeFontSizeOverride("font_size", 15);
+        cnt.AddThemeConstantOverride("outline_size", 5);
+        cnt.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.8f));
+        p.AddChild(cnt);
+        return p;
+    }
+
+    // ------------------------------------------------------------------ modules ----
+
+    private void BuildModules()
+    {
+        var p = App.Prog;
+        _body.AddChild(Dim($"◇ {F(App.Save.ResearchData)} Research Data   ·   "
+                         + $"{App.Save.EquippedModules.Count}/{p.ModuleSlots} slots equipped"));
+
+        foreach (var def in App.Cfg.Modules.Modules)
+            _body.AddChild(ModuleRow(def, p.ModuleLevel(def.Id), p.IsModuleEquipped(def.Id)));
+    }
+
+    private Control ModuleRow(Config.ModuleDef def, int lvl, bool equipped)
+    {
+        int tier = Sentinel.Meta.Progression.ModuleTier(lvl);
+        var accent = TierColor(tier);
+
+        var p = new PanelContainer();
+        p.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(accent, equipped ? 0.13f : 0.05f),
+            BorderColor = new Color(accent, equipped ? 0.85f : 0.4f),
+            BorderWidthLeft = 4, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 10, ContentMarginBottom = 10,
+        });
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 12);
+        p.AddChild(row);
+
+        var col = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        col.AddThemeConstantOverride("separation", 3);
+        row.AddChild(col);
+
+        var top = new Label { Text = $"{(tier == 0 ? "—" : $"◈ T{tier}")}   {def.Name.ToUpperInvariant()}   ·   {(lvl > 0 ? $"Lv.{lvl}" : "not installed")}" };
+        top.AddThemeFontOverride("font", UiTheme.Display);
+        top.AddThemeFontSizeOverride("font_size", 20);
+        top.AddThemeColorOverride("font_color", accent.Lightened(0.28f));
+        col.AddChild(top);
+
+        var tx = new Label { Text = def.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.65f) };
+        tx.AddThemeFontSizeOverride("font_size", 15);
+        col.AddChild(tx);
+
+        double cost = App.Prog.ModuleCost(def);
+        bool canBuy = cost >= 0 && App.Save.ResearchData >= cost;
+        var up = new Button
+        {
+            Text = cost < 0 ? "MAX" : $"◇ {F(cost)}",
+            CustomMinimumSize = new Vector2(126, 62), Disabled = !canBuy,
+        };
+        up.AddThemeFontSizeOverride("font_size", 17);
+        if (canBuy) UiTheme.StylePrimary(up);
+        up.Pressed += () =>
+        {
+            if (App.Prog.BuyModule(def))
+            {
+                Sentinel.Audio.AudioManager.Instance?.Confirm();
+                Rebuild();
+            }
+        };
+        row.AddChild(up);
+
+        var eq = new Button
+        {
+            Text = equipped ? "Unequip" : "Equip",
+            CustomMinimumSize = new Vector2(126, 62),
+            Disabled = lvl <= 0 || (!equipped && App.Save.EquippedModules.Count >= App.Prog.ModuleSlots),
+        };
+        eq.AddThemeFontSizeOverride("font_size", 17);
+        eq.Pressed += () =>
+        {
+            if (equipped) App.Save.EquippedModules.Remove(def.Id);
+            else App.Save.EquippedModules.Add(def.Id);
+            App.Save.Save();
+            Sentinel.Audio.AudioManager.Instance?.Click();
+            Rebuild();
+        };
+        row.AddChild(eq);
+        return p;
+    }
+
+    // ------------------------------------------------------- shield / ship / research ----
+
+    private void BuildShield()
+    {
+        _body.AddChild(Dim("The Planet Shield soaks damage before the crust does. Levels are permanent."));
+        Jump("Open Sentinels & Planet Shield", () => App.ShowSentinels());
+    }
+
+    private void BuildShip()
+    {
+        _body.AddChild(Dim("The commander's hull, its weapons, and the protocols it carries."));
+        Jump("Open Sentinels & ship weapons", () => App.ShowSentinels());
+    }
+
+    private void BuildResearch()
+    {
+        _body.AddChild(Dim("Permanent account-wide upgrades, bought with Research Data."));
+        Jump("Open the Research tree", () => App.ShowResearch());
+    }
+
+    private static Label Header(string text)
+    {
+        var l = new Label { Text = text };
+        l.AddThemeFontOverride("font", UiTheme.Display);
+        l.AddThemeFontSizeOverride("font_size", 20);
+        l.AddThemeColorOverride("font_color", UiTheme.Accent);
+        return l;
+    }
+
+    private static Label Dim(string text)
+    {
+        var l = new Label { Text = text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.55f) };
+        l.AddThemeFontSizeOverride("font_size", 16);
+        return l;
     }
 
     /// <summary>Currency strip, drawn with the real loot sprites.</summary>

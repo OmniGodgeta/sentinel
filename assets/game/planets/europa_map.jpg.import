@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dbrffm11yrefq"
-path="res://.godot/imported/pluto_map.png-e2dbf980891869eab3dad1b689a53d88.ctex"
+uid="uid://mibnwg4w8i6n"
+path="res://.godot/imported/europa_map.jpg-ba6556608c3ce4a6b966d80e291ac141.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game/planets/pluto_map.png"
-dest_files=["res://.godot/imported/pluto_map.png-e2dbf980891869eab3dad1b689a53d88.ctex"]
+source_file="res://assets/game/planets/europa_map.jpg"
+dest_files=["res://.godot/imported/europa_map.jpg-ba6556608c3ce4a6b966d80e291ac141.ctex"]
 
 [params]
 

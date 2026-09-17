@@ -116,8 +116,9 @@ def main():
         if fill:
             im = fill_unimaged(im)
         im = im.resize(SIZE, Image.LANCZOS)
-        path = os.path.join(OUT, f"{pid}_map.png")
-        im.save(path)
+        path = os.path.join(OUT, f"{pid}_map.jpg")
+        # opaque photographic maps: JPEG is ~5x smaller than PNG and identical on a sphere
+        im.save(path, quality=88, optimize=True)
         print(f"  {pid:8s} {SIZE[0]}x{SIZE[1]}  <- {url.split('/')[-1][:60]}")
 
 

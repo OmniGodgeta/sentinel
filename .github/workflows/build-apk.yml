@@ -124,9 +124,51 @@ jobs:
           path: build/beyond-debug.apk
           if-no-files-found: error
 
-      - name: Attach APK to release
+      # Publish the release and attach the APK, with retries.
+      #
+      # This replaced softprops/action-gh-release@v2, which creates the release as a
+      # DRAFT, uploads the asset, then publishes. The APK is ~200MB and the upload
+      # intermittently died with "Error saving asset" — and because the publish step
+      # never ran, the release stayed a draft forever. Drafts are invisible to everyone
+      # and, worse, `/releases/latest` skips them, so the in-app updater saw no new
+      # version at all. v0.31.2, v0.32.0 and v0.33.0 were all stranded this way.
+      #
+      # Doing it by hand means the release is created published up front, so a failed
+      # upload leaves a visible release we can retry into instead of an invisible draft.
+      - name: Publish release and attach APK
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: build/beyond-debug.apk
-          fail_on_unmatched_files: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          ls -l build/beyond-debug.apk
+
+          # Create it published (not a draft) if it doesn't exist; if a previous failed
+          # run left a draft behind, flip it to published.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --draft=false
+          else
+            gh release create "$TAG" --title "$TAG" --notes "Automated build for $TAG" --latest
+          fi
+
+          # Upload with retries — a 200MB asset upload fails often enough that one
+          # attempt is not enough.
+          for attempt in 1 2 3 4; do
+            if gh release upload "$TAG" build/beyond-debug.apk --clobber; then
+              echo "uploaded on attempt $attempt"
+              break
+            fi
+            if [ "$attempt" = 4 ]; then
+              echo "::error::APK upload failed after 4 attempts"
+              exit 1
+            fi
+            echo "upload attempt $attempt failed, retrying in 20s..."
+            sleep 20
+          done
+
+          # Make sure it really is published and really has the asset, so a green run
+          # always means an installable release.
+          gh release edit "$TAG" --draft=false --latest
+          gh release view "$TAG" --json isDraft,assets \
+            --jq '"isDraft=\(.isDraft) assets=\(.assets | map(.name + " " + (.size|tostring)) | join(", "))"'

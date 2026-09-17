@@ -134,7 +134,7 @@ public static class Art
     /// equirectangular map extracted (caller falls back to the flat sprite).</summary>
     public static ShaderMaterial? PlanetMaterial(string skin)
     {
-        string map = $"res://assets/game/planets/{skin}_map.png";
+        string map = $"res://assets/game/planets/{skin}_map.jpg";
         if (!ResourceLoader.Exists(map)) return null;
 
         var look = PlanetLook.TryGetValue(skin, out var l)

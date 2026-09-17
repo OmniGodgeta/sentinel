@@ -376,7 +376,7 @@ public sealed partial class ChipScreen : CanvasLayer
     /// <summary>A chip as PDTD draws it: the tier's rarity-coloured plate with the chip's
     /// own glyph on top. Falls back to the plain glyph, then to a text symbol, so a
     /// missing sprite degrades instead of blanking the row.</summary>
-    private static Control ChipPlate(ChipDef def, ChipTierDef td, int size)
+    internal static Control ChipPlate(ChipDef def, ChipTierDef td, int size)
     {
         var holder = new Control { CustomMinimumSize = new Vector2(size, size) };
 

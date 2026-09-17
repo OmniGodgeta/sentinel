@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bs05i0t0qma6e"
-path="res://.godot/imported/triton_map.png-715052d99d76aeae7778bd1fa7831681.ctex"
+uid="uid://n7khy3hwerc0"
+path="res://.godot/imported/mars_map.jpg-9c3348e600f4a0fb7a61ef07944458a5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game/planets/triton_map.png"
-dest_files=["res://.godot/imported/triton_map.png-715052d99d76aeae7778bd1fa7831681.ctex"]
+source_file="res://assets/game/planets/mars_map.jpg"
+dest_files=["res://.godot/imported/mars_map.jpg-9c3348e600f4a0fb7a61ef07944458a5.ctex"]
 
 [params]
 

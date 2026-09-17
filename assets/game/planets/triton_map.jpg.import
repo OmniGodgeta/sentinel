@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdrh0o8nffreq"
-path="res://.godot/imported/europa_map.png-6784096eba68ca720d93011c79d3d5b0.ctex"
+uid="uid://ce38wl6detab"
+path="res://.godot/imported/triton_map.jpg-8324d58c6ffe29cf84068358fe9c4523.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game/planets/europa_map.png"
-dest_files=["res://.godot/imported/europa_map.png-6784096eba68ca720d93011c79d3d5b0.ctex"]
+source_file="res://assets/game/planets/triton_map.jpg"
+dest_files=["res://.godot/imported/triton_map.jpg-8324d58c6ffe29cf84068358fe9c4523.ctex"]
 
 [params]
 
