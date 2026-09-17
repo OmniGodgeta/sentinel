@@ -95,18 +95,51 @@ public sealed partial class ResearchScreen : CanvasLayer
             return;
         }
 
+        // PDTD draws a branch as a hex tech tree, not a list — tier 1 at the bottom,
+        // the spine zigzagging up. Tapping a hex opens that node's detail card below it,
+        // which is where the buy button lives.
+        var tree = new ResearchTree
+        {
+            Accent = BranchAccent(_branch),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
         for (int tier = 1; tier <= 6; tier++)
         {
             bool tierOpen = p.TierOpen(_branch, tier);
-            var th = new Label { Text = tierOpen ? $"— TIER {tier} —" : $"— TIER {tier} (locked · Cmdr {Progression.TierCommanderGate(tier)}, 3 in tier {tier - 1}) —" };
-            th.AddThemeFontSizeOverride("font_size", 22);
-            th.Modulate = tierOpen ? new Color(1, 1, 1, 0.7f) : new Color(1, 1, 1, 0.3f);
-            _list.AddChild(th);
-
             foreach (var node in App.Research.NodesIn(_branch, tier))
-                _list.AddChild(NodeRow(node, p));
+            {
+                tree.Cells.Add(new ResearchTree.Cell
+                {
+                    Id = node.Id,
+                    Name = node.Name,
+                    Tier = tier,
+                    Ranks = p.Ranks(node.Id),
+                    RankCount = Mathf.Max(1, node.RankCount),
+                    Capstone = node.IsCapstone,
+                    Locked = !tierOpen,
+                    Affordable = p.CanBuy(node, out _),
+                });
+            }
         }
+        tree.Layout(960f);
+        tree.OnPick += id => { _selected = id; Rebuild(); };
+        _list.AddChild(tree);
+
+        // detail card for whatever's selected (default: the deepest node you can buy)
+        if (string.IsNullOrEmpty(_selected) || App.Research.Node(_selected) is null
+            || App.Research.Node(_selected)!.Branch != _branch)
+        {
+            _selected = "";
+            for (int tier = 6; tier >= 1 && _selected == ""; tier--)
+                foreach (var n in App.Research.NodesIn(_branch, tier))
+                    if (p.CanBuy(n, out _)) { _selected = n.Id; break; }
+        }
+        var sel = string.IsNullOrEmpty(_selected) ? null : App.Research.Node(_selected);
+        if (sel != null) _list.AddChild(NodeRow(sel, p));
     }
+
+    /// <summary>Which node's detail card is open under the tree.</summary>
+    private string _selected = "";
 
     private Control NodeRow(ResearchNode node, Progression p)
     {
