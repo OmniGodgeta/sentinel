@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Sentinel.Meta;
 
 /// <summary>
@@ -111,17 +113,73 @@ public sealed class ModifierSet
     public int HeroLevel = 1;
     public int AbilitySlots = 3;
 
+    // ---- per-weapon modifiers -------------------------------------------------
+    //
+    // PDTD's upgrade cards and chips are almost all per-weapon ("Radiation Link DMG
+    // +60%", "Waterdrop DMG +7%"), not global. Rather than add a named field per
+    // weapon per stat (10 kinds x ~8 stats), they land in one bag keyed by
+    // "<kind>:<stat>", written through two effect-key prefixes:
+    //
+    //   "ow:<kind>:<stat>"     numeric — damage, rate, radius, duration, count,
+    //                          tick_rate, rotate_speed, explosion_radius, ...
+    //   "trait:<kind>:<name>"  a named behaviour flag PDTD's card text refers to
+    //                          (RadiationLineExplosion, enableRotate, ...)
+    //
+    // Numeric stats accumulate additively and are read as "1 + value" multipliers
+    // (or raw adds for the _flat / count ones) — see WeaponMult/WeaponAdd below.
+    // Unknown kinds and stats are stored harmlessly, so data can name a mechanic
+    // before the sim implements it without throwing anything away.
+    private System.Collections.Generic.Dictionary<string, float> _weaponMods = new();
+
+    /// <summary>A per-weapon stat as a multiplier: 1 + the accumulated bonus.
+    /// Use for damage / rate / radius / duration style stats.</summary>
+    public float WeaponMult(string kind, string stat)
+        => 1f + _weaponMods.GetValueOrDefault(kind + ":" + stat);
+
+    /// <summary>A per-weapon stat as a raw additive (counts, flat seconds, flags).</summary>
+    public float WeaponAdd(string kind, string stat)
+        => _weaponMods.GetValueOrDefault(kind + ":" + stat);
+
+    /// <summary>Has this weapon been granted a named behaviour by a card/chip?</summary>
+    public bool WeaponTrait(string kind, string trait)
+        => _weaponMods.GetValueOrDefault(kind + ":@" + trait) > 0f;
+
     public ModifierSet Clone()
     {
         var c = (ModifierSet)MemberwiseClone();
         c.UnlockedTurrets = new System.Collections.Generic.HashSet<string>(UnlockedTurrets);
         c.UnlockedAbilities = new System.Collections.Generic.HashSet<string>(UnlockedAbilities);
         c.OrbitalMeta = new System.Collections.Generic.Dictionary<string, int>(OrbitalMeta);
+        // MemberwiseClone copies the reference; the bag is mutable per-run so it has
+        // to be a real copy or a run's card picks would leak into the next run.
+        c._weaponMods = new System.Collections.Generic.Dictionary<string, float>(_weaponMods);
         return c;
     }
 
     public void ApplyEffect(string key, float v)
     {
+        // "ow:<kind>:<stat>" and "trait:<kind>:<name>" — see _weaponMods above.
+        if (key.StartsWith("ow:"))
+        {
+            int sep = key.IndexOf(':', 3);
+            if (sep > 3)
+            {
+                string k = key[3..sep] + ":" + key[(sep + 1)..];
+                _weaponMods[k] = _weaponMods.GetValueOrDefault(k) + v;
+            }
+            return;
+        }
+        if (key.StartsWith("trait:"))
+        {
+            int sep = key.IndexOf(':', 6);
+            if (sep > 6)
+            {
+                string k = key[6..sep] + ":@" + key[(sep + 1)..];
+                _weaponMods[k] = _weaponMods.GetValueOrDefault(k) + v;
+            }
+            return;
+        }
+
         switch (key)
         {
             case "turret_damage": TurretDamageMult += v; break;

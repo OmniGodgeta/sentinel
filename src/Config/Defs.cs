@@ -200,7 +200,11 @@ public sealed record ChipTierDef
     public int Tier { get; init; }
     public string Name { get; init; } = "";
     public string Color { get; init; } = "#9b9bb0";
-    public int MergeCost { get; init; } = 3;
+    /// <summary>How many of this tier fuse into ONE of the next (0 = top tier, can't
+    /// merge). The fused chip is a random archetype, not the same one — PDTD's rule.</summary>
+    public int MergeCount { get; init; } = 3;
+    /// <summary>Which `assets/game/pdtd/chip/plate_*` sprite backs a chip of this tier.</summary>
+    public string Plate { get; init; } = "";
 }
 
 /// <summary>A chip archetype (data/chips.json) — dropped from Armory chests (see
@@ -213,8 +217,19 @@ public sealed record ChipDef
     public string Name { get; init; } = "";
     public string Text { get; init; } = "";
     public string Icon { get; init; } = "";
+    /// <summary>Which `assets/game/pdtd/chip/glyph_*` sprite sits on the chip's plate.</summary>
+    public string Glyph { get; init; } = "";
     public string EffectKey { get; init; } = "";
     public float EffectPerTier { get; init; }
+}
+
+/// <summary>Maps the retired v0.29/v0.30 chip ids and 4-tier scheme onto the current
+/// 7-tier PDTD one, so an existing save's chips carry over instead of vanishing from
+/// the Armory. Applied once per load by <see cref="Sentinel.Meta.ChipVault"/>.</summary>
+public sealed record ChipLegacyMap
+{
+    public System.Collections.Generic.Dictionary<string, int> Tiers { get; init; } = new();
+    public System.Collections.Generic.Dictionary<string, string> Chips { get; init; } = new();
 }
 
 /// <summary>An in-run draft boost card (data/runcards.json) — a PDTD-style percentage
@@ -275,6 +290,7 @@ public sealed record ChipsDb
     public int EquipSlots { get; init; } = 4;
     public System.Collections.Generic.List<ChipTierDef> Tiers { get; init; } = new();
     public System.Collections.Generic.List<ChipDef> Chips { get; init; } = new();
+    public ChipLegacyMap LegacyTierMap { get; init; } = new();
 }
 
 public sealed record TurretFork

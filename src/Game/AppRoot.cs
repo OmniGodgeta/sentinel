@@ -33,6 +33,7 @@ public sealed partial class AppRoot : Node
         Prog = new Progression(Save, Research, Cfg);
         Shop = new Shop(Save, Cfg);
         Chips = new ChipVault(Save, Cfg);
+        Chips.MigrateLegacyChips();   // carry pre-v0.31 chips onto the 7-tier table
         Sentinel.Audio.AudioManager.Instance?.SetVolume(Save.Options.SfxVolume, Save.Options.Muted);
         Sentinel.Audio.MusicPlayer.Instance?.SetVolume(Save.Options.MusicVolume, Save.Options.Muted);
 
@@ -66,6 +67,7 @@ public sealed partial class AppRoot : Node
         Prog = new Progression(Save, Research, Cfg);
         Shop = new Shop(Save, Cfg);
         Chips = new ChipVault(Save, Cfg);
+        Chips.MigrateLegacyChips();   // carry pre-v0.31 chips onto the 7-tier table
         SyncCodex();
     }
 

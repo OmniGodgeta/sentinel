@@ -138,12 +138,22 @@ public sealed partial class SimWorld
     {
         var d = Cfg.OrbitalWeapons[i];
         int L = _owLevel[i];
-        // chip bonuses (Mods.OrbitalWeaponDamageMult/RadiusMult) apply uniformly to every
-        // orbital weapon — see ModifierSet.cs's "orbital weapons: chip bonuses" section
-        float dmg = (d.Damage + d.DamagePerLevel * (L - 1)) * Mathf.Max(0.2f, Mods.OrbitalWeaponDamageMult);
-        int cnt = Mathf.Max(1, d.Count + Mathf.FloorToInt(d.CountPerLevel * (L - 1)));
-        float radius = (d.Radius + d.RadiusPerLevel * (L - 1)) * Mathf.Max(0.2f, Mods.OrbitalWeaponRadiusMult);
-        float dur = d.Duration + d.DurationPerLevel * (L - 1);
+        // Two layers stack here: the global chip/research bonuses
+        // (Mods.OrbitalWeapon*Mult), which apply to every sentinel, and the per-weapon
+        // ones from PDTD's upgrade cards and per-weapon chips ("Radiation Link DMG +60%"),
+        // which ModifierSet keys by weapon Kind — see its "per-weapon modifiers" section.
+        string kind = d.Kind;
+        float dmg = (d.Damage + d.DamagePerLevel * (L - 1))
+                    * Mathf.Max(0.2f, Mods.OrbitalWeaponDamageMult)
+                    * Mathf.Max(0.05f, Mods.WeaponMult(kind, "damage"));
+        int cnt = Mathf.Max(1, d.Count + Mathf.FloorToInt(d.CountPerLevel * (L - 1))
+                               + Mathf.FloorToInt(Mods.WeaponAdd(kind, "count")));
+        float radius = (d.Radius + d.RadiusPerLevel * (L - 1))
+                       * Mathf.Max(0.2f, Mods.OrbitalWeaponRadiusMult)
+                       * Mathf.Max(0.2f, Mods.WeaponMult(kind, "radius"));
+        float dur = (d.Duration + d.DurationPerLevel * (L - 1))
+                    * Mathf.Max(0.2f, Mods.WeaponMult(kind, "duration"))
+                    + Mods.WeaponAdd(kind, "duration_flat");
         Vector2 from = OrbitalPlatformPos(i);
 
         switch (d.Kind)
@@ -295,7 +305,9 @@ public sealed partial class SimWorld
             }
         }
 
-        _owCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1)) / Mathf.Max(0.2f, Mods.OrbitalWeaponRateMult);
+        _owCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1))
+                   / Mathf.Max(0.2f, Mods.OrbitalWeaponRateMult)
+                   / Mathf.Max(0.2f, Mods.WeaponMult(kind, "rate"));
         Events.Push(SimEventKind.HeroWeaponFired, from, radius, 10 + i);
     }
 

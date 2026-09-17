@@ -1,28 +1,68 @@
 {
+  "_note": "Chips, rebuilt on PDTD's own scheme (config/data/chip_info). PDTD uses SEVEN quality tiers, not four, and scales a chip's number linearly with tier: a damage chip is 7% at common and 49% at ultimate (7 x tier). 'effect_per_tier' is that per-tier step, so a chip's value is always effect_per_tier x tier. Most chips are per-weapon — effect keys use the 'ow:<kind>:<stat>' form ModifierSet understands — with a handful of global ones, matching PDTD's split. merge_count is how many of one tier fuse into ONE of the next; the result is a RANDOM archetype of that higher tier (PDTD's behaviour, and what makes merging a decision rather than bookkeeping).",
+
   "equip_slots": 4,
+
   "tiers": [
-    { "tier": 1, "name": "T1", "color": "#9b9bb0", "merge_cost": 3 },
-    { "tier": 2, "name": "T2", "color": "#4fd6de", "merge_cost": 3 },
-    { "tier": 3, "name": "T3", "color": "#b06bf2", "merge_cost": 3 },
-    { "tier": 4, "name": "T4", "color": "#f5c518", "merge_cost": 0 }
+    { "tier": 1, "name": "Common",    "color": "#9aa4b2", "merge_count": 3, "plate": "plate_common" },
+    { "tier": 2, "name": "Fine",      "color": "#46d17a", "merge_count": 3, "plate": "plate_fine" },
+    { "tier": 3, "name": "Rare",      "color": "#5ba4f5", "merge_count": 3, "plate": "plate_rare" },
+    { "tier": 4, "name": "Epic",      "color": "#b57cf0", "merge_count": 3, "plate": "plate_epic" },
+    { "tier": 5, "name": "Legendary", "color": "#f0a93a", "merge_count": 3, "plate": "plate_legendary" },
+    { "tier": 6, "name": "Supreme",   "color": "#ff6b4a", "merge_count": 3, "plate": "plate_supreme" },
+    { "tier": 7, "name": "Ultimate",  "color": "#ff3fd0", "merge_count": 0, "plate": "plate_ultimate" }
   ],
+
   "chips": [
-    { "id": "chip_damage", "name": "Warhead Chip", "icon": "damage",
-      "text": "Boosts every sentinel's damage.", "effect_key": "orbital_weapon_damage", "effect_per_tier": 0.08 },
+    { "id": "chip_dmg_battery",     "name": "Missile Core",        "icon": "battery",     "glyph": "glyph_1",
+      "text": "Missile Battery DMG",   "effect_key": "ow:battery:damage",     "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_waterdrop",   "name": "Aqua Core",           "icon": "waterdrop",   "glyph": "glyph_2",
+      "text": "Waterdrop DMG",         "effect_key": "ow:waterdrop:damage",   "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_laser",       "name": "Photon Core",         "icon": "laser",       "glyph": "glyph_3",
+      "text": "Laser DMG",             "effect_key": "ow:laser:damage",       "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_beam",        "name": "Focusing Core",       "icon": "beam_laser",  "glyph": "glyph_4",
+      "text": "Beam DMG",              "effect_key": "ow:beam_laser:damage",  "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_radline",     "name": "Isotope Core",        "icon": "rad_line",    "glyph": "glyph_5",
+      "text": "Radiation Link DMG",    "effect_key": "ow:rad_line:damage",    "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_radzone",     "name": "Fallout Core",        "icon": "rad_zone",    "glyph": "glyph_6",
+      "text": "Radiation Zone DMG",    "effect_key": "ow:rad_zone:damage",    "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_spacebomb",   "name": "Gravity Core",        "icon": "space_bomb",  "glyph": "glyph_7",
+      "text": "Space Bomb DMG",        "effect_key": "ow:space_bomb:damage",  "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_forcefield",  "name": "Collapse Core",       "icon": "force_field", "glyph": "glyph_8",
+      "text": "Force Field DMG",       "effect_key": "ow:force_field:damage", "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_lightning",   "name": "Arc Core",            "icon": "lightning",   "glyph": "glyph_9",
+      "text": "Chain Lightning DMG",   "effect_key": "ow:lightning:damage",   "effect_per_tier": 0.07 },
+    { "id": "chip_dmg_shockorb",    "name": "Voltaic Core",        "icon": "shock_orb",   "glyph": "glyph_10",
+      "text": "Ball Lightning DMG",    "effect_key": "ow:shock_orb:damage",   "effect_per_tier": 0.07 },
 
-    { "id": "chip_cooldown", "name": "Coolant Chip", "icon": "cooldown",
-      "text": "Speeds up every sentinel's fire rate.", "effect_key": "orbital_weapon_rate", "effect_per_tier": 0.06 },
+    { "id": "chip_rate_all",        "name": "Coolant Chip",        "icon": "cooldown",    "glyph": "glyph_11",
+      "text": "All sentinel cooldown speed", "effect_key": "orbital_weapon_rate",   "effect_per_tier": 0.05 },
+    { "id": "chip_dmg_all",         "name": "Warhead Chip",        "icon": "damage",      "glyph": "glyph_12",
+      "text": "All sentinel DMG",            "effect_key": "orbital_weapon_damage", "effect_per_tier": 0.05 },
+    { "id": "chip_radius_all",      "name": "Amplifier Chip",      "icon": "radius",      "glyph": "glyph_13",
+      "text": "All sentinel radius",         "effect_key": "orbital_weapon_radius", "effect_per_tier": 0.05 },
+    { "id": "chip_shield",          "name": "Aegis Chip",          "icon": "shield",      "glyph": "glyph_14",
+      "text": "Planet Shield capacity",      "effect_key": "planet_shield_mult",    "effect_per_tier": 0.05 },
+    { "id": "chip_hull",            "name": "Plating Chip",        "icon": "hull",        "glyph": "glyph_15",
+      "text": "Commander hull",              "effect_key": "hero_hull",             "effect_per_tier": 0.04 },
+    { "id": "chip_integrity",       "name": "Bedrock Chip",        "icon": "hull",        "glyph": "glyph_16",
+      "text": "Planet integrity",            "effect_key": "planet_integrity",      "effect_per_tier": 0.04 },
+    { "id": "chip_salvage",         "name": "Salvage Chip",        "icon": "salvage",     "glyph": "glyph_17",
+      "text": "Research Data earned",        "effect_key": "rd_gain",               "effect_per_tier": 0.05 },
+    { "id": "chip_xp",              "name": "Datalink Chip",       "icon": "salvage",     "glyph": "glyph_18",
+      "text": "Commander XP earned",         "effect_key": "xp_gain",               "effect_per_tier": 0.05 }
+  ],
 
-    { "id": "chip_radius", "name": "Amplifier Chip", "icon": "radius",
-      "text": "Widens every sentinel's blast/beam/zone radius.", "effect_key": "orbital_weapon_radius", "effect_per_tier": 0.07 },
-
-    { "id": "chip_shield", "name": "Aegis Chip", "icon": "shield",
-      "text": "Strengthens the Planet Shield's capacity.", "effect_key": "planet_shield_mult", "effect_per_tier": 0.06 },
-
-    { "id": "chip_hull", "name": "Plating Chip", "icon": "hull",
-      "text": "Reinforces the hero ship's hull.", "effect_key": "hero_hull", "effect_per_tier": 0.05 },
-
-    { "id": "chip_salvage", "name": "Salvage Chip", "icon": "salvage",
-      "text": "More Research Data earned per mission.", "effect_key": "rd_gain", "effect_per_tier": 0.05 }
-  ]
+  "legacy_tier_map": {
+    "_note": "v0.29-v0.30 shipped four tiers (T1-T4) with six archetypes. Those ids no longer exist, so ChipVault migrates them on load rather than letting them silently disappear from the Armory. Old tier N maps to the new tier below, and each retired archetype maps to its nearest new one.",
+    "tiers": { "1": 1, "2": 3, "3": 5, "4": 7 },
+    "chips": {
+      "chip_damage": "chip_dmg_all",
+      "chip_cooldown": "chip_rate_all",
+      "chip_radius": "chip_radius_all",
+      "chip_shield": "chip_shield",
+      "chip_hull": "chip_hull",
+      "chip_salvage": "chip_salvage"
+    }
+  }
 }

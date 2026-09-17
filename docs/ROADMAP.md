@@ -1958,3 +1958,55 @@ Current: **v0.26.2**, `application/config/version = "0.26.2"`, APK ~200 MB
   that's not license to go build a different, bigger feature — stay scoped.
 - Fuller running history: `~/.claude/projects/-home-shadowswords-Work/memory/`
   (`sentinel-game.md`, `pdtd-reference.md`) on the original dev machine.
+
+## v0.31.0 — chips rebuilt on PDTD's table, Armory shop, canonical sentinel art
+
+Reported: chips accumulated in earlier versions had disappeared; the updater's
+Download button did nothing; keys showed the wrong art.
+
+- **Chip loss diagnosed and migrated.** v0.29/v0.30 shipped six chip archetypes
+  over four tiers. Rebuilding on PDTD's real table (`config/data/chip_info`:
+  SEVEN qualities, value scaling linearly — a damage chip is 7% at common and
+  49% at ultimate) retires every old id, and the Armory only renders chips whose
+  archetype still exists, so an existing inventory would have gone invisible
+  while still sitting in save.json. `ChipVault.MigrateLegacyChips` maps the old
+  ids and tiers across on load (old T1/T2/T3/T4 -> Common/Rare/Legendary/
+  Ultimate, so a maxed old chip stays maxed). Idempotent.
+- **Merging is now PDTD's.** Three chips of a tier — any archetypes, not three
+  of the same — fuse into ONE chip of the next tier with a **random** archetype.
+  The old same-archetype merge meant a pile of the wrong chip stayed wrong.
+- **Two real bugs fixed in `SpendChips`**: it spent whatever stack it reached
+  next, so paying 1 point with only top-tier chips in hand destroyed a
+  729-value chip and gave no change. It now takes only what's needed and never
+  breaks into a tier while anything cheaper can still cover the bill.
+- **Save durability.** A failed load used to return an empty SaveGame, which the
+  next write committed over the top of real progress. It now copies the bad file
+  aside, falls back to `save.json.bak` (rolled on every successful write), and
+  only starts fresh if both are gone.
+- **Per-weapon modifier layer.** PDTD's cards and chips are almost all
+  per-weapon ("Radiation Link DMG +60%"). `ModifierSet` gained a keyed bag
+  written through `ow:<kind>:<stat>` and `trait:<kind>:<name>` effect keys, and
+  `OrbitalWeapons` reads it alongside the existing global multipliers. This is
+  the foundation the card rework needs.
+- **Armory on PDTD's shop layout**: chests as side-by-side art cards with the
+  real box sprites, Open 1 / Open 10, per-tier fuse rows, and chips drawn on
+  their rarity plate with a real glyph.
+- **Key art fixed.** The silver/gold key sprites were extracted correctly all
+  along but nothing used them — the screens rendered literal emoji, and a gold
+  key emoji next to the silver count is exactly the reported symptom.
+- **Canonical sentinel art** (`tools/extract_pdtd_sentinels.py`): all eleven
+  craft pulled from PDTD's own `skins/sentinel/000NN_<weapon>` directories, as
+  both the orbiting model and the `bg`+craft tile PDTD builds its cards from.
+
+### Still open from this round (not in v0.31.0)
+- `data/skillcards.json` is generated (187 PDTD cards, verbatim titles/text) but
+  **not yet wired into the draft** — the in-run cards are still the old ones.
+- Star levels (3 pips, 4th promotes, purple at higher levels), the Level Up
+  screen layout, and the HUD's bottom tile bar.
+- Radiation Link: should start as one static line, with rotation / extra links /
+  end explosion / endpoint lasers arriving as upgrade cards (confirmed against
+  PDTD's own card list — they are all upgrades there too, not base behaviour).
+- Waterdrop should ricochet between enemies rather than fire a beam.
+- Enemies reaching the planet vanish instead of stopping at range and firing.
+- Enemy scale/HP pass; research/menu centring; Module page on PDTD's layout;
+  planet renames (Mars/Europa/Titan/Triton/Pluto) + preview.

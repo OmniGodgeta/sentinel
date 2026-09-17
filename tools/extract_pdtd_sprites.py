@@ -136,6 +136,73 @@ GROUPS = {
         ("ui/sprites/item/crystal_reforge.png.ab", "crystal"),
         ("ui/sprites/item/medal_icon.png.ab", "medal"),
     ], False, 256),
+
+    # The Armory's chests. PDTD's shop sells one box per equipment family
+    # (sentinel / planet / mothership / force shield) plus a generic chest, and
+    # dresses the row with the two "chest slot" plates from the slot machine UI.
+    "chestart": ("chest", [
+        ("ui/sprites/item/box_sentinel.png.ab", "box_sentinel"),
+        ("ui/sprites/item/box_planet.png.ab", "box_planet"),
+        ("ui/sprites/item/box_mothership.png.ab", "box_mothership"),
+        ("ui/sprites/item/box_shield.png.ab", "box_shield"),
+        ("ui/sprites/slot/gray_chests.png.ab", "chest_silver"),
+        ("ui/sprites/slot/purple_chests.png.ab", "chest_gold"),
+        ("ui/sprites/shopping/bg_box_normal.png.ab", "box_bg_normal"),
+        ("ui/sprites/shopping/bg_box_super.png.ab", "box_bg_super"),
+    ], False, 512),
+
+    # Chip screen chrome: the rarity-tinted chip plate, the equipped-slot plate,
+    # the empty slot, and the 27 chip glyphs PDTD picks from.
+    "chipui": ("chip", [
+        ("ui/sprites/chip/chipicon_common.png.ab", "plate_common"),
+        ("ui/sprites/chip/chipicon_fine.png.ab", "plate_fine"),
+        ("ui/sprites/chip/chipicon_rare.png.ab", "plate_rare"),
+        ("ui/sprites/chip/chipicon_epic.png.ab", "plate_epic"),
+        ("ui/sprites/chip/chipicon_legendary.png.ab", "plate_legendary"),
+        ("ui/sprites/chip/chipicon_supreme.png.ab", "plate_supreme"),
+        ("ui/sprites/chip/chipicon_ultimate.png.ab", "plate_ultimate"),
+        ("ui/sprites/chip/chiponslot_empty.png.ab", "slot_empty"),
+        ("ui/sprites/chip/outline_slot.png.ab", "slot_outline"),
+        ("ui/sprites/chip/quality_slot.png.ab", "slot_quality"),
+        ("ui/sprites/chip/panel_slot.png.ab", "panel"),
+    ] + [
+        (f"ui/sprites/chip/chip_affix/icon_chip_{i}.png.ab", f"glyph_{i}") for i in range(1, 28)
+    ], False, 256),
+
+    # Module screen chrome. PDTD's Module page is six equipment families with a
+    # glyph each, laid over a slot plate — Beyond's data/modules.json rows map
+    # onto the same six, so these are the icons that page should be using.
+    "moduleui": ("module", [
+        ("ui/sprites/slot/icon_weapon.png.ab", "icon_weapon"),
+        ("ui/sprites/slot/icon_shield.png.ab", "icon_shield"),
+        ("ui/sprites/slot/icon_engine.png.ab", "icon_engine"),
+        ("ui/sprites/slot/icon_reactor.png.ab", "icon_reactor"),
+        ("ui/sprites/slot/icon_radar.png.ab", "icon_radar"),
+        ("ui/sprites/slot/icon_quantacore.png.ab", "icon_quantacore"),
+        ("ui/sprites/slot/icon_all.png.ab", "icon_all"),
+        ("ui/sprites/slot/weapon.png.ab", "art_weapon"),
+        ("ui/sprites/slot/shield.png.ab", "art_shield"),
+        ("ui/sprites/slot/engine.png.ab", "art_engine"),
+        ("ui/sprites/slot/reactor.png.ab", "art_reactor"),
+        ("ui/sprites/slot/radar.png.ab", "art_radar"),
+        ("ui/sprites/slot/quantacore.png.ab", "art_quantacore"),
+        ("ui/sprites/item/designslot.png.ab", "slot"),
+        ("ui/sprites/tech/techslot_back.png.ab", "tech_back"),
+        ("ui/sprites/tech/techslot_front.png.ab", "tech_front"),
+        ("ui/sprites/tech/techslot_outline.png.ab", "tech_outline"),
+    ], False, 384),
+
+    # Per-weapon "alloy" cartridges — a clean, uniform glyph for all eleven
+    # sentinels (the skillicon group only covers seven), which is what the HUD
+    # and the Codex want where a full tile would be too big.
+    "alloy": ("alloy", [
+        (f"ui/sprites/ultimateupgradeui/ultimate_alloy_{i}.png.ab", n) for i, n in (
+            (10001, "missile"), (10002, "waterdrop"), (10003, "railgun"),
+            (10004, "laser"), (10005, "beam_laser"), (10006, "rad_line"),
+            (10007, "rad_zone"), (10008, "space_bomb"), (10009, "force_field"),
+            (10010, "lightning"), (10011, "shock_orb"),
+        )
+    ], False, 256),
 }
 
 

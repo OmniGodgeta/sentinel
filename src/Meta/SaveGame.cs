@@ -13,6 +13,9 @@ namespace Sentinel.Meta;
 public sealed class SaveGame
 {
     private const string Path = "user://save.json";
+    /// <summary>The previous good save, rolled on every write so a corrupt or truncated
+    /// save.json costs one session instead of the whole profile.</summary>
+    private const string BackupPath = "user://save.json.bak";
     private const int Version = 1;
 
     public int Version_ { get; set; } = Version;
@@ -226,8 +229,30 @@ public sealed class SaveGame
         }
         catch (System.Exception ex)
         {
-            GD.PushError($"SaveGame: load failed, starting fresh: {ex.Message}");
-            return new SaveGame();
+            // Never silently hand back an empty save on top of a file that still has the
+            // player's progress in it — the next Save() would overwrite it for good.
+            // Keep the unreadable file aside, try the last known-good backup, and only
+            // start fresh if that fails too.
+            GD.PushError($"SaveGame: load failed ({ex.Message}); keeping a copy and trying the backup");
+            try { DirAccess.CopyAbsolute(Path, Path + ".corrupt"); } catch { /* best effort */ }
+            if (FileAccess.FileExists(BackupPath))
+            {
+                try
+                {
+                    using var bf = FileAccess.Open(BackupPath, FileAccess.ModeFlags.Read);
+                    var b = JsonSerializer.Deserialize<SaveGame>(bf.GetAsText(), Opts);
+                    if (b != null)
+                    {
+                        GD.Print("SaveGame: recovered from backup");
+                        b.NormalizePresets();
+                        return b;
+                    }
+                }
+                catch (System.Exception bex) { GD.PushError($"SaveGame: backup unreadable too: {bex.Message}"); }
+            }
+            var fresh2 = new SaveGame();
+            fresh2.NormalizePresets();
+            return fresh2;
         }
     }
 
@@ -235,8 +260,16 @@ public sealed class SaveGame
     {
         try
         {
+            string json = JsonSerializer.Serialize(this, Opts);
+            // Roll the previous good file to .bak first. A half-written save (app killed
+            // mid-write, storage full) then costs one session rather than the whole
+            // profile — Load() falls back to this.
+            if (FileAccess.FileExists(Path))
+            {
+                try { DirAccess.CopyAbsolute(Path, BackupPath); } catch { /* best effort */ }
+            }
             using var f = FileAccess.Open(Path, FileAccess.ModeFlags.Write);
-            f.StoreString(JsonSerializer.Serialize(this, Opts));
+            f.StoreString(json);
         }
         catch (System.Exception ex)
         {
