@@ -65,7 +65,7 @@ public sealed partial class AbilityScreen : CanvasLayer
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        _list = new VBoxContainer { CustomMinimumSize = new Vector2(742, 0) };
+        _list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         _list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(_list);
 

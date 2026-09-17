@@ -127,6 +127,22 @@ public sealed partial class ShopScreen : CanvasLayer
             desc.AddThemeFontSizeOverride("font_size", 20);
             col.AddChild(desc);
 
+            var actRow = new HBoxContainer();
+            actRow.AddThemeConstantOverride("separation", 10);
+            col.AddChild(actRow);
+
+            // Worlds get a Preview so you can see the planet before spending on it —
+            // they're the one tab where the thing you're buying is a full-screen visual.
+            if (it.Apply.StartsWith("planet:"))
+            {
+                var prev = new Button { Text = "👁  Preview", CustomMinimumSize = new Vector2(200, 76) };
+                prev.AddThemeFontSizeOverride("font_size", 22);
+                string planetId = it.Apply["planet:".Length..];
+                string planetName = it.Name;
+                prev.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); ShowWorldPreview(planetId, planetName, it.Desc); };
+                actRow.AddChild(prev);
+            }
+
             var act = new Button { CustomMinimumSize = new Vector2(0, 76), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             act.AddThemeFontSizeOverride("font_size", 24);
             var itc = it;
@@ -134,7 +150,7 @@ public sealed partial class ShopScreen : CanvasLayer
             else if (owned) { act.Text = "Equip"; UiTheme.StylePrimary(act); act.Pressed += () => { App.Shop.Equip(itc); Sentinel.Audio.AudioManager.Instance?.Click(); Rebuild(); }; }
             else if (shop.CanBuy(it)) { act.Text = $"Requisition  ·  ✦ {it.Cost}"; UiTheme.StylePrimary(act); act.Pressed += () => { if (App.Shop.Buy(itc)) { Sentinel.Audio.AudioManager.Instance?.Confirm(); Rebuild(); } }; }
             else { act.Text = $"✦ {it.Cost} — need {it.Cost - shop.Balance} more"; act.Disabled = true; }
-            col.AddChild(act);
+            actRow.AddChild(act);
 
             _list.AddChild(panel);
         }
@@ -148,5 +164,66 @@ public sealed partial class ShopScreen : CanvasLayer
         };
         note.AddThemeFontSizeOverride("font_size", 18);
         _list.AddChild(note);
+    }
+
+    /// <summary>Full-screen look at a world before buying it: the planet art large, its
+    /// name and blurb under it, tap anywhere to dismiss. Terra has no planets/ sprite —
+    /// it's the shader-rendered Earth — so it falls back to the day map.</summary>
+    private void ShowWorldPreview(string planetId, string name, string desc)
+    {
+        var layer = new CanvasLayer { Layer = 40 };
+        AddChild(layer);
+
+        var dim = new ColorRect { Color = new Color(0.01f, 0.015f, 0.03f, 0.93f) };
+        dim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        layer.AddChild(dim);
+
+        var col = new VBoxContainer
+        {
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetLeft = 30, OffsetRight = -30, OffsetTop = -330, OffsetBottom = 330,
+        };
+        col.AddThemeConstantOverride("separation", 16);
+        col.Theme = UiTheme.Instance;
+        layer.AddChild(col);
+
+        var tex = GD.Load<Texture2D>($"res://assets/game/planets/{planetId}.png")
+                  ?? GD.Load<Texture2D>("res://assets/game/earth_day.png");
+        if (tex != null)
+        {
+            col.AddChild(new TextureRect
+            {
+                Texture = tex,
+                CustomMinimumSize = new Vector2(0, 420),
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            });
+        }
+
+        var nm = new Label { Text = name.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center };
+        nm.AddThemeFontOverride("font", UiTheme.Display);
+        nm.AddThemeFontSizeOverride("font_size", 44);
+        nm.AddThemeColorOverride("font_color", UiTheme.Accent);
+        col.AddChild(nm);
+
+        var dl = new Label
+        {
+            Text = desc,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Modulate = new Color(1, 1, 1, 0.72f),
+        };
+        dl.AddThemeFontSizeOverride("font_size", 22);
+        col.AddChild(dl);
+
+        var hint = new Label { Text = "tap anywhere to close", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.4f) };
+        hint.AddThemeFontSizeOverride("font_size", 17);
+        col.AddChild(hint);
+
+        // whole-screen dismiss
+        var catcher = new Button { Flat = true, MouseFilter = Control.MouseFilterEnum.Stop };
+        catcher.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        catcher.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); layer.QueueFree(); };
+        layer.AddChild(catcher);
     }
 }

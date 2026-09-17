@@ -7,7 +7,8 @@ public sealed partial class SimWorld
     private void StepEnemies()
     {
         float dt = SimClock.TickDelta;
-        float arrival = B.PlanetRadius;
+        float arrival = B.PlanetRadius;                       // kamikaze detonation line
+        float siegeRing = B.PlanetRadius + B.SiegeStandoff;   // where besiegers park
 
         for (int i = 0; i < EnemyHighWater; i++)
         {
@@ -85,10 +86,37 @@ public sealed partial class SimWorld
                 }
             }
 
-            if (e.DistToCenter <= arrival)
+            // --- reaching the planet ---
+            // Kamikaze types still detonate and die. Everything else parks at the surface
+            // and besieges it: PDTD's enemies close to their attack range and keep firing,
+            // they don't fly into the planet and disappear. Standoff attackers (Bombard,
+            // mini-boss) already stopped further out and are handled in StepEnemyBehaviour.
+            if (def.Kamikaze && e.DistToCenter <= arrival)
             {
                 DamagePlanet(e.ContactDamage, leaked: true);
                 KillEnemy(i, leaked: true);
+                continue;
+            }
+
+            if (e.DistToCenter <= siegeRing && def.StandoffRange <= 0f && !def.Kamikaze)
+            {
+                // pin to the siege ring so the crowd forms a visible shell around the
+                // planet rather than sinking into the sprite
+                if (e.DistToCenter > 0.001f) e.Pos = e.Pos / e.DistToCenter * siegeRing;
+                e.DistToCenter = siegeRing;
+                e.Standoff = true;
+
+                e.AttackTimer -= dt;
+                if (e.AttackTimer <= 0f)
+                {
+                    e.AttackTimer = def.SiegeInterval > 0f ? def.SiegeInterval : B.SiegeInterval;
+                    float hit = def.SiegeDamage > 0f ? def.SiegeDamage : e.ContactDamage * B.SiegeDamageMult;
+                    DamagePlanet(hit, leaked: true);
+                    // muzzle flash on the enemy plus a tracer into the crust, so a ring of
+                    // besiegers visibly chews on the planet instead of just sitting there
+                    Vector2 impact = e.DistToCenter > 0.001f ? e.Pos / e.DistToCenter * B.PlanetRadius : Vector2.Zero;
+                    Events.PushLine(SimEventKind.TurretFired, e.Pos, impact, 0f, -1);
+                }
             }
         }
     }

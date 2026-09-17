@@ -64,6 +64,16 @@ public sealed partial class SimWorld
         return false;
     }
 
+    /// <summary>How many times a boost card has already been taken this run. Picks are
+    /// recorded in <see cref="_runCards"/> as "boost:&lt;id&gt;".</summary>
+    private int BoostPickCount(string id)
+    {
+        int n = 0;
+        string key = "boost:" + id;
+        for (int i = 0; i < _runCards.Count; i++) if (_runCards[i] == key) n++;
+        return n;
+    }
+
     private void OfferDraftAfterWave()
     {
         _pendingDrafts++;
@@ -125,6 +135,7 @@ public sealed partial class SimWorld
             for (int i = 0; i < rc.Count; i++)
             {
                 if (!BoostRequirementMet(rc[i].Requires)) continue;
+                if (rc[i].MaxPicks > 0 && BoostPickCount(rc[i].Id) >= rc[i].MaxPicks) continue;
                 pool.Add(BoostCardBase + i);
                 weights.Add(Mathf.Max(1, rc[i].Weight));
             }

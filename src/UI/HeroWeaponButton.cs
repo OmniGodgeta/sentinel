@@ -46,81 +46,86 @@ public sealed partial class HeroWeaponButton : Control
         }
     }
 
+    /// <summary>How many segments the charge bar under the tile is cut into. PDTD draws a
+    /// row of short gold blocks rather than one continuous bar.</summary>
+    private const int ChargeSegments = 9;
+
     public override void _Draw()
     {
+        // PDTD's HUD tile: a square of full-bleed sentinel art in a light chamfered
+        // frame, with a segmented charge bar underneath. No level chip, no "ON" text and
+        // no name plate — the art identifies the weapon and the bar carries the state.
         var sz = Size;
         bool ready = _cd <= 0.01f;
-        // every fixed-pixel constant below was tuned for the original 136px card; scale them
-        // all by k so the card can grow (it's now 272px, 2x) without every border/font/chip
-        // going thin and lost against the much bigger frame.
         float k = sz.X / 136f;
         float ch = 11f * k;
-        var frame = new Rect2(1, 1, sz.X - 2, sz.Y - 2);
+
+        float barH = 9f * k;                       // the segmented bar
+        float barGap = 5f * k;
+        float artSide = Mathf.Max(8f, sz.Y - barH - barGap - 2f);
+        var frame = new Rect2(1, 1, sz.X - 2, artSide);
 
         if (ready && !_alwaysOn)
         {
             float pulse = 0.5f + 0.5f * Mathf.Sin(_t * 4.5f);
-            for (int i = 1; i <= 3; i++)
-                CutOutline(Grow(frame, i * 2.5f * k), ch + i * 2.5f * k, new Color(_accent, (0.16f + 0.14f * pulse) / i), 2f * k);
+            for (int i = 1; i <= 2; i++)
+                CutOutline(Grow(frame, i * 2.5f * k), ch + i * 2.5f * k, new Color(_accent, (0.14f + 0.12f * pulse) / i), 2f * k);
         }
 
-        CutFill(frame, ch, new Color(0.06f, 0.07f, 0.10f, 0.96f));
-        CutFill(Shrink(frame, 3f * k), ch - 2f * k, new Color(_accent, _alwaysOn ? 0.16f : (ready ? 0.12f : 0.05f)));
-        DrawRect(new Rect2(frame.Position.X + ch, frame.Position.Y + 3f * k, frame.Size.X - ch * 2f, 3f * k),
-                 new Color(_accent, _alwaysOn ? 0.9f : (ready ? 0.95f : 0.5f)));
-        CutOutline(frame, ch, new Color(_accent, _alwaysOn ? 0.85f : (ready ? 0.9f : 0.45f)), 2f * k);
-        DrawCornerBrackets(Shrink(frame, 4f * k), 10f * k, new Color(_accent, _alwaysOn ? 0.8f : (ready ? 0.95f : 0.55f)));
+        CutFill(frame, ch, new Color(0.05f, 0.07f, 0.11f, 0.98f));
 
-        var gc = sz * new Vector2(0.5f, 0.4f);
-        // real PDTD sentinel art when this card is one of the orbital weapons, else the
-        // drawn glyph (ship weapons have no PDTD counterpart art)
-        var art = Sentinel.Render.Art.SentinelArt(_kind);
-        if (art != null)
+        // --- full-bleed art, clipped to the chamfered frame ---
+        var tile = Sentinel.Render.Art.Pdtd("tiles/" + _kind);
+        if (tile != null)
         {
-            var ts = art.GetSize();
-            float isz = Mathf.Min(sz.X, sz.Y) * 0.62f;
-            float isc = isz / Mathf.Max(ts.X, ts.Y);
-            DrawSetTransform(gc, 0f, new Vector2(isc, isc));
-            DrawTexture(art, -ts * 0.5f, new Color(1f, 1f, 1f, _alwaysOn || ready ? 1f : 0.7f));
-            DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
-        }
-        else DrawIcon(gc, Mathf.Min(sz.X, sz.Y) * 0.22f, new Color(_accent.Lightened(0.15f), _alwaysOn || ready ? 1f : 0.7f));
-
-        // level chip, top-left
-        DrawRect(new Rect2(frame.Position.X + 5f * k, frame.Position.Y + 5f * k, 34f * k, 20f * k), new Color(0, 0, 0, 0.55f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(frame.Position.X + 9f * k, frame.Position.Y + 20f * k), $"L{_level}",
-                   HorizontalAlignment.Left, 34f * k, Mathf.RoundToInt(16 * k), new Color(1, 1, 1, 0.85f));
-
-        if (_alwaysOn)
-        {
-            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 30f * k), "ON",
-                       HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(18 * k), new Color(0.6f, 1f, 0.7f));
-        }
-        else if (!ready)
-        {
-            // dark cooldown curtain from the top, plus a thin cooldown LINE right under it
-            float frac = Mathf.Clamp(_cd / _cdMax, 0f, 1f);
-            float curtainH = (frame.Size.Y - 20f * k) * frac;
-            DrawRect(new Rect2(frame.Position, new Vector2(frame.Size.X, curtainH)), new Color(0.02f, 0.03f, 0.05f, 0.76f));
-            DrawRect(new Rect2(frame.Position.X, frame.Position.Y + curtainH - 2f * k, frame.Size.X, 2f * k), new Color(_accent, 0.8f));
-            // the cooldown "line" — a thin bar just above the name plate
-            float lineY = frame.Position.Y + frame.Size.Y - 22f * k;
-            DrawRect(new Rect2(frame.Position.X + 4f * k, lineY, frame.Size.X - 8f * k, 4f * k), new Color(0, 0, 0, 0.5f));
-            DrawRect(new Rect2(frame.Position.X + 4f * k, lineY, (frame.Size.X - 8f * k) * (1f - frac), 4f * k), new Color(_accent, 0.95f));
-            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 32f * k), $"{_cd:0.0}s",
-                       HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(18 * k), Colors.White);
+            var poly = CutPoly(Shrink(frame, 2f * k), ch - 1.5f * k);
+            // UVs map the frame's bounds onto the square tile texture, so the art fills
+            // the chamfer corner-to-corner instead of floating in the middle.
+            var inner = Shrink(frame, 2f * k);
+            var uv = new Vector2[poly.Length];
+            for (int i = 0; i < poly.Length; i++)
+                uv[i] = (poly[i] - inner.Position) / inner.Size;
+            float dim = _alwaysOn || ready ? 1f : 0.55f;
+            DrawPolygon(poly, new[] { new Color(dim, dim, dim, 1f) }, uv, tile);
         }
         else
         {
-            float lineY = frame.Position.Y + frame.Size.Y - 22f * k;
-            DrawRect(new Rect2(frame.Position.X + 4f * k, lineY, frame.Size.X - 8f * k, 4f * k), new Color(_accent, 0.35f));
-            float m = 0.4f + 0.6f * Mathf.Abs(Mathf.Sin(_t * 5f));
-            CutOutline(Shrink(frame, 2f * k), ch - 1f * k, new Color(_accent, m * 0.6f), 2f * k);
+            CutFill(Shrink(frame, 3f * k), ch - 2f * k, new Color(_accent, _alwaysOn ? 0.16f : (ready ? 0.12f : 0.05f)));
+            DrawIcon(frame.Position + frame.Size * 0.5f, Mathf.Min(sz.X, artSide) * 0.24f,
+                     new Color(_accent.Lightened(0.15f), _alwaysOn || ready ? 1f : 0.7f));
         }
 
-        DrawRect(new Rect2(frame.Position.X + 3f * k, frame.Position.Y + frame.Size.Y - 20f * k, frame.Size.X - 6f * k, 17f * k), new Color(0f, 0f, 0f, 0.5f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 6f * k), _name.ToUpperInvariant(),
-                   HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(13 * k), new Color(_accent.Lightened(0.3f), 0.9f));
+        // --- frame over the art ---
+        CutOutline(frame, ch, new Color(0.62f, 0.74f, 0.88f, _alwaysOn || ready ? 0.85f : 0.42f), 2.2f * k);
+        CutOutline(Shrink(frame, 3f * k), ch - 2f * k, new Color(1f, 1f, 1f, 0.10f), 1.4f * k);
+        DrawCornerBrackets(Shrink(frame, 5f * k), 9f * k, new Color(_accent, _alwaysOn ? 0.75f : (ready ? 0.9f : 0.45f)));
+
+        // --- cooldown curtain ---
+        if (!_alwaysOn && !ready)
+        {
+            float frac = Mathf.Clamp(_cd / _cdMax, 0f, 1f);
+            float curtainH = frame.Size.Y * frac;
+            DrawRect(new Rect2(frame.Position, new Vector2(frame.Size.X, curtainH)), new Color(0.02f, 0.03f, 0.05f, 0.68f));
+            DrawRect(new Rect2(frame.Position.X, frame.Position.Y + curtainH - 2f * k, frame.Size.X, 2f * k), new Color(_accent, 0.85f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(0, frame.Position.Y + frame.Size.Y * 0.58f), $"{_cd:0.0}",
+                       HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(22 * k), new Color(1, 1, 1, 0.92f));
+        }
+
+        // --- segmented charge bar ---
+        // Always-on systems read as fully charged; everything else fills left-to-right as
+        // the cooldown drains, so a nearly-ready weapon is legible at a glance.
+        float fill = _alwaysOn ? 1f : 1f - Mathf.Clamp(_cd / _cdMax, 0f, 1f);
+        float barY = frame.Position.Y + frame.Size.Y + barGap;
+        float segGap = 2f * k;
+        float segW = (sz.X - 2f - segGap * (ChargeSegments - 1)) / ChargeSegments;
+        var lit = _alwaysOn ? new Color(0.60f, 0.95f, 0.72f) : new Color(0.96f, 0.82f, 0.45f);
+        for (int i = 0; i < ChargeSegments; i++)
+        {
+            float x = 1f + i * (segW + segGap);
+            // a segment lights once the fill passes its midpoint
+            bool on = fill >= (i + 0.5f) / ChargeSegments;
+            DrawRect(new Rect2(x, barY, segW, barH), on ? lit : new Color(0.28f, 0.33f, 0.40f, 0.55f));
+        }
     }
 
     private void DrawIcon(Vector2 c, float s, Color col)

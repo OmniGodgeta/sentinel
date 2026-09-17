@@ -662,7 +662,11 @@ public sealed partial class SimRenderer : Node2D
             // Sprites are drawn well wider than the sim radius on purpose (PDTD's art is
             // generous the same way); bumped 2026-09-16 alongside the camera zoom-out so
             // enemies read bigger on screen, not merely the same size in a wider view.
-            float sizePx = (boss ? e.Radius * 3.6f : e.Radius * 4.3f) + 12f;
+            // Sprites are drawn well above the collision radius on purpose — the hull art
+            // has a lot of transparent margin. Bosses use a smaller factor because their
+            // radius is already huge. Bumped from 3.6/4.3 in v0.31.1: the v0.30 camera
+            // pull-back shrank everything on screen, which read as "all enemies look small".
+            float sizePx = (boss ? e.Radius * 4.0f : e.Radius * 4.9f) + 12f;
             float rot = e.Vel.LengthSquared() > 1f ? e.Vel.Angle() + Mathf.Pi / 2f : e.Pos.Angle() + Mathf.Pi / 2f;
 
             // procedural idle motion — a slow lateral wobble (phase seeded off the

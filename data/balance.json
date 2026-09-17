@@ -1,5 +1,8 @@
 {
   "planet_radius": 120,
+  "siege_standoff": 26,
+  "siege_interval": 1.4,
+  "siege_damage_mult": 0.20,
   "planet_integrity": 1100,
   "turret_ring_radius": 150,
   "hero_orbit_min": 200,

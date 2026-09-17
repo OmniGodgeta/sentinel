@@ -41,7 +41,7 @@ public sealed partial class CodexScreen : CanvasLayer
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        var list = new VBoxContainer { CustomMinimumSize = new Vector2(742, 0) };
+        var list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(list);
 

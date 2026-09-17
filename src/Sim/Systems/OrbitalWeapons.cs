@@ -34,7 +34,15 @@ public sealed partial class SimWorld
         public int NodeCount;        // rad_line: how many linked relay stations (2-10; 2 = a single link)
         public float Spin;           // rad_line: angular speed the whole link chain orbits at
         public float StartTime;      // rad_line: GameTime this effect was cast
+        public float NodeShotTimer;  // rad_line: "Photon Nodes" endpoint-laser cadence
+        /// <summary>rad_line behaviour flags resolved at cast time (level gate or card
+        /// trait), so the tick and the reaper don't have to re-look-up the def:
+        /// 1 = Link Burst, 2 = Photon Nodes.</summary>
+        public int Flags;
     }
+
+    private const int RadFlagBurst = 1;
+    private const int RadFlagNodeShot = 2;
 
     /// <summary>× DespawnRadius — the radius the relay stations orbit at.
     /// Was 0.62 (r≈558) which is why the weapon read as doing no damage at all: that far
@@ -46,6 +54,16 @@ public sealed partial class SimWorld
     private const float RadLineRing = 0.26f;
     /// <summary>Half-width of the damaging beam between two relay stations.</summary>
     private const float RadLineBeamHalfWidth = 30f;
+    /// <summary>"Photon Nodes" — seconds between endpoint laser shots. PDTD's card says
+    /// "every 2s"; its sibling "Arc Nodes" says 2.5s.</summary>
+    private const float RadLineNodeShotInterval = 2f;
+    private const float RadLineNodeShotRange = 340f;
+    /// <summary>Endpoint shot damage as a multiple of the link's per-tick DPS.</summary>
+    private const float RadLineNodeShotMult = 3.5f;
+    /// <summary>"Link Burst" — radius of the explosion each relay leaves when the
+    /// structure expires.</summary>
+    private const float RadLineBurstRadius = 150f;
+    private const float RadLineBurstMult = 6f;
 
     /// <summary>The arc (degrees) the whole relay chain spans for a given node count — PDTD's
     /// Radiation Link levels up by extending/connecting more links until they nearly ring the
@@ -118,7 +136,15 @@ public sealed partial class SimWorld
         for (int k = _owEffects.Count - 1; k >= 0; k--)
         {
             var fx = _owEffects[k];
-            if (GameTime >= fx.DieAt) { _owEffects.RemoveAt(k); continue; }
+            if (GameTime >= fx.DieAt)
+            {
+                // "Link Burst" (PDTD card 1000632): the relays detonate when the structure
+                // ends rather than just switching off.
+                if (fx.Kind == 1 && (fx.Flags & RadFlagBurst) != 0)
+                    RadLineBurst(in fx);
+                _owEffects.RemoveAt(k);
+                continue;
+            }
             StepOwEffect(ref fx, dt);
             _owEffects[k] = fx;
         }
@@ -206,13 +232,63 @@ public sealed partial class SimWorld
                 // PDTD's Radiation Link always starts as a SINGLE link (2 relay stations).
                 // Extra links come only from "+1 Radiation Link" upgrade cards, which trade
                 // damage for reach — levelling the weapon alone never adds links.
-                int nodes = Mathf.Clamp(2 + Mods.RadLinkExtraNodes, 2, 10);
-                float spinDir = Rng.NextInt(2) == 0 ? 1f : -1f;
-                _owEffects.Add(new OwEffect
+                int nodes = Mathf.Clamp(2 + Mods.RadLinkExtraNodes
+                                          + Mathf.FloorToInt(Mods.WeaponAdd("rad_line", "count")), 2, 10);
+
+                // Rotation is an UPGRADE in PDTD ("Lingering Orbit" at weapon level 2, then
+                // "Link Spin" doubles it), not base behaviour — a fresh Radiation Link hangs
+                // dead still. Without the gate every cast span slowly from the first second,
+                // which is what made it read as wrong.
+                float spin = 0f;
+                if ((d.RotateLevel > 0 && L >= d.RotateLevel) || Mods.WeaponTrait("rad_line", "enableRotate"))
                 {
-                    Kind = 1, DieAt = GameTime + dur, Dps = dmg * Mathf.Max(0.1f, Mods.RadLineDamageMult), P0 = bearing,
-                    NodeCount = nodes, Spin = spinDir * (0.10f + 0.01f * L), StartTime = GameTime,
-                });
+                    float spinDir = Rng.NextInt(2) == 0 ? 1f : -1f;
+                    spin = spinDir * (0.10f + 0.01f * L) * Mathf.Max(0.1f, Mods.WeaponMult("rad_line", "rotate_speed"));
+                }
+
+                // ONE structure, not a pile of them. Radiation Link's duration (7s+) is
+                // longer than its cooldown (~4.7s), so every cast used to add a second,
+                // third... independent link at its own random bearing — on screen that's
+                // two disconnected lines that don't share endpoints, which is exactly the
+                // reported bug. Re-firing now refreshes the live structure in place.
+                int radFlags = 0;
+                if ((d.BurstLevel > 0 && L >= d.BurstLevel) || Mods.WeaponTrait("rad_line", "RadiationLineExplosion"))
+                    radFlags |= RadFlagBurst;
+                if ((d.NodeShotLevel > 0 && L >= d.NodeShotLevel) || Mods.WeaponTrait("rad_line", "PhotonNodes"))
+                    radFlags |= RadFlagNodeShot;
+
+                bool refreshed = false;
+                for (int fi = 0; fi < _owEffects.Count; fi++)
+                {
+                    var ex = _owEffects[fi];
+                    if (ex.Kind != 1) continue;
+                    ex.DieAt = GameTime + dur;
+                    ex.Dps = dmg * Mathf.Max(0.1f, Mods.RadLineDamageMult);
+                    ex.NodeCount = nodes;
+                    ex.Spin = spin;
+                    // Re-aim at the current pressure, every cast, spinning or not. A single
+                    // structure only spans one chord, so a link left on the bearing of
+                    // whatever was closest when it first went up ends up guarding empty
+                    // sky — the old stacking hid that by covering several bearings at once.
+                    // Resetting StartTime alongside P0 restarts the sweep from the new
+                    // bearing, which is exactly a re-launch; skipping this for spinning
+                    // links made "Lingering Orbit" a straight downgrade, since the link
+                    // then rotated away from the enemies and never came back.
+                    ex.P0 = bearing;
+                    ex.StartTime = GameTime;
+                    ex.Flags = radFlags;
+                    _owEffects[fi] = ex;
+                    refreshed = true;
+                    break;
+                }
+                if (!refreshed)
+                {
+                    _owEffects.Add(new OwEffect
+                    {
+                        Kind = 1, DieAt = GameTime + dur, Dps = dmg * Mathf.Max(0.1f, Mods.RadLineDamageMult), P0 = bearing,
+                        NodeCount = nodes, Spin = spin, StartTime = GameTime, Flags = radFlags,
+                    });
+                }
                 break;
             }
             case "shock_orb":
@@ -230,7 +306,6 @@ public sealed partial class SimWorld
                 int cur = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
                 if (cur < 0) break;
                 Vector2 node = from;
-                Vector2 lastPos = node;
                 System.Span<bool> hit = stackalloc bool[96];
                 for (int j = 0; j < cnt && cur >= 0; j++)
                 {
@@ -239,7 +314,6 @@ public sealed partial class SimWorld
                     if (cur < 96) hit[cur] = true;
                     Events.PushLine(SimEventKind.ChainArc, node, en.Pos, 3f, 2);
                     node = en.Pos;
-                    lastPos = node;
                     int next = -1; float best = radius * radius;
                     for (int e = 0; e < EnemyHighWater; e++)
                     {
@@ -249,7 +323,11 @@ public sealed partial class SimWorld
                     }
                     cur = next;
                 }
-                _fxOwBeamLeft = 0.14f; _fxOwBeamKind = 2; _fxOwBeamFrom = from; _fxOwBeamTo = lastPos;
+                // No _fxOwBeam here. That FX draws a straight beam from the platform to the
+                // LAST enemy in the chain, over the top of the ricochet arcs — so a weapon
+                // that was already bouncing correctly still looked like it fired a laser.
+                // The ChainArc events above (AquaBolt) are the whole visual: launch arc
+                // from the platform, then a bolt between each pair of victims.
                 break;
             }
             case "space_bomb":
@@ -311,6 +389,26 @@ public sealed partial class SimWorld
         Events.Push(SimEventKind.HeroWeaponFired, from, radius, 10 + i);
     }
 
+    /// <summary>"Link Burst": every relay station explodes when the Radiation Link expires.
+    /// Damage keys off the structure's own DPS so it scales with the weapon's level and
+    /// every per-weapon damage card rather than needing its own tuning knob.</summary>
+    private void RadLineBurst(in OwEffect fx)
+    {
+        int n = Mathf.Max(2, fx.NodeCount);
+        float r2 = RadLineBurstRadius * RadLineBurstRadius;
+        for (int k = 0; k < n; k++)
+        {
+            Vector2 c = RadLineNode(in fx, k);
+            for (int e = 0; e < EnemyHighWater; e++)
+            {
+                if (!Enemies[e].Alive) continue;
+                if (Enemies[e].Pos.DistanceSquaredTo(c) > r2) continue;
+                DamageEnemy(e, fx.Dps * RadLineBurstMult, DamageSource.Orbital, shieldMult: 0f);
+            }
+            Events.Push(SimEventKind.MissileImpact, c, RadLineBurstRadius, 0);
+        }
+    }
+
     private void StepOwEffect(ref OwEffect fx, float dt)
     {
         fx.Tick += dt;
@@ -349,6 +447,26 @@ public sealed partial class SimWorld
                         ref var vic = ref Enemies[e];
                         vic.BurnDps = Mathf.Max(vic.BurnDps, fx.Dps * 0.5f);
                         vic.BurnLeft = Mathf.Max(vic.BurnLeft, 3f);
+                    }
+                }
+
+                // "Photon Nodes" (PDTD card 1000651): the relay endpoints fire a small
+                // laser on their own timer. Endpoints only — the interior relays of a long
+                // chain stay quiet, same as PDTD.
+                if ((fx.Flags & RadFlagNodeShot) != 0)
+                {
+                    fx.NodeShotTimer += interval;
+                    if (fx.NodeShotTimer >= RadLineNodeShotInterval)
+                    {
+                        fx.NodeShotTimer = 0f;
+                        for (int k = 0; k < n; k++)
+                        {
+                            if (k != 0 && k != n - 1) continue;
+                            int tgt = ClosestEnemyTo(nodes[k], RadLineNodeShotRange);
+                            if (tgt < 0) continue;
+                            DamageEnemy(tgt, fx.Dps * RadLineNodeShotMult, DamageSource.Orbital, shieldMult: 0f);
+                            Events.PushLine(SimEventKind.ChainArc, nodes[k], Enemies[tgt].Pos, 2f, 1);
+                        }
                     }
                 }
             }

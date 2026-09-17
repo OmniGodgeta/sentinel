@@ -9,6 +9,15 @@ namespace Sentinel.Config;
 public sealed record BalanceDef
 {
     public float PlanetRadius { get; init; } = 120f;
+    /// <summary>How far above the planet's surface a besieging enemy parks. Enemies used
+    /// to be consumed on contact; they now stop here and keep attacking, so this is what
+    /// separates the front line from the crust.</summary>
+    public float SiegeStandoff { get; init; } = 26f;
+    /// <summary>Default seconds between siege attacks (EnemyDef.SiegeInterval overrides).</summary>
+    public float SiegeInterval { get; init; } = 1.1f;
+    /// <summary>Default siege damage as a fraction of the enemy's ContactDamage. A parked
+    /// enemy hits many times instead of once, so this is well under 1.</summary>
+    public float SiegeDamageMult { get; init; } = 0.34f;
     public float PlanetIntegrity { get; init; } = 1000f;
     public float TurretRingRadius { get; init; } = 150f;
     public float HeroOrbitMin { get; init; } = 200f;
@@ -162,6 +171,19 @@ public sealed record OrbitalWeaponDef
     public float DotDps { get; init; }             // burn / radiation damage-over-time
     public float DotSeconds { get; init; }
     public float StunSeconds { get; init; }
+    // ---- Radiation Link behaviour gates ----
+    // In PDTD these arrive as drafted upgrades ("Lingering Orbit", "Link Burst", "Photon
+    // Nodes"), several of which carry a needLevel of their own. Beyond gates them on the
+    // weapon's level until the per-weapon skill-card draft (data/skillcards.json) is
+    // wired up, at which point they become real cards and these become the fallback.
+    // 0 = never from levelling.
+    /// <summary>Level at which the link starts rotating. PDTD's "Lingering Orbit" is
+    /// needLevel 2.</summary>
+    public int RotateLevel { get; init; }
+    /// <summary>Level at which the relays explode when the link expires ("Link Burst").</summary>
+    public int BurstLevel { get; init; }
+    /// <summary>Level at which the endpoints start firing lasers ("Photon Nodes").</summary>
+    public int NodeShotLevel { get; init; }
     public bool ShieldPierce { get; init; }
     public bool ArmorPierce { get; init; }
     public float SlowFactor { get; init; }         // force_field: 1 = normal speed, e.g. 0.5 = half speed
@@ -243,6 +265,11 @@ public sealed record RunCardDef
     public string Accent { get; init; } = "#4fd6de";
     public int Weight { get; init; } = 12;
     public string Requires { get; init; } = "";
+    /// <summary>How many times this card may be taken in one run. 0 = unlimited, which is
+    /// how the percentage buffs have always worked (stacking +60% damage is the point).
+    /// Cards that switch a behaviour ON must set 1 — taking them twice does nothing, so
+    /// leaving them in the pool lets the draft keep offering a card that is now a blank.</summary>
+    public int MaxPicks { get; init; }
     public System.Collections.Generic.Dictionary<string, float> Effects { get; init; } = new();
 }
 
@@ -372,6 +399,17 @@ public sealed record EnemyDef
     public int Bounty { get; init; } = 6;
     public bool CcImmune { get; init; }                // siege crawler: immune to slow/pull
     public bool IgnoreObstacles { get; init; }
+    // ---- siege (every enemy without its own StandoffRange) ----
+    /// <summary>true = the old behaviour: detonate on the planet for ContactDamage and
+    /// die. Suicide//kamikaze types want this. Everything else now parks at the surface
+    /// and keeps attacking (PDTD's enemies besiege the planet, they don't vanish into it).</summary>
+    public bool Kamikaze { get; init; }
+    /// <summary>Seconds between siege attacks once parked. 0 = use
+    /// <c>balance.json</c>'s <c>siege_interval</c>.</summary>
+    public float SiegeInterval { get; init; }
+    /// <summary>Damage per siege attack. 0 = ContactDamage scaled by
+    /// <c>balance.json</c>'s <c>siege_damage_mult</c>.</summary>
+    public float SiegeDamage { get; init; }
     // ranged attacker (bombard): stops at StandoffRange, shells planet/turrets
     public float StandoffRange { get; init; }
     public float RangedDamage { get; init; }

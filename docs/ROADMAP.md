@@ -2010,3 +2010,53 @@ Download button did nothing; keys showed the wrong art.
 - Enemies reaching the planet vanish instead of stopping at range and firing.
 - Enemy scale/HP pass; research/menu centring; Module page on PDTD's layout;
   planet renames (Mars/Europa/Titan/Triton/Pluto) + preview.
+
+## v0.31.1 — enemies besiege the planet, Radiation Link rebuilt, PDTD HUD tiles
+
+- **Enemies no longer vanish into the planet.** Only `StandoffRange` types (Bombard,
+  mini-boss) ever stopped and fired; everything else reached `PlanetRadius`, dealt
+  contact damage once and was deleted. They now park on a siege ring
+  (`balance.json`: `siege_standoff`/`siege_interval`/`siege_damage_mult`) and keep
+  attacking, with a muzzle flash and a tracer into the crust. `Kamikaze` on an
+  EnemyDef keeps the old detonate-and-die behaviour for suicide types.
+- **Enemy scale/hull pass.** Radius spread widened (light craft 9-13, heavies 20-34,
+  boss 56) and the sprite factor raised 3.6/4.3 -> 4.0/4.9, since the v0.30 camera
+  pull-back is what made everything read as small. Heavies got hull and armour to
+  match. First attempt overshot badly (m04-m08 all lost, endless wave 41 -> 1), so
+  the hull numbers came back roughly halfway; the sizes stayed.
+- **Radiation Link is one structure again.** Its duration (7s+) outlasts its cooldown
+  (~4.7s), so every cast used to stack another independent link at its own random
+  bearing — on screen, two disconnected lines that share no endpoints, exactly as
+  reported. Re-firing now refreshes the live structure and **re-aims** it at current
+  pressure (without the re-aim a single link guards empty sky; the old stacking hid
+  that by covering several bearings at once).
+- **Rotation, end-burst and endpoint lasers are upgrades, not defaults** — confirmed
+  against PDTD's own card list, where "Lingering Orbit" (needLevel 2), "Link Burst"
+  and "Photon Nodes" are all drafted. Gated on weapon level for now
+  (`rotate_level`/`burst_level`/`node_shot_level` in `data/orbital_weapons.json`),
+  with the card traits already wired as an OR so the skill-card draft can take over.
+  They were briefly boost cards; four always-eligible extra boost cards crowded
+  weapon levelling out of the draft badly enough to drop SimTest endless from wave
+  41 to 5, so they moved to level gates.
+- `RunCardDef.MaxPicks` added — boost cards were re-offerable forever, which is right
+  for stacking percentages and wrong for anything that flips a behaviour on.
+- **Waterdrop stopped looking like a laser.** It has ricocheted correctly since
+  v0.30, but also fired `_fxOwBeam` — a straight beam from the platform to the *last*
+  enemy in the chain, drawn over the bounce arcs. Removed; the AquaBolt chain arcs
+  are now the whole visual.
+- **HUD tiles rebuilt to PDTD's layout**: full-bleed sentinel art clipped into the
+  chamfered frame with a segmented charge bar under it, no level chip / "ON" text /
+  name plate.
+- Research, Ability and Codex lists were pinned to a 742px column with no fill flag,
+  so they hugged the left of a 1000px root. Now fill; Research's branch tabs centre.
+- Worlds renamed to real bodies with real descriptions — Mars, Europa, Titan, Triton,
+  Pluto — and each gets a **Preview** button showing the planet full-screen before
+  you spend on it.
+
+### Still open
+- `data/skillcards.json` (187 PDTD cards) still not wired into the draft; star levels
+  (3 pips, 4th promotes, purple above L1) and the Level Up screen layout with it.
+- Module page on PDTD's six-family layout; chip page polish.
+- Shock Orb / Orbital Lightning art+card alignment to Ball Lightning / Chain Lightning.
+- Missing card art: Field Amplifier, Warfield Upgrading, Ordnance Calibration,
+  Deflection Uprating, Saturation Doctrine.

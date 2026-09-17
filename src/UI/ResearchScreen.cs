@@ -48,7 +48,13 @@ public sealed partial class ResearchScreen : CanvasLayer
 
         var tabScroll = new ScrollContainer { VerticalScrollMode = ScrollContainer.ScrollMode.Disabled, CustomMinimumSize = new Vector2(0, 87) };
         root.AddChild(tabScroll);
-        _tabs = new HBoxContainer();
+        // Fill the scroll's width and centre the row, so the branch tabs sit under the
+        // middle of the screen instead of hugging the left edge when they all fit.
+        _tabs = new HBoxContainer
+        {
+            Alignment = BoxContainer.AlignmentMode.Center,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
         _tabs.AddThemeConstantOverride("separation", 8);
         tabScroll.AddChild(_tabs);
         foreach (var b in ResearchDb.Branches)
@@ -63,7 +69,7 @@ public sealed partial class ResearchScreen : CanvasLayer
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        _list = new VBoxContainer { CustomMinimumSize = new Vector2(742, 0) };
+        _list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         _list.AddThemeConstantOverride("separation", 6);
         scroll.AddChild(_list);
 
