@@ -36,16 +36,16 @@ public sealed partial class ChipScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(210, 84) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
         var title = new Label { Text = "  ARMORY", VerticalAlignment = VerticalAlignment.Center };
         title.AddThemeFontOverride("font", UiTheme.Display);
-        title.AddThemeFontSizeOverride("font_size", 48);
+        title.AddThemeFontSizeOverride("font_size", 34);
         head.AddChild(title);
 
         _keys = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _keys.AddThemeFontSizeOverride("font_size", 30);
+        _keys.AddThemeFontSizeOverride("font_size", 21);
         _keys.AddThemeColorOverride("font_color", UiTheme.Accent2);
         root.AddChild(_keys);
 
@@ -73,8 +73,8 @@ public sealed partial class ChipScreen : CanvasLayer
         for (int i = 0; i < slotCount; i++)
         {
             string? k = i < App.Save.EquippedChips.Count ? App.Save.EquippedChips[i] : null;
-            var b = new Button { CustomMinimumSize = new Vector2(150, 80) };
-            b.AddThemeFontSizeOverride("font_size", 22);
+            var b = new Button { CustomMinimumSize = new Vector2(105, 56) };
+            b.AddThemeFontSizeOverride("font_size", 15);
             if (k != null)
             {
                 var parts = k.Split(':');
@@ -106,8 +106,8 @@ public sealed partial class ChipScreen : CanvasLayer
         var mergeHdr = SectionHeader("CHIPS");
         mergeHdr.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         mergeRow.AddChild(mergeHdr);
-        var quickMerge = new Button { Text = "⚡ Quick Merge", CustomMinimumSize = new Vector2(280, 90) };
-        quickMerge.AddThemeFontSizeOverride("font_size", 26);
+        var quickMerge = new Button { Text = "⚡ Quick Merge", CustomMinimumSize = new Vector2(196, 63) };
+        quickMerge.AddThemeFontSizeOverride("font_size", 18);
         quickMerge.Pressed += () => { int n = vault.QuickMergeAll(); Click(); Rebuild(); ShowToast(n > 0 ? $"Merged {n}×" : "Nothing to merge"); };
         mergeRow.AddChild(quickMerge);
 
@@ -130,7 +130,7 @@ public sealed partial class ChipScreen : CanvasLayer
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Modulate = new Color(1, 1, 1, 0.5f),
             };
-            none.AddThemeFontSizeOverride("font_size", 26);
+            none.AddThemeFontSizeOverride("font_size", 18);
             _list.AddChild(none);
         }
     }
@@ -139,7 +139,7 @@ public sealed partial class ChipScreen : CanvasLayer
     {
         var l = new Label { Text = text };
         l.AddThemeFontOverride("font", UiTheme.Display);
-        l.AddThemeFontSizeOverride("font_size", 30);
+        l.AddThemeFontSizeOverride("font_size", 21);
         l.AddThemeColorOverride("font_color", UiTheme.Accent);
         return l;
     }
@@ -162,20 +162,20 @@ public sealed partial class ChipScreen : CanvasLayer
         row.AddChild(col);
         var nm = new Label { Text = $"{name}    ·    have {keys}" };
         nm.AddThemeFontOverride("font", UiTheme.Display);
-        nm.AddThemeFontSizeOverride("font_size", 30);
+        nm.AddThemeFontSizeOverride("font_size", 21);
         nm.AddThemeColorOverride("font_color", accent.Lightened(0.2f));
         col.AddChild(nm);
         var tx = new Label { Text = "1 key per chest — always drops one chip.", Modulate = new Color(1, 1, 1, 0.6f) };
-        tx.AddThemeFontSizeOverride("font_size", 22);
+        tx.AddThemeFontSizeOverride("font_size", 15);
         col.AddChild(tx);
 
-        var open1 = new Button { Text = "Open 1", CustomMinimumSize = new Vector2(180, 100), Disabled = keys < 1 };
-        open1.AddThemeFontSizeOverride("font_size", 26);
+        var open1 = new Button { Text = "Open 1", CustomMinimumSize = new Vector2(126, 70), Disabled = keys < 1 };
+        open1.AddThemeFontSizeOverride("font_size", 18);
         open1.Pressed += () => { var got = App.Chips.OpenChests(kind, 1); Click(); Rebuild(); ShowDrops(got); };
         row.AddChild(open1);
 
-        var open5 = new Button { Text = "Open 5", CustomMinimumSize = new Vector2(180, 100), Disabled = keys < 5 };
-        open5.AddThemeFontSizeOverride("font_size", 26);
+        var open5 = new Button { Text = "Open 5", CustomMinimumSize = new Vector2(126, 70), Disabled = keys < 5 };
+        open5.AddThemeFontSizeOverride("font_size", 18);
         open5.Pressed += () => { var got = App.Chips.OpenChests(kind, 5); Click(); Rebuild(); ShowDrops(got); };
         row.AddChild(open5);
 
@@ -198,8 +198,8 @@ public sealed partial class ChipScreen : CanvasLayer
         row.AddThemeConstantOverride("separation", 12);
         p.AddChild(row);
 
-        var glyph = new Label { Text = IconGlyph(def.Icon), VerticalAlignment = VerticalAlignment.Center, CustomMinimumSize = new Vector2(60, 0) };
-        glyph.AddThemeFontSizeOverride("font_size", 40);
+        var glyph = new Label { Text = IconGlyph(def.Icon), VerticalAlignment = VerticalAlignment.Center, CustomMinimumSize = new Vector2(42, 0) };
+        glyph.AddThemeFontSizeOverride("font_size", 28);
         row.AddChild(glyph);
 
         var col = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -207,11 +207,11 @@ public sealed partial class ChipScreen : CanvasLayer
         row.AddChild(col);
         var nm = new Label { Text = $"{def.Name.ToUpperInvariant()}    ·    {td.Name}    ·    ×{count}" + (equipped ? "   ✓ EQUIPPED" : "") };
         nm.AddThemeFontOverride("font", UiTheme.Display);
-        nm.AddThemeFontSizeOverride("font_size", 30);
+        nm.AddThemeFontSizeOverride("font_size", 21);
         nm.AddThemeColorOverride("font_color", accent.Lightened(0.25f));
         col.AddChild(nm);
         var tx = new Label { Text = def.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.7f) };
-        tx.AddThemeFontSizeOverride("font_size", 24);
+        tx.AddThemeFontSizeOverride("font_size", 17);
         col.AddChild(tx);
 
         var btnCol = new VBoxContainer();
@@ -220,8 +220,8 @@ public sealed partial class ChipScreen : CanvasLayer
 
         if (App.Chips.CanMerge(def.Id, td.Tier))
         {
-            var merge = new Button { Text = $"Merge ×{td.MergeCost}", CustomMinimumSize = new Vector2(220, 90) };
-            merge.AddThemeFontSizeOverride("font_size", 24);
+            var merge = new Button { Text = $"Merge ×{td.MergeCost}", CustomMinimumSize = new Vector2(154, 63) };
+            merge.AddThemeFontSizeOverride("font_size", 17);
             merge.Pressed += () => { App.Chips.Merge(def.Id, td.Tier); Click(); Rebuild(); };
             btnCol.AddChild(merge);
         }
@@ -229,10 +229,10 @@ public sealed partial class ChipScreen : CanvasLayer
         var equipBtn = new Button
         {
             Text = equipped ? "Unequip" : "Equip",
-            CustomMinimumSize = new Vector2(220, 90),
+            CustomMinimumSize = new Vector2(154, 63),
             Disabled = !equipped && App.Save.EquippedChips.Count >= App.Cfg.Chips.EquipSlots,
         };
-        equipBtn.AddThemeFontSizeOverride("font_size", 24);
+        equipBtn.AddThemeFontSizeOverride("font_size", 17);
         equipBtn.Pressed += () =>
         {
             if (equipped) App.Chips.Unequip(def.Id, td.Tier); else App.Chips.Equip(def.Id, td.Tier);
@@ -269,7 +269,7 @@ public sealed partial class ChipScreen : CanvasLayer
     private void ShowToast(string text)
     {
         var l = new Label { Text = text, HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.7f) };
-        l.AddThemeFontSizeOverride("font_size", 22);
+        l.AddThemeFontSizeOverride("font_size", 15);
         _list.AddChild(l);
         _list.MoveChild(l, 0);
     }

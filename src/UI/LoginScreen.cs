@@ -47,7 +47,7 @@ public sealed partial class LoginScreen : CanvasLayer
 
         var title = new Label { Text = "COMMANDER ACCOUNT", HorizontalAlignment = HorizontalAlignment.Center };
         title.AddThemeFontOverride("font", UiTheme.Display);
-        title.AddThemeFontSizeOverride("font_size", 48);
+        title.AddThemeFontSizeOverride("font_size", 34);
         title.AddThemeColorOverride("font_color", UiTheme.Accent);
         col.AddChild(title);
 
@@ -57,37 +57,37 @@ public sealed partial class LoginScreen : CanvasLayer
             HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = new Color(1, 1, 1, 0.65f),
         };
-        sub.AddThemeFontSizeOverride("font_size", 28);
+        sub.AddThemeFontSizeOverride("font_size", 20);
         col.AddChild(sub);
 
-        col.AddChild(new Control { CustomMinimumSize = new Vector2(0, 12) });
+        col.AddChild(new Control { CustomMinimumSize = new Vector2(0, 8) });
 
-        _email = new LineEdit { PlaceholderText = "email", CustomMinimumSize = new Vector2(0, 112) };
-        _email.AddThemeFontSizeOverride("font_size", 36);
+        _email = new LineEdit { PlaceholderText = "email", CustomMinimumSize = new Vector2(0, 78) };
+        _email.AddThemeFontSizeOverride("font_size", 25);
         col.AddChild(_email);
 
-        _password = new LineEdit { PlaceholderText = "password (6+ chars)", Secret = true, CustomMinimumSize = new Vector2(0, 112) };
-        _password.AddThemeFontSizeOverride("font_size", 36);
+        _password = new LineEdit { PlaceholderText = "password (6+ chars)", Secret = true, CustomMinimumSize = new Vector2(0, 78) };
+        _password.AddThemeFontSizeOverride("font_size", 25);
         _password.TextSubmitted += _ => Attempt(signUp: false);
         col.AddChild(_password);
 
         _status = new Label { HorizontalAlignment = HorizontalAlignment.Center, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 0.9f, 0.6f) };
-        _status.AddThemeFontSizeOverride("font_size", 28);
+        _status.AddThemeFontSizeOverride("font_size", 20);
         col.AddChild(_status);
 
-        var loginBtn = new Button { Text = "Log In", CustomMinimumSize = new Vector2(0, 124) };
-        loginBtn.AddThemeFontSizeOverride("font_size", 38);
+        var loginBtn = new Button { Text = "Log In", CustomMinimumSize = new Vector2(0, 87) };
+        loginBtn.AddThemeFontSizeOverride("font_size", 27);
         UiTheme.StylePrimary(loginBtn);
         loginBtn.Pressed += () => Attempt(signUp: false);
         col.AddChild(loginBtn);
 
-        var signupBtn = new Button { Text = "Create Account", CustomMinimumSize = new Vector2(0, 112) };
-        signupBtn.AddThemeFontSizeOverride("font_size", 34);
+        var signupBtn = new Button { Text = "Create Account", CustomMinimumSize = new Vector2(0, 78) };
+        signupBtn.AddThemeFontSizeOverride("font_size", 24);
         signupBtn.Pressed += () => Attempt(signUp: true);
         col.AddChild(signupBtn);
 
-        var skip = new Button { Text = "Skip — play as guest", CustomMinimumSize = new Vector2(0, 100), Flat = true };
-        skip.AddThemeFontSizeOverride("font_size", 30);
+        var skip = new Button { Text = "Skip — play as guest", CustomMinimumSize = new Vector2(0, 70), Flat = true };
+        skip.AddThemeFontSizeOverride("font_size", 21);
         skip.Modulate = new Color(1, 1, 1, 0.6f);
         skip.Pressed += Leave;
         col.AddChild(skip);

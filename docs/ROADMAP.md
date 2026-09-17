@@ -5,8 +5,38 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.27.1, 2026-09-16.** Update this file when you finish or start
+Last updated: **v0.27.2, 2026-09-17.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — menu screens dialed back down (v0.27.2)
+
+User feedback right after v0.27.1 shipped: the menu-screen buttons (main
+menu, Shop, Sentinels, Upgrades, Modules, Armory, Events, Settings, Login,
+Splash, Codex, Abilities, Profile, Star Map, Level-up) were "far too large."
+Root cause: the v0.27.0 blanket 2x pass over those 16 screens never got the
+same live-feedback dial-back the in-mission HUD cards did (those went 2x →
+user said too big → settled at 1.5x; the standalone menu screens stayed at
+literal 2x the whole time). Rescaled `CustomMinimumSize`/font sizes across
+all 16 files down to ~1.4x original (a further ×0.7 on top of the 2x), and
+manually re-tightened `MenuScreen.cs`'s hand-positioned top-right icon row
+(gear/currency/codex) and identity block (badge/name/profile-tap) to match
+instead of leaving them with the correct-but-loose gaps the blanket pass
+alone would produce.
+
+**Bug hit and fixed during this pass**: the first correction script emitted
+bare decimal literals (e.g. `26.6`) for `Vector2`/`AddThemeFontSizeOverride`
+arguments — those are `double` by default in C#, and neither `Vector2`
+(wants `float`) nor `AddThemeFontSizeOverride` (wants `int`) accept an
+implicit `double` narrowing, so it was 114 compile errors across the same 16
+files. Fixed by rounding every such literal to a plain integer (menu button
+sizes/fonts never needed fractional precision anyway) — a follow-up regex
+pass, not a revert.
+
+**Verified**: `dotnet build` clean, `SimTest` `ALL CHECKS OK` (UI-only
+change, sim untouched). **Not verified live** — same caveat as v0.27.0's
+menu-screen pass, no screenshot harness covers `AppRoot`'s menu tree.
 
 ---
 

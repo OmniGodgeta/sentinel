@@ -34,18 +34,18 @@ public sealed partial class ResearchScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(210, 84) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
         var title = new Label { Text = "  RESEARCH", VerticalAlignment = VerticalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 48);
+        title.AddThemeFontSizeOverride("font_size", 34);
         head.AddChild(title);
 
         _wallet = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _wallet.AddThemeFontSizeOverride("font_size", 30);
+        _wallet.AddThemeFontSizeOverride("font_size", 21);
         root.AddChild(_wallet);
 
-        var tabScroll = new ScrollContainer { VerticalScrollMode = ScrollContainer.ScrollMode.Disabled, CustomMinimumSize = new Vector2(0, 124) };
+        var tabScroll = new ScrollContainer { VerticalScrollMode = ScrollContainer.ScrollMode.Disabled, CustomMinimumSize = new Vector2(0, 87) };
         root.AddChild(tabScroll);
         _tabs = new HBoxContainer();
         _tabs.AddThemeConstantOverride("separation", 8);
@@ -53,8 +53,8 @@ public sealed partial class ResearchScreen : CanvasLayer
         foreach (var b in ResearchDb.Branches)
         {
             string bb = b;
-            var t = new Button { Text = ResearchDb.BranchName(b).Split(' ')[0], ToggleMode = true, CustomMinimumSize = new Vector2(240, 112) };
-            t.AddThemeFontSizeOverride("font_size", 30);
+            var t = new Button { Text = ResearchDb.BranchName(b).Split(' ')[0], ToggleMode = true, CustomMinimumSize = new Vector2(168, 78) };
+            t.AddThemeFontSizeOverride("font_size", 21);
             t.Pressed += () => { _branch = bb; Rebuild(); };
             _tabs.AddChild(t);
         }
@@ -62,7 +62,7 @@ public sealed partial class ResearchScreen : CanvasLayer
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        _list = new VBoxContainer { CustomMinimumSize = new Vector2(1060, 0) };
+        _list = new VBoxContainer { CustomMinimumSize = new Vector2(742, 0) };
         _list.AddThemeConstantOverride("separation", 6);
         scroll.AddChild(_list);
 
@@ -92,7 +92,7 @@ public sealed partial class ResearchScreen : CanvasLayer
         {
             bool tierOpen = p.TierOpen(_branch, tier);
             var th = new Label { Text = tierOpen ? $"— TIER {tier} —" : $"— TIER {tier} (locked · Cmdr {Progression.TierCommanderGate(tier)}, 3 in tier {tier - 1}) —" };
-            th.AddThemeFontSizeOverride("font_size", 32);
+            th.AddThemeFontSizeOverride("font_size", 22);
             th.Modulate = tierOpen ? new Color(1, 1, 1, 0.7f) : new Color(1, 1, 1, 0.3f);
             _list.AddChild(th);
 
@@ -119,11 +119,11 @@ public sealed partial class ResearchScreen : CanvasLayer
             Text = cap ? $"◆ {node.Name}" + (capActive ? "   ✓ active" : "")
                        : $"{node.Name}   [{ranks}/{node.RankCount}]",
         };
-        name.AddThemeFontSizeOverride("font_size", 30);
+        name.AddThemeFontSizeOverride("font_size", 21);
         row.AddChild(name);
 
         var desc = new Label { Text = node.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.6f) };
-        desc.AddThemeFontSizeOverride("font_size", 30);
+        desc.AddThemeFontSizeOverride("font_size", 21);
         row.AddChild(desc);
 
         var actionRow = new HBoxContainer();
@@ -135,17 +135,17 @@ public sealed partial class ResearchScreen : CanvasLayer
             Text = cap ? (capActive ? "active" : $"choose  ({costStr})")
                        : ranks >= node.RankCount ? "maxed" : $"buy rank {ranks + 1}  ({costStr})",
             Disabled = !can,
-            CustomMinimumSize = new Vector2(0, 112),
+            CustomMinimumSize = new Vector2(0, 78),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
-        buy.AddThemeFontSizeOverride("font_size", 30);
+        buy.AddThemeFontSizeOverride("font_size", 21);
         buy.Pressed += () => { if (p.Buy(node)) Rebuild(); };
         actionRow.AddChild(buy);
 
         if (!can && reason is not ("maxed" or "active"))
         {
             var r = new Label { Text = "  " + reason, Modulate = new Color(1f, 0.6f, 0.5f), VerticalAlignment = VerticalAlignment.Center };
-            r.AddThemeFontSizeOverride("font_size", 30);
+            r.AddThemeFontSizeOverride("font_size", 21);
             actionRow.AddChild(r);
         }
         return panel;
@@ -154,7 +154,7 @@ public sealed partial class ResearchScreen : CanvasLayer
     private static Label Note(string t)
     {
         var l = new Label { Text = t, HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.6f) };
-        l.AddThemeFontSizeOverride("font_size", 30);
+        l.AddThemeFontSizeOverride("font_size", 21);
         return l;
     }
 
