@@ -2149,3 +2149,32 @@ with PDTD's own titles and text — "Power Link", "Extended Reach", "Link Burst"
   Chip/Planet/Force Shield/MotherShip/Cosmic, bottom tabs Chip/Module/Item, and Planet
   splitting into Research (hex tech tree) / Ultimate (alloy-funded upgrades) / Skins.
 - Ultimate Alloy + Unobtainium Alloy currencies, gold chests rolling 5-10% for them.
+
+## v0.33.0 — sentinel ultimates, Ultimate Alloy, Upgrades on PDTD's layout
+
+- **Ultimates.** Every sentinel charges one over a run and cuts loose for a few seconds
+  at +100% damage and several times its fire rate. Charge times and durations are
+  PDTD's own (`config/data/weapon_ultimate`): 61s for Chain Lightning up to 187s for
+  Force Field, running 5-12s. Firing is automatic — there's no room for eleven ultimate
+  buttons, and one that sits full because you didn't notice it is worse than one that
+  goes off. The HUD tile draws a filling ring while charging and animates gold while
+  firing, which is the "the cards become animated" cue.
+- **Ultimate Alloy + Unobtainium Alloy**, earned only from Gold chests (10% for 2-5
+  Ultimate Alloy, 2% for Unobtainium). They buy the four per-sentinel upgrade tracks.
+- **Upgrades rebuilt on PDTD's layout** (reference shots): a left category rail
+  (Chip / Planet / Force Shield / MotherShip / Cosmic) with PDTD's own module icons, a
+  currency strip drawn with the real loot sprites, and a bottom sub-tab row whose
+  contents change per category. Planet splits into Research / Ultimate / Skins the way
+  PDTD's does; Ultimate shows each sentinel's tile art, what its ultimate does, and the
+  four upgrade columns (Charge Speed, Initial Energy, DMG Bonus, Duration) with their
+  alloy prices; Skins shows each world as a live rotating globe.
+- Difficulty re-tuned upward slightly to pay for the ultimates, since they add a lot of
+  sustained power. All eight missions now clear in SimTest, with m07/m08 taking real
+  damage (842 and 836 of 1100) rather than finishing untouched.
+
+### Still open
+- The Chip / Module / Force Shield / MotherShip sub-tabs still hand off to their existing
+  full screens rather than rendering inline in the new frame.
+- Equipped-module slot strip along the top of the Upgrades body (PDTD shows six with
+  T-badges and enhancement bars).
+- Research as a hex tech tree rather than a list.

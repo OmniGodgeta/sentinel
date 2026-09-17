@@ -37,6 +37,13 @@ public sealed class ChipVault
     private static readonly (int tier, float weight)[] SilverOdds = { (1, 0.70f), (2, 0.30f) };
     private static readonly (int tier, float weight)[] GoldOdds = { (2, 0.55f), (3, 0.38f), (4, 0.07f) };
 
+    /// <summary>Chance a Gold chest also yields Ultimate Alloy (the 5-10% band asked for,
+    /// sitting at the top of it since the payout is only 2-5).</summary>
+    private const float GoldAlloyChance = 0.10f;
+    /// <summary>Chance it yields Unobtainium Alloy instead — the rare one, checked first
+    /// so it carves its slice out of the same 10%.</summary>
+    private const float GoldUnobtainiumChance = 0.02f;
+
     private int RollTier((int tier, float weight)[] odds)
     {
         float total = 0f;
@@ -60,6 +67,14 @@ public sealed class ChipVault
         var odds = kind == "gold" ? GoldOdds : SilverOdds;
         for (int i = 0; i < count; i++)
         {
+            // Gold chests also roll for ultimate-upgrade alloy on top of the chip.
+            // Unobtainium is the rare one and only ever drops here.
+            if (kind == "gold")
+            {
+                float r = GD.Randf();
+                if (r < GoldUnobtainiumChance) _save.UnobtainiumAlloy += 1;
+                else if (r < GoldAlloyChance) _save.UltimateAlloy += GD.RandRange(2, 5);
+            }
             var chip = D.Chips[GD.RandRange(0, D.Chips.Count - 1)];
             int tier = RollTier(odds);
             string k = Key(chip.Id, tier);

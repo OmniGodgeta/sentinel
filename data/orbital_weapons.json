@@ -15,7 +15,11 @@
       "duration_per_level": 0.3,
       "range": 700,
       "shield_pierce": true,
-      "text": "A continuous beam that locks on and burns through shields and anything in its path."
+      "text": "A continuous beam that locks on and burns through shields and anything in its path.",
+      "ultimate_charge_seconds": 120,
+      "ultimate_duration": 12,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 2.5
     },
     {
       "id": "orbital_lightning",
@@ -32,7 +36,11 @@
       "count_per_level": 0.4,
       "radius": 190,
       "stun_seconds": 1.2,
-      "text": "Chain lightning that arcs between targets and stuns on impact."
+      "text": "Chain lightning that arcs between targets and stuns on impact.",
+      "ultimate_charge_seconds": 61,
+      "ultimate_duration": 8,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 6.0
     },
     {
       "id": "radiation_line",
@@ -50,7 +58,11 @@
       "text": "Launches radiation points that link into a lethal corridor for a time.",
       "rotate_level": 2,
       "burst_level": 4,
-      "node_shot_level": 6
+      "node_shot_level": 6,
+      "ultimate_charge_seconds": 150,
+      "ultimate_duration": 12,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 2.5
     },
     {
       "id": "shock_orb",
@@ -68,7 +80,11 @@
       "duration": 8,
       "duration_per_level": 0.8,
       "stun_seconds": 0.6,
-      "text": "Deploys an orb that orbits the planet, unleashing electric shockwaves."
+      "text": "Deploys an orb that orbits the planet, unleashing electric shockwaves.",
+      "ultimate_charge_seconds": 180,
+      "ultimate_duration": 5,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 6.0
     },
     {
       "id": "radiation_zone",
@@ -85,7 +101,11 @@
       "radius_per_level": 12,
       "duration": 12,
       "duration_per_level": 1.0,
-      "text": "Releases a drifting radiation zone that poisons everything inside it."
+      "text": "Releases a drifting radiation zone that poisons everything inside it.",
+      "ultimate_charge_seconds": 150,
+      "ultimate_duration": 12,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 2.5
     },
     {
       "id": "waterdrop",
@@ -102,7 +122,11 @@
       "count_per_level": 0.4,
       "radius": 260,
       "armor_pierce": true,
-      "text": "Fires a waterdrop bolt that ricochets between enemies, striking several in sequence."
+      "text": "Fires a waterdrop bolt that ricochets between enemies, striking several in sequence.",
+      "ultimate_charge_seconds": 137,
+      "ultimate_duration": 10,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 6.0
     },
     {
       "id": "space_bomb",
@@ -118,7 +142,11 @@
       "radius": 95,
       "radius_per_level": 9,
       "range": 650,
-      "text": "Lobs a gravity bomb that detonates for area damage on impact."
+      "text": "Lobs a gravity bomb that detonates for area damage on impact.",
+      "ultimate_charge_seconds": 150,
+      "ultimate_duration": 5,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 6.0
     },
     {
       "id": "force_field",
@@ -136,7 +164,11 @@
       "duration": 5,
       "duration_per_level": 0.4,
       "slow_factor": 0.55,
-      "text": "Projects a damaging field around the planet that slows everything it touches."
+      "text": "Projects a damaging field around the planet that slows everything it touches.",
+      "ultimate_charge_seconds": 187,
+      "ultimate_duration": 12,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 2.5
     },
     {
       "id": "laser",
@@ -154,7 +186,11 @@
       "dot_dps": 6,
       "dot_seconds": 3,
       "stun_seconds": 0.5,
-      "text": "Fires searing lasers into the nearest threats, scorching each impact point into a burning field."
+      "text": "Fires searing lasers into the nearest threats, scorching each impact point into a burning field.",
+      "ultimate_charge_seconds": 125,
+      "ultimate_duration": 5,
+      "ultimate_damage_bonus": 1.0,
+      "ultimate_rate_mult": 6.0
     }
   ]
 }

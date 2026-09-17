@@ -198,6 +198,21 @@ public sealed record OrbitalWeaponDef
     public int BurstLevel { get; init; }
     /// <summary>Level at which the endpoints start firing lasers ("Photon Nodes").</summary>
     public int NodeShotLevel { get; init; }
+
+    // ---- ultimate (PDTD config/data/weapon_ultimate) ----
+    // Every sentinel charges an ultimate over the course of a run and cuts loose for a
+    // few seconds. PDTD's charge times run 61s (Chain Lightning) to 187s (Force Field)
+    // and its ultimates are uniformly "+100% DMG, much faster, for N seconds", which is
+    // what these three fields express without needing bespoke code per weapon.
+    /// <summary>Seconds of uptime to fill the ultimate. 0 = this weapon has none.</summary>
+    public float UltimateChargeSeconds { get; init; }
+    /// <summary>How long the ultimate runs once it fires.</summary>
+    public float UltimateDuration { get; init; } = 5f;
+    /// <summary>Damage multiplier while the ultimate is running (1 = +100%).</summary>
+    public float UltimateDamageBonus { get; init; } = 1f;
+    /// <summary>Fire-rate multiplier while it runs — this is what turns "fire a missile"
+    /// into "fire 60 missiles in 5s".</summary>
+    public float UltimateRateMult { get; init; } = 6f;
     public bool ShieldPierce { get; init; }
     public bool ArmorPierce { get; init; }
     public float SlowFactor { get; init; }         // force_field: 1 = normal speed, e.g. 0.5 = half speed
@@ -363,6 +378,33 @@ public sealed record ItemsDb
     public System.Collections.Generic.List<ItemDef> Items { get; init; } = new();
 
     public ItemRarityDef? Rarity(string id) => Rarities.Find(r => r.Id == id);
+}
+
+/// <summary>One of the four per-sentinel ultimate upgrade tracks (data/ultimates.json),
+/// matching PDTD's Ultimate Upgrades screen.</summary>
+public sealed record UltimateTrackDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Text { get; init; } = "";
+    public string Icon { get; init; } = "";
+    /// <summary>Stat gain per level (a fraction, e.g. 0.03 = +3%).</summary>
+    public float PerLevel { get; init; }
+    /// <summary>Ultimate Alloy price of the first level.</summary>
+    public int Cost { get; init; } = 10;
+    /// <summary>Which ultimate stat this feeds; combined with the weapon's Kind into an
+    /// "ow:&lt;kind&gt;:&lt;stat&gt;" effect key.</summary>
+    public string Stat { get; init; } = "";
+}
+
+public sealed record UltimatesDb
+{
+    public int MaxLevel { get; init; } = 20;
+    public float CostGrowth { get; init; } = 1.18f;
+    /// <summary>Level from which a purchase also costs Unobtainium Alloy.</summary>
+    public int UnobtainiumFrom { get; init; } = 11;
+    public int UnobtainiumCost { get; init; } = 1;
+    public System.Collections.Generic.List<UltimateTrackDef> Tracks { get; init; } = new();
 }
 
 public sealed record ChipsDb

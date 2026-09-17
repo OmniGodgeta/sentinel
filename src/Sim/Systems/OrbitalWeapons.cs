@@ -26,6 +26,24 @@ public sealed partial class SimWorld
     public int OrbitalWeaponStars(int i) =>
         (uint)i < (uint)_owPicks.Length ? _owPicks[i] % StarsPerLevel : 0;
 
+    // ---- ultimates ----
+    // Each sentinel charges while it's in play and, when full, cuts loose for a few
+    // seconds at greatly increased damage and rate — PDTD's weapon_ultimate, whose charge
+    // times run 61s to 187s. Firing is automatic: Beyond has no spare screen real estate
+    // for eleven ultimate buttons, and an ultimate that sits full because you didn't
+    // notice it is worse than one that just goes off.
+    private float[] _owUltCharge = System.Array.Empty<float>();   // 0..1
+    private float[] _owUltLeft = System.Array.Empty<float>();     // seconds of uptime left
+
+    /// <summary>Ultimate charge for weapon <paramref name="i"/>, 0..1. Always 0 for a
+    /// weapon with no ultimate configured or one that isn't in play.</summary>
+    public float OrbitalUltimateCharge(int i) =>
+        (uint)i < (uint)_owUltCharge.Length ? _owUltCharge[i] : 0f;
+
+    /// <summary>Is this weapon's ultimate firing right now? The HUD animates its tile.</summary>
+    public bool OrbitalUltimateActive(int i) =>
+        (uint)i < (uint)_owUltLeft.Length && _owUltLeft[i] > 0f;
+
     private const float OwOrbit = 2.45f;   // × SentinelOrbitRadius — a clear orbit ring in open space
 
     // active timed field effects (radiation line / shock orb / radiation zone / beam laser /
@@ -125,6 +143,11 @@ public sealed partial class SimWorld
         _owLevel = new int[n];
         _owCd = new float[n];
         _owPicks = new int[n];
+        _owUltCharge = new float[n];
+        _owUltLeft = new float[n];
+        // "Initial Energy" — start part-charged rather than from zero.
+        for (int i = 0; i < n; i++)
+            _owUltCharge[i] = Mathf.Clamp(Mods.WeaponAdd(Cfg.OrbitalWeapons[i].Kind, "ult_initial"), 0f, 0.95f);
         _owEffects.Clear();
         _fxOwBeamLeft = 0f;
 
@@ -171,6 +194,35 @@ public sealed partial class SimWorld
 
         for (int i = 0; i < _owCd.Length; i++) if (_owCd[i] > 0f) _owCd[i] -= dt;
 
+        // ---- ultimate charge / expiry ----
+        for (int i = 0; i < _owUltCharge.Length; i++)
+        {
+            if (_owLevel[i] <= 0) continue;
+            var ud = Cfg.OrbitalWeapons[i];
+            float chargeSecs = ud.UltimateChargeSeconds;
+            if (chargeSecs <= 0f) continue;
+            // Upgrades -> Planet -> Ultimate feeds these three tracks.
+            chargeSecs /= Mathf.Max(0.2f, Mods.WeaponMult(ud.Kind, "ult_charge_rate"));
+
+            if (_owUltLeft[i] > 0f)
+            {
+                _owUltLeft[i] -= dt;
+                if (_owUltLeft[i] <= 0f) { _owUltLeft[i] = 0f; _owUltCharge[i] = 0f; }
+                continue;
+            }
+            if (_owUltCharge[i] < 1f)
+            {
+                _owUltCharge[i] = Mathf.Min(1f, _owUltCharge[i] + dt / chargeSecs);
+                if (_owUltCharge[i] >= 1f)
+                {
+                    _owUltLeft[i] = Mathf.Max(0.5f, ud.UltimateDuration
+                                              * Mathf.Max(0.2f, Mods.WeaponMult(ud.Kind, "ult_duration")));
+                    _owCd[i] = 0f;   // let it open fire immediately
+                    Events.Push(SimEventKind.AbilityCast, OrbitalPlatformPos(i), 0f, -4);
+                }
+            }
+        }
+
         // --- active field effects ---
         for (int k = _owEffects.Count - 1; k >= 0; k--)
         {
@@ -208,9 +260,16 @@ public sealed partial class SimWorld
         // ones from PDTD's upgrade cards and per-weapon chips ("Radiation Link DMG +60%"),
         // which ModifierSet keys by weapon Kind — see its "per-weapon modifiers" section.
         string kind = d.Kind;
+        // While the ultimate is running the weapon hits far harder and cycles far faster —
+        // that's what turns "fire a missile" into PDTD's "fire 60 missiles in 5s".
+        bool ult = _owUltLeft[i] > 0f;
+        float ultDmg = ult
+            ? 1f + Mathf.Max(0f, d.UltimateDamageBonus) * Mathf.Max(0.2f, Mods.WeaponMult(kind, "ult_damage"))
+            : 1f;
         float dmg = (d.Damage + d.DamagePerLevel * (L - 1))
                     * Mathf.Max(0.2f, Mods.OrbitalWeaponDamageMult)
-                    * Mathf.Max(0.05f, Mods.WeaponMult(kind, "damage"));
+                    * Mathf.Max(0.05f, Mods.WeaponMult(kind, "damage"))
+                    * ultDmg;
         int cnt = Mathf.Max(1, d.Count + Mathf.FloorToInt(d.CountPerLevel * (L - 1))
                                + Mathf.FloorToInt(Mods.WeaponAdd(kind, "count")));
         float radius = (d.Radius + d.RadiusPerLevel * (L - 1))
@@ -424,7 +483,8 @@ public sealed partial class SimWorld
 
         _owCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1))
                    / Mathf.Max(0.2f, Mods.OrbitalWeaponRateMult)
-                   / Mathf.Max(0.2f, Mods.WeaponMult(kind, "rate"));
+                   / Mathf.Max(0.2f, Mods.WeaponMult(kind, "rate"))
+                   / (ult ? Mathf.Max(1f, d.UltimateRateMult) : 1f);
         Events.Push(SimEventKind.HeroWeaponFired, from, radius, 10 + i);
     }
 

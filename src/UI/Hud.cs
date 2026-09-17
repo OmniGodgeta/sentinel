@@ -1157,6 +1157,8 @@ public sealed partial class Hud : CanvasLayer
             int lvl = w.OrbitalWeaponLevel(i);
             b.SetState(lvl, w.OrbitalWeaponCooldownLeft(i),
                        Mathf.Max(od.MinCooldown, od.Cooldown + od.CooldownPerLevel * (lvl - 1)));
+            b.SetUltimate(w.OrbitalUltimateCharge(i), w.OrbitalUltimateActive(i),
+                          w.OrbitalWeaponStars(i), Sentinel.Sim.SimWorld.StarsPerLevel - 1);
         }
 
         foreach (var (i, b) in _weaponBtns)

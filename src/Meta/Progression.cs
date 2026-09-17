@@ -359,6 +359,22 @@ public sealed class Progression
             m.ApplyEffect(def.EffectKey, def.EffectPerTier * tier);
         }
 
+        // ultimate upgrade tracks (Upgrades -> Planet -> Ultimate), keyed
+        // "{weapon_id}:{track_id}" and applied per weapon Kind
+        foreach (var (key, lvl) in _save.UltimateLevels)
+        {
+            if (lvl <= 0) continue;
+            int sep = key.IndexOf(':');
+            if (sep <= 0) continue;
+            string weaponId = key[..sep], trackId = key[(sep + 1)..];
+            string kind = "";
+            foreach (var ow in _cfg.OrbitalWeapons)
+                if (ow.Id == weaponId) { kind = ow.Kind; break; }
+            var track = _cfg.Ultimates.Tracks.Find(t => t.Id == trackId);
+            if (kind.Length == 0 || track == null || track.Stat.Length == 0) continue;
+            m.ApplyEffect($"ow:{kind}:{track.Stat}", track.PerLevel * lvl);
+        }
+
         // level-up cards
         foreach (var id in _save.LevelCards)
         {

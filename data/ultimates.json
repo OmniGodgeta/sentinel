@@ -1,0 +1,26 @@
+{
+  "_note": "Per-sentinel ultimate upgrade tracks (Upgrades -> Planet -> Ultimate), copied from PDTD's Ultimate Upgrades screen: four tracks per weapon — Charge Speed, Initial Energy, DMG Bonus, and a per-weapon count track — each bought a level at a time with Ultimate Alloy, and Unobtainium Alloy once past `unobtainium_from`. `per_level` is the stat gain per level; `cost` is the Ultimate Alloy price, which steps up by `cost_growth` each level. Effect keys are ModifierSet.ApplyEffect keys, scoped per weapon with the ow:<kind>: prefix; `ult_` stats are read by the ultimate system in OrbitalWeapons.cs.",
+
+  "max_level": 20,
+  "cost_growth": 1.18,
+  "unobtainium_from": 11,
+  "unobtainium_cost": 1,
+
+  "tracks": [
+    { "id": "charge", "name": "Charge Speed", "icon": "attr_crit_rate",
+      "text": "Ultimate charges faster.",
+      "per_level": 0.01, "cost": 10, "stat": "ult_charge_rate" },
+
+    { "id": "initial", "name": "Initial Energy", "icon": "attr_impact",
+      "text": "Start each run with the ultimate part-charged.",
+      "per_level": 0.01, "cost": 10, "stat": "ult_initial" },
+
+    { "id": "dmg", "name": "DMG Bonus", "icon": "attr_damage",
+      "text": "Ultimate damage bonus.",
+      "per_level": 0.03, "cost": 10, "stat": "ult_damage" },
+
+    { "id": "duration", "name": "Duration", "icon": "attr_crit_damage",
+      "text": "Ultimate lasts longer.",
+      "per_level": 0.03, "cost": 60, "stat": "ult_duration" }
+  ]
+}

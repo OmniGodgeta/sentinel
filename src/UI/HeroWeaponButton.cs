@@ -34,6 +34,20 @@ public sealed partial class HeroWeaponButton : Control
         _level = level; _cd = cooldownLeft; _cdMax = Mathf.Max(0.01f, cooldownMax);
     }
 
+    private float _ultCharge;
+    private bool _ultActive;
+    private int _stars, _starMax;
+
+    /// <summary>Ultimate charge (0..1), whether it's firing, and the sentinel's star
+    /// pips. A charging ultimate draws a rising ring around the tile; a firing one
+    /// animates the whole card, which is PDTD's "the card becomes animated" cue.</summary>
+    public void SetUltimate(float charge, bool active, int stars, int starMax)
+    {
+        _ultCharge = Mathf.Clamp(charge, 0f, 1f);
+        _ultActive = active;
+        _stars = stars; _starMax = starMax;
+    }
+
     public override void _Process(double delta) { _t += (float)delta; QueueRedraw(); }
 
     public override void _GuiInput(InputEvent e)
@@ -109,6 +123,47 @@ public sealed partial class HeroWeaponButton : Control
             DrawRect(new Rect2(frame.Position.X, frame.Position.Y + curtainH - 2f * k, frame.Size.X, 2f * k), new Color(_accent, 0.85f));
             DrawString(ThemeDB.FallbackFont, new Vector2(0, frame.Position.Y + frame.Size.Y * 0.58f), $"{_cd:0.0}",
                        HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(22 * k), new Color(1, 1, 1, 0.92f));
+        }
+
+        // --- ultimate ---
+        // Charging: a bright arc creeps around the tile's edge. Firing: the whole frame
+        // pulses gold and the art brightens — PDTD animates the card while its ultimate
+        // is up, and this is the closest thing the 2D HUD has to that.
+        if (_ultActive)
+        {
+            float p = 0.5f + 0.5f * Mathf.Sin(_t * 12f);
+            for (int i = 1; i <= 3; i++)
+                CutOutline(Grow(frame, i * 3f * k), ch + i * 3f * k,
+                           new Color(1f, 0.86f, 0.35f, (0.55f + 0.35f * p) / i), 3f * k);
+            CutOutline(frame, ch, new Color(1f, 0.95f, 0.65f, 0.9f), 3.5f * k);
+            DrawString(ThemeDB.FallbackFont, new Vector2(0, frame.Position.Y + 22f * k), "ULTIMATE",
+                       HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(15 * k),
+                       new Color(1f, 0.93f, 0.55f, 0.95f));
+        }
+        else if (_ultCharge > 0.001f)
+        {
+            // a ring that fills clockwise from the top as the ultimate charges
+            float r = Mathf.Min(frame.Size.X, frame.Size.Y) * 0.5f - 2f * k;
+            var c0 = frame.Position + frame.Size * 0.5f;
+            DrawArc(c0, r, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * _ultCharge, 40,
+                    new Color(1f, 0.86f, 0.35f, _ultCharge >= 1f ? 0.95f : 0.5f), 3f * k);
+        }
+
+        // --- star pips ---
+        // Same three-pip row PDTD puts under an equipped sentinel, purple once promoted.
+        if (_starMax > 0)
+        {
+            float pipR = 3.2f * k;
+            float gap = 10f * k;
+            float total = (_starMax - 1) * gap;
+            float sy = frame.Position.Y + frame.Size.Y - 11f * k;
+            var litc = _level > 1 ? new Color(0.76f, 0.52f, 1f) : new Color(1f, 0.93f, 0.62f);
+            for (int s = 0; s < _starMax; s++)
+            {
+                var pc = new Vector2(sz.X * 0.5f - total * 0.5f + s * gap, sy);
+                DrawCircle(pc, pipR + 1.2f * k, new Color(0, 0, 0, 0.55f));
+                DrawCircle(pc, pipR, s < _stars ? litc : new Color(0.42f, 0.47f, 0.55f, 0.8f));
+            }
         }
 
         // --- segmented charge bar ---

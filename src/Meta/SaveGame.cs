@@ -73,6 +73,15 @@ public sealed class SaveGame
     public int SilverKeys { get; set; } = 0;
     public int GoldKeys { get; set; } = 0;
 
+    /// <summary>Ultimate Alloy — spent on the per-sentinel ultimate upgrade tracks
+    /// (Upgrades -> Planet -> Ultimate). Earned from Gold chests.</summary>
+    public int UltimateAlloy { get; set; } = 0;
+    /// <summary>Unobtainium Alloy — the rare one. Same tracks, far scarcer: it only
+    /// appears on the deepest levels of each track.</summary>
+    public int UnobtainiumAlloy { get; set; } = 0;
+    /// <summary>Per-sentinel ultimate upgrade levels, key "{weapon_id}:{track_id}".</summary>
+    public Dictionary<string, int> UltimateLevels { get; set; } = new();
+
     // level-up upgrade cards picked (Planet-Defense-TD style meta progression)
     public List<string> LevelCards { get; set; } = new();
 
