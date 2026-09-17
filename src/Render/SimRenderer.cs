@@ -16,7 +16,7 @@ public sealed partial class SimRenderer : Node2D
     public SimWorld World = null!;
     public int SelectedSlot = -1;
 
-    private enum FxKind : byte { Muzzle, Tracer, Spark, Boom, Shock, Lightning, Text, CastRing, Warp, Smoke }
+    private enum FxKind : byte { Muzzle, Tracer, Spark, Boom, Shock, Lightning, Text, CastRing, Warp, Smoke, AquaBolt }
     private struct Fx
     {
         public FxKind Kind;
@@ -77,9 +77,9 @@ public sealed partial class SimRenderer : Node2D
                 // e.I picks the arc's color family — waterdrop's ricochet (2) reads as a cyan
                 // water-bolt trail and Ball Lightning's zap (3) as a hot yellow spark, rather
                 // than the shared electric-blue lightning-chain look every other chain uses.
-                Push(FxKind.Lightning, e.Pos, e.PosB, 0f, 0.16f, e.I switch
+                Push(e.I == 2 ? FxKind.AquaBolt : FxKind.Lightning, e.Pos, e.PosB, 0f, 0.2f, e.I switch
                 {
-                    2 => new Color(0.25f, 0.82f, 0.92f),
+                    2 => new Color(0.55f, 0.95f, 1f),
                     3 => new Color(0.98f, 0.82f, 0.20f),
                     _ => new Color(0.6f, 0.85f, 1f),
                 });
@@ -224,6 +224,24 @@ public sealed partial class SimRenderer : Node2D
         DrawSetTransform(pos, rot, new Vector2(sc, sc));
         DrawTexture(tex, -ts * 0.5f, mod);
         DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+    }
+
+    /// <summary>Stretch a PDTD beam texture from <paramref name="a"/> to <paramref name="b"/> —
+    /// the texture's long axis runs along the beam, its short axis becomes the beam width.
+    /// Returns false (drawing nothing) when the named texture isn't present, so callers can
+    /// fall back to the old procedural line.</summary>
+    private bool BeamSprite(string vfxName, Vector2 a, Vector2 b, float width, Color mod)
+    {
+        var tex = Art.Vfx(vfxName);
+        if (tex == null) return false;
+        var ts = tex.GetSize();
+        Vector2 d = b - a;
+        float len = d.Length();
+        if (len < 1f) return false;
+        DrawSetTransform(a, d.Angle(), new Vector2(len / ts.X, width / ts.Y));
+        DrawTexture(tex, new Vector2(0, -ts.Y * 0.5f), mod);
+        DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+        return true;
     }
 
     private void DrawGuides()
@@ -410,27 +428,36 @@ public sealed partial class SimRenderer : Node2D
             if (any > 0f) DrawArc(Vector2.Zero, any, 0, Mathf.Tau, 72, new Color(0.5f, 0.7f, 1f, 0.05f), 1.5f);
         }
 
-        // the orbiting weapon platforms — chunky ringed sentinel stations (PDTD look)
+        // the orbiting weapon platforms — PDTD's own sentinel models, one per weapon kind
+        // (assets/game/pdtd/icons/<kind>.png, extracted from the game's sentinel skins).
+        // Falls back to the old procedural station only if a kind has no art.
         for (int i = 0; i < n; i++)
         {
             if (World.OrbitalWeaponLevel(i) <= 0) continue;
-            var c = ColorForKind(World.OrbitalWeaponKind(i));
+            string kind = World.OrbitalWeaponKind(i);
+            var c = ColorForKind(kind);
             var p = World.OrbitalPlatformPos(i);
             float ang = p.Angle() + Mathf.Pi / 2f;
             float lvl = World.OrbitalWeaponLevel(i);
             float sc = 1.5f + Mathf.Min(0.9f, lvl * 0.06f);
-            Vector2 R(float x, float y) => p + new Vector2(x, y).Rotated(ang) * sc;
 
+            var art = Art.SentinelArt(kind);
+            if (art != null)
+            {
+                // soft ready-glow behind the hull, then the model itself
+                DrawCircle(p, 26f * sc, new Color(c, 0.10f + 0.04f * Mathf.Sin(gt * 3f + i)));
+                Blit(art, p, ang, 62f * sc, Colors.White);
+                continue;
+            }
+
+            Vector2 R(float x, float y) => p + new Vector2(x, y).Rotated(ang) * sc;
             DrawCircle(p, 20f * sc, new Color(c, 0.10f));
             DrawArc(p, 15f * sc, 0, Mathf.Tau, 22, new Color(c, 0.28f), 1.5f);   // station ring
-            // hull disc
             DrawColoredPolygon(new[] { R(-11, -5), R(11, -5), R(14, 4), R(0, 10), R(-14, 4) }, new Color(0.09f, 0.11f, 0.16f));
             DrawPolyline(new[] { R(-11, -5), R(11, -5), R(14, 4), R(0, 10), R(-14, 4), R(-11, -5) }, new Color(c, 0.9f), 1.8f);
-            // spires
             DrawLine(R(-6, -5), R(-6, -14), new Color(c, 0.8f), 1.8f);
             DrawLine(R(0, -6), R(0, -18), new Color(c, 0.95f), 2.2f);
             DrawLine(R(6, -5), R(6, -14), new Color(c, 0.8f), 1.8f);
-            // core glow
             DrawCircle(p, 3.6f * sc * (0.8f + 0.2f * Mathf.Sin(gt * 5f + i)), new Color(c, 0.95f));
             DrawCircle(p, 1.8f, Colors.White);
         }
@@ -445,17 +472,42 @@ public sealed partial class SimRenderer : Node2D
             var from = World.FxOrbitalBeamFrom;
             var to = World.FxOrbitalBeamTo;
             bool bomb = bk == 3;
-            if (!bomb)
-            {
-                DrawLine(from, to, new Color(c, 0.32f * k), bk == 1 ? 7f : 5f);
-                DrawLine(from, to, new Color(1f, 0.96f, 0.9f, 0.9f * k), bk == 1 ? 3f : 2f);
-            }
-            // impact rings expanding on the ground — bigger for the space bomb's blast
             float grow = (1f - k);
-            float ringMul = bomb ? 2.1f : 1f;
-            DrawArc(to, (8f + grow * 46f) * ringMul, 0, Mathf.Tau, 28, new Color(c, 0.7f * k), bomb ? 4f : 3f);
-            DrawArc(to, (4f + grow * 26f) * ringMul, 0, Mathf.Tau, 22, new Color(1f, 0.95f, 0.9f, 0.6f * k), 2f);
-            if (bomb) DrawCircle(to, 10f * k, new Color(c, 0.5f * k));
+            if (bk == 1)   // Laser — PDTD's own beam texture
+            {
+                if (!BeamSprite("beam01", from, to, 26f, new Color(c, 0.95f * k)))
+                {
+                    DrawLine(from, to, new Color(c, 0.32f * k), 7f);
+                    DrawLine(from, to, new Color(1f, 0.96f, 0.9f, 0.9f * k), 3f);
+                }
+                var fl = Art.Vfx("flare");
+                if (fl != null) Blit(fl, to, 0f, 54f * (0.6f + grow), new Color(c, 0.85f * k));
+            }
+            else if (bk == 2)   // Waterdrop — PDTD's aqua bullet streaked along its path
+            {
+                if (!BeamSprite("aqua_bullet", from, to, 22f, new Color(1f, 1f, 1f, 0.95f * k)))
+                    DrawLine(from, to, new Color(c, 0.6f * k), 5f);
+                var sp = Art.Vfx("orb_point");
+                if (sp != null) Blit(sp, to, 0f, 42f * (0.7f + grow * 0.6f), new Color(c, 0.9f * k));
+            }
+            else if (bomb)      // Space Bomb — PDTD's explosion + shockwave ring
+            {
+                var ex = Art.Vfx("explosion");
+                var ring = Art.Vfx("ring");
+                if (ex != null) Blit(ex, to, grow * 1.5f, (40f + grow * 130f), new Color(1f, 0.92f, 0.8f, 0.95f * k));
+                if (ring != null) Blit(ring, to, 0f, (30f + grow * 190f), new Color(c, 0.75f * k));
+                if (ex == null && ring == null)
+                {
+                    DrawArc(to, (8f + grow * 46f) * 2.1f, 0, Mathf.Tau, 28, new Color(c, 0.7f * k), 4f);
+                    DrawCircle(to, 10f * k, new Color(c, 0.5f * k));
+                }
+            }
+            else
+            {
+                DrawLine(from, to, new Color(c, 0.32f * k), 5f);
+                DrawLine(from, to, new Color(1f, 0.96f, 0.9f, 0.9f * k), 2f);
+                DrawArc(to, 8f + grow * 46f, 0, Mathf.Tau, 28, new Color(c, 0.7f * k), 3f);
+            }
         }
 
         // active field effects
@@ -471,19 +523,28 @@ public sealed partial class SimRenderer : Node2D
                 for (int seg = 0; seg < nodeN - 1; seg++)
                 {
                     Vector2 a = nodes[seg], b = nodes[seg + 1];
-                    DrawLine(a, b, new Color(gc, 0.22f), 26f);
-                    DrawLine(a, b, new Color(gc, 0.7f), 8f);
-                    DrawLine(a, b, new Color(0.92f, 1f, 0.82f, 0.95f), 2.6f);
+                    if (!BeamSprite("beam03", a, b, 30f, new Color(gc, 0.95f)))
+                    {
+                        DrawLine(a, b, new Color(gc, 0.22f), 26f);
+                        DrawLine(a, b, new Color(gc, 0.7f), 8f);
+                    }
+                    DrawLine(a, b, new Color(0.92f, 1f, 0.82f, 0.85f), 2.6f);
                     for (int s = 0; s < 4; s++)
                     {
                         float ph = Mathf.PosMod(gt * 0.9f + s * 0.25f, 1f);
                         DrawCircle(a.Lerp(b, ph), 3.5f, new Color(0.9f, 1f, 0.8f, 0.8f));
                     }
                 }
-                // the relay stations themselves — small mini-beacons at each node,
-                // with a tiny pylon structure at the two ends of the chain
+                // the relay stations themselves — PDTD's own radiation-point sprite
+                var rp = Art.Vfx("radiation_point");
                 for (int k = 0; k < nodeN; k++)
                 {
+                    if (rp != null)
+                    {
+                        DrawCircle(nodes[k], 16f, new Color(gc, 0.16f));
+                        Blit(rp, nodes[k], gt * 0.8f + k, 40f, new Color(gc.Lightened(0.35f), 0.95f));
+                        continue;
+                    }
                     DrawCircle(nodes[k], 8f, new Color(gc, 0.18f));
                     DrawArc(nodes[k], 6f, 0, Mathf.Tau, 12, new Color(gc, 0.85f), 1.8f);
                     DrawCircle(nodes[k], 2.6f, new Color(0.9f, 1f, 0.85f, 0.95f));
@@ -493,18 +554,25 @@ public sealed partial class SimRenderer : Node2D
             else if (fx.Kind == 4) // beam laser — PDTD Beam sentinel: continuous locked-on burn
             {
                 var lc = ColorForKind("beam_laser");
-                DrawLine(fx.From, fx.Pos, new Color(lc, 0.35f), 8f);
-                DrawLine(fx.From, fx.Pos, new Color(lc, 0.8f), 3.5f);
-                DrawLine(fx.From, fx.Pos, new Color(1f, 0.95f, 0.9f, 0.9f), 1.4f);
                 float pulse = 0.6f + 0.4f * Mathf.Sin(gt * 20f);
-                DrawCircle(fx.Pos, 6f * pulse, new Color(lc, 0.8f));
-                DrawArc(fx.Pos, 10f, 0, Mathf.Tau, 20, new Color(lc, 0.5f), 2f);
+                if (!BeamSprite("beam05", fx.From, fx.Pos, 30f * (0.85f + 0.15f * pulse), new Color(lc, 0.95f)))
+                {
+                    DrawLine(fx.From, fx.Pos, new Color(lc, 0.35f), 8f);
+                    DrawLine(fx.From, fx.Pos, new Color(lc, 0.8f), 3.5f);
+                }
+                DrawLine(fx.From, fx.Pos, new Color(1f, 0.95f, 0.9f, 0.85f), 1.4f);
+                var bf = Art.Vfx("flare");
+                if (bf != null) Blit(bf, fx.Pos, 0f, 46f * pulse, new Color(lc, 0.9f));
+                else DrawCircle(fx.Pos, 6f * pulse, new Color(lc, 0.8f));
             }
             else if (fx.Kind == 5) // force field — PDTD Force Field: a planet-hugging damage + slow dome
             {
                 var fc = ColorForKind("force_field");
                 float life = Mathf.Clamp((fx.DieAt - gt), 0f, 1f);
                 float pulse = 0.5f + 0.5f * Mathf.Sin(gt * 4f);
+                var shield = Art.Vfx("orb_shield");
+                if (shield != null)
+                    Blit(shield, Vector2.Zero, gt * 0.25f, fx.Radius * 2.1f, new Color(fc, (0.55f + 0.2f * pulse) * life + 0.25f));
                 DrawCircle(Vector2.Zero, fx.Radius, new Color(fc, (0.06f + 0.03f * pulse) * life + 0.02f));
                 DrawArc(Vector2.Zero, fx.Radius, 0, Mathf.Tau, 64, new Color(fc, 0.55f + 0.2f * pulse), 2.4f);
                 for (int s = 0; s < 10; s++)
@@ -539,13 +607,17 @@ public sealed partial class SimRenderer : Node2D
                 DrawArc(fx.Pos, fx.Radius, 0, Mathf.Tau, 44, new Color(col, 0.45f), 2f);
                 if (fx.Kind == 2)
                 {
-                    DrawCircle(fx.Pos, 8f, new Color(col, 0.95f));
-                    DrawCircle(fx.Pos, 4f, Colors.White);
+                    // PDTD's Ball Lightning: a glowing energy core throwing real lightning arcs
+                    var core = Art.Vfx("energyball");
+                    var arc = Art.Vfx("lightning_arc");
+                    if (core != null) Blit(core, fx.Pos, gt * 1.7f, 54f + 8f * Mathf.Sin(gt * 9f), new Color(col.Lightened(0.3f), 0.95f));
+                    else { DrawCircle(fx.Pos, 8f, new Color(col, 0.95f)); DrawCircle(fx.Pos, 4f, Colors.White); }
                     for (int s = 0; s < 6; s++)
                     {
                         float aa = gt * 11f + s * Mathf.Tau / 6f;
                         var e = fx.Pos + Vector2.FromAngle(aa) * fx.Radius * (0.6f + 0.35f * Mathf.Sin(gt * 7f + s));
-                        DrawLine(fx.Pos, e, new Color(col, 0.35f), 1.4f);
+                        if (arc == null || !BeamSprite("lightning_arc", fx.Pos, e, 16f, new Color(col, 0.55f)))
+                            DrawLine(fx.Pos, e, new Color(col, 0.35f), 1.4f);
                     }
                 }
                 else
@@ -737,20 +809,22 @@ public sealed partial class SimRenderer : Node2D
             DrawCircle(h.Pos, sr, new Color(sc, 0.07f));
         }
 
-        // --- Laser Volley cone ---
-        if (World.FxLaserLeft > 0f)
+        // --- ship laser: one locked, high-power beam held on a target (PDTD's ship laser) ---
+        if (World.HeroBeamLeft > 0f && World.HeroBeamTargetPos is Vector2 beamTo)
         {
-            float k = World.FxLaserLeft / 0.14f;
             var lc = new Color(0.95f, 0.22f, 0.20f);
-            int beams = Mathf.Max(2, World.FxLaserBeams);
-            float spread = Mathf.DegToRad(38f);
-            float baseA = World.FxLaserAim.Angle();
-            for (int bnum = 0; bnum < beams; bnum++)
+            float pulse = 0.85f + 0.15f * Mathf.Sin(World.GameTime * 22f);
+            if (!BeamSprite("beam01", h.Pos, beamTo, 38f * pulse, new Color(lc, 0.95f)))
             {
-                float a = baseA + Mathf.Lerp(-spread, spread, beams == 1 ? 0.5f : bnum / (float)(beams - 1));
-                var dir = Vector2.FromAngle(a);
-                DrawLine(h.Pos + dir * 14f, h.Pos + dir * 560f, new Color(lc, 0.28f * k), 5f);
-                DrawLine(h.Pos + dir * 14f, h.Pos + dir * 560f, new Color(1f, 0.8f, 0.75f, 0.8f * k), 2f);
+                DrawLine(h.Pos, beamTo, new Color(lc, 0.35f), 10f);
+                DrawLine(h.Pos, beamTo, new Color(1f, 0.85f, 0.8f, 0.9f), 3.5f);
+            }
+            DrawLine(h.Pos, beamTo, new Color(1f, 0.95f, 0.92f, 0.9f), 2f);
+            var lf = Art.Vfx("flare");
+            if (lf != null)
+            {
+                Blit(lf, beamTo, 0f, 62f * pulse, new Color(lc.Lightened(0.3f), 0.9f));
+                Blit(lf, h.Pos, 0f, 34f * pulse, new Color(lc.Lightened(0.4f), 0.8f));
             }
         }
 
@@ -1006,7 +1080,15 @@ public sealed partial class SimRenderer : Node2D
                     DrawArc(f.A, f.R * (0.1f + k) * 0.8f, 0, Mathf.Tau, 48, new Color(1, 1, 1, (1f - k) * 0.5f), 3f);
                     break;
                 case FxKind.Lightning:
-                    DrawLightning(f.A, f.B, f.Col, 1f - k);
+                    // real PDTD lightning-arch texture stretched along the arc, with the old
+                    // procedural bolt as the fallback
+                    if (!BeamSprite("lightning_arc", f.A, f.B, 26f * (1f - k * 0.4f), new Color(f.Col, 1f - k)))
+                        DrawLightning(f.A, f.B, f.Col, 1f - k);
+                    break;
+                case FxKind.AquaBolt:
+                    // Waterdrop ricochet leg — PDTD's own aqua bullet streak
+                    if (!BeamSprite("aqua_bullet", f.A, f.B, 20f, new Color(f.Col, 1f - k)))
+                        DrawLine(f.A, f.B, new Color(f.Col, 1f - k), 3f);
                     break;
                 case FxKind.Warp:
                     DrawArc(f.A, f.R * (1f - k), 0, Mathf.Tau, 16, new Color(f.Col, (1f - k) * 0.8f), 2f);

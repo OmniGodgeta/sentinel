@@ -50,18 +50,15 @@ public sealed class Progression
     /// the Protocols screen.</summary>
     public static readonly string[] BaseAbilities = System.Array.Empty<string>();
 
-    /// <summary>Equipped ability slots: 3 base, +1 at hero 8, +1 at hero 20, + level-card bonuses.</summary>
+    /// <summary>Equipped ability slots — a flat 3.</summary>
     public int AbilitySlots
     {
         get
         {
-            int h = Hero;
-            int fromHero = h >= 20 ? 5 : h >= 8 ? 4 : 3;
-            int fromCards = 0;
-            foreach (var id in _save.LevelCards)
-                if (_cfg.LevelCard(id) is { } c && c.Effects.TryGetValue("ability_slot", out float v))
-                    fromCards += (int)v;
-            return System.Math.Min(6, fromHero + fromCards);
+            // Capped at 3, PDTD-style — the commander carries three battle cards, not a
+            // growing rack of them. (Hero level and ability_slot level-cards used to push
+            // this to 5-6; they no longer do.)
+            return 3;
         }
     }
 

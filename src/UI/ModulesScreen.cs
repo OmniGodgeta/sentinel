@@ -25,10 +25,11 @@ public sealed partial class ModulesScreen : CanvasLayer
         var root = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetLeft = -320, OffsetRight = 320, OffsetTop = 34, OffsetBottom = -12,
+            OffsetLeft = -500, OffsetRight = 500, OffsetTop = 34, OffsetBottom = -12,
         };
         root.AddThemeConstantOverride("separation", 10);
         root.Theme = UiTheme.Instance;
+        AddChild(MenuFrame.Around(root));
         AddChild(root);
 
         var head = new HBoxContainer();

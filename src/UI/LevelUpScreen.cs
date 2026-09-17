@@ -26,7 +26,7 @@ public sealed partial class LevelUpScreen : CanvasLayer
         wrap.Theme = UiTheme.Instance;
         AddChild(wrap);
 
-        var root = new VBoxContainer { CustomMinimumSize = new Vector2(868, 0) };
+        var root = new VBoxContainer { CustomMinimumSize = new Vector2(940, 0) };
         root.AddThemeConstantOverride("separation", 16);
         wrap.AddChild(root);
 

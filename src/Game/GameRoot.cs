@@ -40,7 +40,8 @@ public sealed partial class GameRoot : Node2D
     // TopReserve grows by the display's safe-area inset (notch / punch-hole) so the
     // status + speed row never sits under the camera cutout.
     public float TopReserve { get; private set; } = 172f;
-    public const float BottomReserve = 500f;   // matches Hud's _wavePanel — weapon/ability cards are 204/219px (1.5x)
+    public const float BottomReserve = 340f;   // UPPER BOUND for Hud's _wavePanel — the panel itself
+                                               // sizes to its content each frame (see Hud.Refresh)
     public float SafeTopInset { get; private set; }
 
     /// <summary>True while the sim is frozen only because a card draft is waiting —

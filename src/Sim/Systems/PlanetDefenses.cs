@@ -11,6 +11,11 @@ public sealed partial class SimWorld
     private Sentinel[] _sentinels = System.Array.Empty<Sentinel>();
     public System.ReadOnlySpan<Sentinel> SentinelView => _sentinels;
 
+    /// <summary>Seconds until the planet's missile battery fires again, and the interval it
+    /// resets to — the HUD shows the battery as an always-on card with a live cooldown.</summary>
+    public float BatteryCooldownLeft => Mathf.Max(0f, _batteryCd);
+    public float BatteryInterval => B.BatteryInterval / Mathf.Max(0.2f, Mods.BatteryRateMult);
+
     internal void InitPlanetDefenses()
     {
         _batteryCd = 0f;

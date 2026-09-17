@@ -15,6 +15,11 @@ public sealed partial class SimWorld
     /// below it they are hero weapons.</summary>
     public const int OrbitalCardBase = 100;
 
+    /// <summary>How many orbital sentinels can be active at once. PDTD runs the planet's
+    /// missile battery plus five others; Beyond matches that, so the draft stops offering
+    /// new sentinels once five are live (it keeps offering upgrades to those five).</summary>
+    public const int MaxActiveSentinels = 5;
+
     private int _pendingDrafts;
     private readonly List<string> _runCards = new();
     private readonly List<int> _draftOptions = new();
@@ -49,8 +54,19 @@ public sealed partial class SimWorld
 
         var hw = Cfg.HeroWeapons;
         for (int i = 0; i < hw.Count; i++) Consider(i, _hwLevel[i], hw[i].MaxLevel);
+
+        // PDTD's rule: the planet's missile battery is always slot 1, and you may run at
+        // most MaxActiveSentinels others. Once that many are live, the draft only offers
+        // upgrades to the ones you already have — never a brand-new sentinel.
         var ow = Cfg.OrbitalWeapons;
-        for (int i = 0; i < ow.Count; i++) Consider(OrbitalCardBase + i, _owLevel[i], ow[i].MaxLevel);
+        int active = 0;
+        for (int i = 0; i < ow.Count; i++) if (_owLevel[i] > 0) active++;
+        bool roomForNew = active < MaxActiveSentinels;
+        for (int i = 0; i < ow.Count; i++)
+        {
+            if (_owLevel[i] == 0 && !roomForNew) continue;
+            Consider(OrbitalCardBase + i, _owLevel[i], ow[i].MaxLevel);
+        }
 
         if (pool.Count == 0) { _pendingDrafts = 0; return; }
 

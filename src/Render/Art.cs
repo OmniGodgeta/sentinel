@@ -73,6 +73,32 @@ public static class Art
         return t;
     }
 
+    // ---- real Planet Defense: Space TD art (assets/game/pdtd/, see CREDITS.txt) ----
+
+    private static readonly Dictionary<string, Texture2D> _sentinel = new();
+    /// <summary>The sentinel platform's own model art, keyed by the weapon's
+    /// <c>Kind</c> (data/orbital_weapons.json). Null when a kind has no PDTD
+    /// counterpart — callers fall back to drawing the platform procedurally.</summary>
+    public static Texture2D? SentinelArt(string kind)
+    {
+        if (_sentinel.TryGetValue(kind, out var t)) return t;
+        string p = $"res://assets/game/pdtd/icons/{kind}.png";
+        t = ResourceLoader.Exists(p) ? GD.Load<Texture2D>(p) : null!;
+        _sentinel[kind] = t;
+        return t;
+    }
+
+    private static readonly Dictionary<string, Texture2D> _vfx = new();
+    /// <summary>A PDTD VFX texture by short name (beam01, aqua_bullet, energyball, ...).</summary>
+    public static Texture2D? Vfx(string name)
+    {
+        if (_vfx.TryGetValue(name, out var t)) return t;
+        string p = $"res://assets/game/pdtd/vfx/{name}.png";
+        t = ResourceLoader.Exists(p) ? GD.Load<Texture2D>(p) : null!;
+        _vfx[name] = t;
+        return t;
+    }
+
     public static ShaderMaterial EarthMaterial()
     {
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://assets/game/earth.gdshader") };

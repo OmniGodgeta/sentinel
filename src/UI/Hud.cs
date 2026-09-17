@@ -47,11 +47,12 @@ public sealed partial class Hud : CanvasLayer
     private Button _launch = null!;
 
     private PanelContainer _wavePanel = null!;
+    private VBoxContainer _waveBody = null!;
     private AbilityButton[] _abilityBtns = new AbilityButton[8];
     private readonly bool[] _configured = new bool[8];
     private Label _reticlePrompt = null!;
     private VirtualJoystick _joystick = null!;
-    private HBoxContainer _weaponRow = null!;
+    private HFlowContainer _weaponRow = null!;
     private Button _autoBtn = null!;
     private bool _lastAutoFire, _lastAutopilotOn;
 
@@ -231,10 +232,14 @@ public sealed partial class Hud : CanvasLayer
         });
         AddChild(_wavePanel);
         var wv = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
+        _waveBody = wv;
         wv.AddThemeConstantOverride("separation", 10);
         _wavePanel.AddChild(wv);
-        _weaponRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        _weaponRow.AddThemeConstantOverride("separation", 10);
+        // flow (not a plain HBox) so the planet battery + every active sentinel can sit
+        // alongside the ship-weapon cards and wrap to a second line instead of overflowing
+        _weaponRow = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center };
+        _weaponRow.AddThemeConstantOverride("h_separation", 8);
+        _weaponRow.AddThemeConstantOverride("v_separation", 8);
         wv.AddChild(_weaponRow);
         var abRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         abRow.AddThemeConstantOverride("separation", 14);
@@ -270,7 +275,7 @@ public sealed partial class Hud : CanvasLayer
         _draftPanel = new PanelContainer
         {
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = 10, OffsetRight = -10, OffsetTop = -660, OffsetBottom = 660, Visible = false,
+            OffsetLeft = 10, OffsetRight = -10, OffsetTop = -420, OffsetBottom = 420, Visible = false,
         };
         AddChild(_draftPanel);
         var dv = new VBoxContainer();
@@ -470,6 +475,13 @@ public sealed partial class Hud : CanvasLayer
 
         _buildPanel.Visible = BuildOpen;
         _wavePanel.Visible = fighting && !BuildOpen && !draft;
+        if (_wavePanel.Visible)
+        {
+            // hug the content: a short or empty row shouldn't reserve the full panel height
+            float need = Mathf.Clamp(_waveBody.GetCombinedMinimumSize().Y + 26f, 120f, GameRoot.BottomReserve);
+            _wavePanel.OffsetTop = -need;
+            _joystick.OffsetBottom = -need;
+        }
         _endCard.Visible = ended;
         _endDim.Visible = ended;
         _draftPanel.Visible = draft;
@@ -664,7 +676,7 @@ public sealed partial class Hud : CanvasLayer
 
             var btn = new Button
             {
-                CustomMinimumSize = new Vector2(300, 940),
+                CustomMinimumSize = new Vector2(220, 690),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
                 ClipContents = true,
@@ -695,7 +707,7 @@ public sealed partial class Hud : CanvasLayer
                 Texture = CardTexture(cardId),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                CustomMinimumSize = new Vector2(0, 620),
+                CustomMinimumSize = new Vector2(0, 450),
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ClipContents = true,
@@ -735,17 +747,40 @@ public sealed partial class Hud : CanvasLayer
         }
     }
 
+    /// <summary>The bottom card row: the planet's missile battery, every active orbital
+    /// sentinel, and the ship's own weapons — all with a live cooldown, PDTD-style. The
+    /// battery and the sentinels auto-fire, so they're drawn as compact non-tappable chips;
+    /// only the ship weapons are full-size tappable cards.</summary>
     private void RefreshWeaponRow(SimWorld w)
     {
         int n = w.HeroWeaponCount;
+        int on = w.OrbitalWeaponCount;
         // (re)build the cards only when the set of unlocked weapons changes
         int sig = 0;
         for (int i = 0; i < n; i++) sig = sig * 7 + (w.HeroWeaponLevel(i) > 0 ? 1 : 0);
+        for (int i = 0; i < on; i++) sig = sig * 7 + (w.OrbitalWeaponLevel(i) > 0 ? 1 : 0);
         if (sig != _weaponRowSig)
         {
             _weaponRowSig = sig;
             foreach (Node c in _weaponRow.GetChildren()) c.QueueFree();
             _weaponBtns.Clear();
+            _orbitalBtns.Clear();
+
+            // planet missile battery — always there, always firing
+            _batteryBtn = new HeroWeaponButton();
+            _batteryBtn.Configure("BATTERY", "missiles", new Color(0.95f, 0.72f, 0.35f), alwaysOn: true, compact: true);
+            _weaponRow.AddChild(_batteryBtn);
+
+            for (int i = 0; i < on; i++)
+            {
+                if (w.OrbitalWeaponLevel(i) <= 0) continue;
+                var od = w.Cfg.OrbitalWeapons[i];
+                var b = new HeroWeaponButton();
+                b.Configure(ShortName(od.Name), od.Kind, HexColor(od.Accent, UiTheme.Accent), alwaysOn: true, compact: true);
+                _weaponRow.AddChild(b);
+                _orbitalBtns.Add((i, b));
+            }
+
             for (int i = 0; i < n; i++)
             {
                 if (w.HeroWeaponLevel(i) <= 0) continue;
@@ -760,6 +795,16 @@ public sealed partial class Hud : CanvasLayer
             }
         }
 
+        _batteryBtn?.SetState(1, w.BatteryCooldownLeft, w.BatteryInterval);
+
+        foreach (var (i, b) in _orbitalBtns)
+        {
+            var od = w.Cfg.OrbitalWeapons[i];
+            int lvl = w.OrbitalWeaponLevel(i);
+            b.SetState(lvl, w.OrbitalWeaponCooldownLeft(i),
+                       Mathf.Max(od.MinCooldown, od.Cooldown + od.CooldownPerLevel * (lvl - 1)));
+        }
+
         foreach (var (i, b) in _weaponBtns)
         {
             var def = w.Cfg.HeroWeapons[i];
@@ -771,7 +816,9 @@ public sealed partial class Hud : CanvasLayer
     }
 
     private int _weaponRowSig = -1;
+    private HeroWeaponButton? _batteryBtn;
     private readonly System.Collections.Generic.List<(int idx, HeroWeaponButton btn)> _weaponBtns = new();
+    private readonly System.Collections.Generic.List<(int idx, HeroWeaponButton btn)> _orbitalBtns = new();
     private static string ShortName(string n)
     {
         int sp = n.IndexOf(' ');

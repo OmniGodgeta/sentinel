@@ -20,6 +20,11 @@ public sealed partial class SimWorld
     private float _heroShieldAbsorb;   // fraction of a hit the pool eats
     private float _plasmaRadius;       // >0 while Plasma Field is unlocked (renderer)
 
+    // Ship laser: one high-power beam that locks a target and burns it for a few seconds
+    // (PDTD's ship laser), not the old instant multi-beam cone.
+    private float _heroBeamLeft, _heroBeamDps, _heroBeamTick, _heroBeamRange;
+    private EnemyHandle _heroBeamTarget = EnemyHandle.None;
+
     // short cosmetic timers the renderer reads (set from sim, never read back)
     private float _fxLaserLeft;   private Vector2 _fxLaserAim;   private int _fxLaserBeams;
     private float _fxYamatoLeft;  private Vector2 _fxYamatoPos;  private float _fxYamatoR;
@@ -36,6 +41,10 @@ public sealed partial class SimWorld
     public float FxLaserLeft => _fxLaserLeft;
     public Vector2 FxLaserAim => _fxLaserAim;
     public int FxLaserBeams => _fxLaserBeams;
+    /// <summary>Seconds left on the ship laser's locked beam (0 = not firing).</summary>
+    public float HeroBeamLeft => _heroBeamLeft;
+    /// <summary>Where the ship laser is currently burning, or null if it has no live target.</summary>
+    public Vector2? HeroBeamTargetPos => Resolve(in _heroBeamTarget, out int bi) ? Enemies[bi].Pos : null;
     public float FxYamatoLeft => _fxYamatoLeft;
     public Vector2 FxYamatoPos => _fxYamatoPos;
     public float FxYamatoRadius => _fxYamatoR;
@@ -51,6 +60,8 @@ public sealed partial class SimWorld
         _heroShield = _heroShieldLeft = _heroShieldAbsorb = 0f;
         _plasmaRadius = 0f;
         _fxLaserLeft = _fxYamatoLeft = _fxIonLeft = 0f;
+        _heroBeamLeft = _heroBeamDps = _heroBeamTick = _heroBeamRange = 0f;
+        _heroBeamTarget = EnemyHandle.None;
     }
 
     /// <summary>An upgrade-card pick — raise this weapon one level (unlock at 1).</summary>
@@ -80,6 +91,8 @@ public sealed partial class SimWorld
         if (_fxLaserLeft > 0f) _fxLaserLeft -= dt;
         if (_fxYamatoLeft > 0f) _fxYamatoLeft -= dt;
         if (_fxIonLeft > 0f) _fxIonLeft -= dt;
+
+        StepHeroBeam(dt);
 
         // --- Plasma Field: always-on aura once unlocked ---
         int pi = HwPlasmaIndex();
@@ -137,7 +150,7 @@ public sealed partial class SimWorld
 
         switch (d.Kind)
         {
-            case "laser": FireLaser(d, dmg, cnt); break;
+            case "laser": FireLaser(d, dmg, d.Duration + d.DurationPerLevel * (L - 1)); break;
             case "missiles": FireMissiles(d, dmg, cnt); break;
             case "ion": FireIonBeam(d, dmg, cnt); break;
             case "yamato": FireYamato(d, dmg, L); break;
@@ -162,24 +175,48 @@ public sealed partial class SimWorld
         return dir.LengthSquared() > 0.01f ? dir.Normalized() : Vector2.Down;
     }
 
-    private void FireLaser(Config.HeroWeaponDef d, float dmg, int beams)
+    /// <summary>PDTD's ship laser: locks one target and burns a single high-power beam into
+    /// it for the weapon's duration, rather than spraying an instant cone. Damage is a
+    /// per-second rate applied while the beam holds (see StepHeroBeam).</summary>
+    private void FireLaser(Config.HeroWeaponDef d, float dps, float duration)
     {
-        Vector2 facing = HeroAimDir();
-        float half = Mathf.DegToRad(d.ArcDeg) * 0.5f;
-        float rSq = d.Range * d.Range;
-        int hits = 0;
-        for (int e = 0; e < EnemyHighWater && hits < beams * 3; e++)
-        {
-            ref readonly var en = ref Enemies[e];
-            if (!en.Alive) continue;
-            Vector2 to = en.Pos - Hero.Pos;
-            if (to.LengthSquared() > rSq) continue;
-            if (Mathf.Abs(Mathf.AngleDifference(facing.Angle(), to.Angle())) > half) continue;
-            DamageEnemy(e, dmg, DamageSource.Hero);
-            hits++;
-        }
-        _fxLaserLeft = 0.14f; _fxLaserAim = facing; _fxLaserBeams = beams;
+        int t = Resolve(in _heroFocus, out int fi) ? fi : ClosestEnemyTo(Hero.Pos, d.Range);
+        if (t < 0) return;
+        _heroBeamTarget = HandleOf(t);
+        _heroBeamLeft = duration;
+        _heroBeamDps = dps;
+        _heroBeamRange = d.Range;
+        _heroBeamTick = 0f;
+        _fxLaserLeft = 0.14f; _fxLaserAim = (Enemies[t].Pos - Hero.Pos).Normalized(); _fxLaserBeams = 1;
         Events.Push(SimEventKind.HeroWeaponFired, Hero.Pos, d.Range, 0);
+    }
+
+    /// <summary>Burn the locked beam. Re-acquires if the target dies mid-burn so the beam
+    /// isn't wasted, and drops out if nothing is left in range.</summary>
+    private void StepHeroBeam(float dt)
+    {
+        if (_heroBeamLeft <= 0f) return;
+        _heroBeamLeft -= dt;
+        if (_heroBeamLeft <= 0f || !Hero.Alive) { _heroBeamLeft = 0f; _heroBeamTarget = EnemyHandle.None; return; }
+
+        if (!Resolve(in _heroBeamTarget, out int ti))
+        {
+            int next = ClosestEnemyTo(Hero.Pos, _heroBeamRange);
+            if (next < 0) return;
+            _heroBeamTarget = HandleOf(next);
+            ti = next;
+        }
+
+        DamageEnemy(ti, _heroBeamDps * dt, DamageSource.Hero, shieldMult: 0f);
+
+        // one beam-line event every few ticks — the renderer draws a continuous beam from
+        // these and the audio layer throttles itself off the same stream
+        _heroBeamTick += dt;
+        if (_heroBeamTick >= 0.1f)
+        {
+            _heroBeamTick = 0f;
+            Events.PushLine(SimEventKind.BeamTick, Hero.Pos, Enemies[ti].Pos, 2f, 1);
+        }
     }
 
     private void FireMissiles(Config.HeroWeaponDef d, float dmg, int missiles)

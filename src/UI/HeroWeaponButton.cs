@@ -19,10 +19,13 @@ public sealed partial class HeroWeaponButton : Control
     private float _cd, _cdMax;
     private float _t;
 
-    public void Configure(string name, string kind, Color accent, bool alwaysOn)
+    /// <summary><paramref name="compact"/> is for the auto-firing planet systems (the missile
+    /// battery and the orbital sentinels) — same card, drawn small, since they sit alongside
+    /// the bigger tappable ship-weapon cards in the same wrapping row.</summary>
+    public void Configure(string name, string kind, Color accent, bool alwaysOn, bool compact = false)
     {
         _name = name; _kind = kind; _accent = accent; _alwaysOn = alwaysOn;
-        CustomMinimumSize = new Vector2(204, 204);
+        CustomMinimumSize = compact ? new Vector2(132, 132) : new Vector2(150, 150);
         TooltipText = name;
     }
 
@@ -69,7 +72,19 @@ public sealed partial class HeroWeaponButton : Control
         DrawCornerBrackets(Shrink(frame, 4f * k), 10f * k, new Color(_accent, _alwaysOn ? 0.8f : (ready ? 0.95f : 0.55f)));
 
         var gc = sz * new Vector2(0.5f, 0.4f);
-        DrawIcon(gc, Mathf.Min(sz.X, sz.Y) * 0.22f, new Color(_accent.Lightened(0.15f), _alwaysOn || ready ? 1f : 0.7f));
+        // real PDTD sentinel art when this card is one of the orbital weapons, else the
+        // drawn glyph (ship weapons have no PDTD counterpart art)
+        var art = Sentinel.Render.Art.SentinelArt(_kind);
+        if (art != null)
+        {
+            var ts = art.GetSize();
+            float isz = Mathf.Min(sz.X, sz.Y) * 0.62f;
+            float isc = isz / Mathf.Max(ts.X, ts.Y);
+            DrawSetTransform(gc, 0f, new Vector2(isc, isc));
+            DrawTexture(art, -ts * 0.5f, new Color(1f, 1f, 1f, _alwaysOn || ready ? 1f : 0.7f));
+            DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+        }
+        else DrawIcon(gc, Mathf.Min(sz.X, sz.Y) * 0.22f, new Color(_accent.Lightened(0.15f), _alwaysOn || ready ? 1f : 0.7f));
 
         // level chip, top-left
         DrawRect(new Rect2(frame.Position.X + 5f * k, frame.Position.Y + 5f * k, 34f * k, 20f * k), new Color(0, 0, 0, 0.55f));
@@ -135,6 +150,54 @@ public sealed partial class HeroWeaponButton : Control
             case "shield":
                 DrawArc(c + new Vector2(0, s * 0.5f), s, Mathf.Pi, Mathf.Tau, 20, col, 4f * k);
                 break;
+
+            // ---- orbital sentinel kinds (data/orbital_weapons.json) ----
+            case "beam_laser":   // one thick locked beam
+                DrawLine(c + new Vector2(-s, s * 0.6f), c + new Vector2(s, -s * 0.6f), col, 5f * k);
+                DrawCircle(c + new Vector2(s, -s * 0.6f), 4f * k, Colors.White);
+                break;
+            case "lightning":    // zigzag chain
+                DrawPolyline(new[] { c + new Vector2(-s * 0.7f, -s), c + new Vector2(0, -s * 0.15f),
+                                     c + new Vector2(-s * 0.3f, 0), c + new Vector2(s * 0.6f, s) }, col, 3f * k);
+                break;
+            case "rad_line":     // two relay nodes joined by a link
+                DrawLine(c + new Vector2(-s * 0.8f, 0), c + new Vector2(s * 0.8f, 0), col, 3f * k);
+                DrawCircle(c + new Vector2(-s * 0.8f, 0), 4.5f * k, col);
+                DrawCircle(c + new Vector2(s * 0.8f, 0), 4.5f * k, col);
+                break;
+            case "rad_zone":     // trefoil-ish drifting zone
+                DrawArc(c, s * 0.85f, 0, Mathf.Tau, 20, col, 2.5f * k);
+                for (int i = 0; i < 3; i++)
+                    DrawLine(c, c + Vector2.FromAngle(i * Mathf.Tau / 3f - Mathf.Pi / 2f) * s * 0.8f, col, 3f * k);
+                break;
+            case "shock_orb":    // ball lightning
+                DrawCircle(c, s * 0.45f, col);
+                for (int i = 0; i < 6; i++)
+                {
+                    var a = i * Mathf.Tau / 6f;
+                    DrawLine(c + Vector2.FromAngle(a) * s * 0.55f, c + Vector2.FromAngle(a) * s, col, 2f * k);
+                }
+                break;
+            case "waterdrop":    // droplet
+            {
+                var pts = new[] { c + new Vector2(0, -s), c + new Vector2(-s * 0.62f, s * 0.35f),
+                                  c + new Vector2(0, s * 0.9f), c + new Vector2(s * 0.62f, s * 0.35f) };
+                DrawColoredPolygon(pts, col);
+                break;
+            }
+            case "space_bomb":   // bomb + blast spikes
+                DrawCircle(c, s * 0.5f, col);
+                for (int i = 0; i < 8; i++)
+                {
+                    var a = i * Mathf.Tau / 8f;
+                    DrawLine(c + Vector2.FromAngle(a) * s * 0.62f, c + Vector2.FromAngle(a) * s, col, 2.5f * k);
+                }
+                break;
+            case "force_field":  // nested domes
+                for (int i = 1; i <= 3; i++)
+                    DrawArc(c, s * (0.35f + i * 0.22f), 0, Mathf.Tau, 20, col, 2.2f * k);
+                break;
+
             default:
                 DrawCircle(c, s * 0.6f, col);
                 break;

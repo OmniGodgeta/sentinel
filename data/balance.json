@@ -17,8 +17,8 @@
   "xp_kill_mult": 1.15,
 
   "battery_damage": 13,
-  "battery_interval": 1.0,
+  "battery_interval": 1.15,
   "battery_salvo": 5,
-  "battery_missile_speed": 220,
+  "battery_missile_speed": 176,
   "battery_range": 760
 }

@@ -1,15 +1,16 @@
 {
   "weapons": [
-    { "id": "laser_volley", "name": "Laser Volley", "kind": "laser", "accent": "#e8352f",
-      "max_level": 10, "cooldown": 2.53, "cooldown_per_level": -0.17, "min_cooldown": 0.69,
-      "damage": 18, "damage_per_level": 10, "count": 3, "count_per_level": 0.4,
-      "range": 580, "arc_deg": 46,
-      "text": "A cone of searing laser beams that pierce enemies — high sustained damage." },
+    { "id": "laser_volley", "name": "Laser", "kind": "laser", "accent": "#e8352f",
+      "max_level": 10, "cooldown": 6.0, "cooldown_per_level": -0.3, "min_cooldown": 3.2,
+      "damage": 42, "damage_per_level": 18, "count": 1,
+      "duration": 3, "duration_per_level": 0.12,
+      "range": 700,
+      "text": "Locks a single high-power beam onto one target and burns it for three seconds." },
 
     { "id": "missile_barrage", "name": "Missile Barrage", "kind": "missiles", "accent": "#f0821e",
-      "max_level": 10, "cooldown": 14.95, "cooldown_per_level": -0.92, "min_cooldown": 5.18,
+      "max_level": 10, "cooldown": 17.19, "cooldown_per_level": -1.06, "min_cooldown": 5.96,
       "damage": 48, "damage_per_level": 20, "count": 6, "count_per_level": 0.8,
-      "splash": 66, "speed": 230,
+      "splash": 66, "speed": 184,
       "text": "Saturation missile salvo. Unleash hell — leave nothing standing." },
 
     { "id": "ion_cannon", "name": "Ion Cannon", "kind": "ion", "accent": "#2ea6f2",

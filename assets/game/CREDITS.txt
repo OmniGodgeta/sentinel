@@ -55,6 +55,26 @@ Hero/battery missile sprite (assets/game/missile.png)
   Re-processed (luminance -> alpha, rotated so the nose points "up" to match
   this renderer's sprite convention, downscaled).
 
+Sentinel models + weapon VFX (assets/game/pdtd/**)
+  Real Planet Defense: Space TD art (CyberJoy Games, com.cyberjoy.prjw5n2),
+  extracted with UnityPy from UnityDataAssetPack.apk, per the user's explicit
+  2026-09-15 OK to use PDTD assets in this personal, never-published build
+  (CLAUDE.md §4). Two sets:
+    icons/<kind>.png  — the 11 sentinel platform renders from
+      assets/Res/skins/sentinel/000NN_<weapon>/ui/*_mainicon.png, downscaled to
+      256px. Used both as the in-world orbiting platform sprite and as the icon
+      on the HUD's bottom weapon cards.
+    vfx/*.png — the weapon effect textures: laserbeam01/03/05 (beams),
+      weapon/aqua.png (Waterdrop bolt), weapon/radiationpoint.png (Radiation
+      Link relay), spacebomb energyball/ring/shockwave/bomb_flare,
+      orb circle/point/shield (Ball Lightning core, Force Field dome),
+      lightningarches lightning_big2/lightning_new (chain arcs), plus
+      glow/flare/explosion/missiletrail.
+  bomb_flare, explosion, missile_trail, orb_circle, orb_shield and ring came
+  out of Unity with a black backing instead of transparency, so they were
+  re-processed luminance->alpha (same fix the missile sprite needed at
+  v0.25.1); shockwave's alpha peaked at 67/255 and was normalised.
+
 Enemy + boss sprites (assets/game/enemies/*.png)
   All 11 replaced at v0.25.2 with real Planet Defense: Space TD art (CyberJoy
   Games, com.cyberjoy.prjw5n2), extracted via UnityPy from each prefab's

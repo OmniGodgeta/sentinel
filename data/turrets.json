@@ -29,7 +29,7 @@
       { "id": "strip", "name": "Shield Strip", "damage_mult": 0.85 } ] },
 
   { "id": "missile_silo", "name": "Missile Silo", "fire": "projectile", "cost": 200,
-    "damage": 40, "fire_interval": 1.35, "range": 370, "arc_degrees": 150, "projectile_speed": 210,
+    "damage": 40, "fire_interval": 1.55, "range": 370, "arc_degrees": 150, "projectile_speed": 168,
     "splash_radius": 48, "homing": true, "target_mode": "first", "color": 0.02, "codex_id": "tur_missile",
     "forks": [
       { "id": "cluster", "name": "Cluster", "fire_rate_mult": 1.6, "damage_mult": 0.6, "splash_mult": 0.8 },

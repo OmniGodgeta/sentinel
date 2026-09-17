@@ -5,8 +5,90 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.27.2, 2026-09-17.** Update this file when you finish or start
+Last updated: **v0.28.0, 2026-09-17.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — real PDTD sprites/VFX, ship laser rework, PDTD HUD rules (v0.28.0)
+
+User pushed back, correctly, that an earlier session had swapped PDTD *audio*
+but skipped PDTD *art* for weapons, rationalising that Beyond's renderer is
+procedural. That call was wrong — this pass does the real extraction.
+
+**Real PDTD art is now in (assets/game/pdtd/, see CREDITS.txt)** — extracted
+with UnityPy from `UnityDataAssetPack.apk`:
+- `icons/<kind>.png`: all 11 PDTD sentinel platform renders. These now draw as
+  the **in-world orbiting sentinel platforms** (replacing the hand-drawn
+  "chunky ringed station") *and* as the icons on the HUD's bottom cards.
+- `vfx/*.png`: the weapon effect textures — laserbeam01/03/05, the Waterdrop
+  bolt, the Radiation Link relay point, spacebomb energyball/ring/shockwave,
+  orb shield + core, lightning arches, glow/flare/explosion.
+- New `Art.SentinelArt(kind)` / `Art.Vfx(name)` loaders and a `BeamSprite()`
+  helper in `SimRenderer` that stretches a beam texture between two points.
+  Every rewired effect keeps its old procedural draw as a fallback when a
+  texture is missing, so nothing hard-depends on the extracted set.
+- Rewired to PDTD textures: ship laser, Beam, Laser, Waterdrop (bolt + each
+  ricochet leg), Space Bomb (explosion + shockwave ring), Ball Lightning
+  (energy core + real lightning arcs), Force Field (hex shield dome),
+  Radiation Link (beam + relay sprites), chain arcs.
+- **Gotcha, already hit once here and once at v0.25.1**: several Unity
+  textures export with a *black backing* rather than alpha (Force Field
+  rendered as a solid black square in-game). Fixed by re-processing
+  luminance->alpha; `shockwave` additionally needed its 0-67 alpha range
+  normalised. If a newly extracted PDTD texture looks like a black box, this
+  is why.
+
+**Ship laser reworked** — was an instant 3-beam cone; it's now PDTD's single
+high-power beam that **locks one target and burns it for 3s**
+(`_heroBeam*` in HeroWeapons.cs, damage applied per-tick with a BeamTick
+event stream driving the render + audio). `laser_volley` in
+`data/hero_weapons.json` became duration-based (6s cooldown, 3s burn).
+
+**Missiles**: 20% slower and 15% longer cooldown on all three sources (hero
+Missile Barrage, the planet battery, the Missile Silo turret).
+
+**PDTD HUD rules**:
+- The bottom bar now shows **the planet missile battery first, then every
+  active sentinel, then the ship weapons**, each with a live cooldown — it
+  previously showed ship weapons only, which is why no battery/Radiation Line
+  card was visible. Battery/sentinel cards are compact and non-tappable
+  (they auto-fire); ship weapons stay tappable. The row is an `HFlowContainer`
+  so it wraps instead of overflowing.
+- **Max 5 active sentinels** (`SimWorld.MaxActiveSentinels`): once five are
+  live the in-run draft only offers upgrades to those five, never a sixth —
+  matching PDTD's battery + 5 layout.
+- **Commander ability slots capped at 3** (was 3-6, scaling with hero level).
+- The bottom panel now **sizes to its content each frame** instead of
+  reserving a fixed height — that fixed reserve is what showed as a big empty
+  blue box before anything was unlocked. `GameRoot.BottomReserve` is now just
+  an upper bound, and the joystick's lower edge follows the live panel height.
+- The level-up draft popup was overflowing the screen (4x300px cards in a
+  1080px canvas); cards are 220x690 now and the panel fits.
+
+**Menus**: every screen's root column standardised to a centred 1000px-wide
+box (several were 520-640 wide with *wider* content inside them, which is why
+they read as off-centre), and each menu panel now gets a `MenuFrame` — a
+faint bordered frame with corner ticks and one bright segment that travels the
+whole perimeter once every 5 seconds.
+
+**Verified**: `dotnet build` clean, `SimTest` ALL CHECKS OK / deterministic /
+1x==4x identical, and screenshot-verified in a live run (bottom bar shows
+BATTERY + RADIATION + FORCE with cooldowns; Force Field renders as PDTD's hex
+dome after the alpha fix).
+
+### Still open
+
+- **Module/chip rework to match PDTD properly**: user wants PDTD's 6 module
+  slots, each module carrying a tier (T1/T2...) and level, upgraded by
+  spending chips — the v0.27.1 Armory built a simpler 4-slot global-bonus chip
+  system instead. Needs a real redesign pass.
+- **In-run item drops** with per-rarity % chance — asked for, not started.
+- Per-weapon PDTD *audio events*: the sounds in use are real PDTD samples, but
+  picked by name out of SFX.bank rather than mapped through Master.bank's FMOD
+  event graph, so they aren't necessarily the exact clip PDTD plays for that
+  weapon. Mapping the event graph is the remaining fidelity step.
+- Force Field + Waterdrop card art (still procedural placeholders).
 
 ---
 
