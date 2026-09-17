@@ -83,7 +83,9 @@ public sealed partial class SplashScreen : CanvasLayer
                 if (UpdateChecker.IsNewer(tag, UpdateChecker.Current()))
                 {
                     string label = string.IsNullOrWhiteSpace(name) || name == tag ? tag : $"{name} ({tag})";
-                    UpdateChecker.MarkAvailable(tag, url);
+                    // The apk asset URL matters: without it PromptInstall's card has nothing
+                    // to download and silently bounces to a browser instead (v0.30.2 fix).
+                    UpdateChecker.MarkAvailable(tag, url, UpdateChecker.ApkAssetUrl(d));
                     ShowGate(label, url);
                 }
             }

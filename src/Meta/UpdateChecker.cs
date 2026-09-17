@@ -56,29 +56,33 @@ public sealed partial class UpdateChecker : CanvasLayer
             string notes = Get("body", "");
             string name = Get("name", tag);
 
-            // the APK asset's own direct-download URL — lets Download fetch it in-app
-            // instead of only opening the release page in a browser
-            string apkUrl = "";
-            if (d.TryGetValue("assets", out var assetsVal) && assetsVal.VariantType == Variant.Type.Array)
-            {
-                foreach (var av in assetsVal.AsGodotArray())
-                {
-                    if (av.VariantType != Variant.Type.Dictionary) continue;
-                    var ad = av.AsGodotDictionary();
-                    string an = ad.TryGetValue("name", out var anv) ? anv.AsString() : "";
-                    if (an.EndsWith(".apk"))
-                    {
-                        apkUrl = ad.TryGetValue("browser_download_url", out var auv) ? auv.AsString() : "";
-                        break;
-                    }
-                }
-            }
+            string apkUrl = ApkAssetUrl(d);
 
             if (!IsNewer(tag, Current())) { QueueFree(); return; }
             MarkAvailable(tag, url, apkUrl);
             ShowCard(string.IsNullOrWhiteSpace(name) ? tag : name, tag, notes, url, apkUrl);
         }
         catch { QueueFree(); }
+    }
+
+    /// <summary>Pull the release's APK asset's direct-download URL out of a parsed
+    /// /releases/latest payload, so Download can fetch it in-app instead of only opening
+    /// the release page in a browser. Shared with <see cref="UI.SplashScreen"/>, which
+    /// used to skip this entirely and hand <see cref="MarkAvailable"/> an empty apk URL —
+    /// the gate's Download button then always fell through to the browser (v0.30.2 fix).</summary>
+    public static string ApkAssetUrl(Godot.Collections.Dictionary d)
+    {
+        if (!d.TryGetValue("assets", out var assetsVal) || assetsVal.VariantType != Variant.Type.Array)
+            return "";
+        foreach (var av in assetsVal.AsGodotArray())
+        {
+            if (av.VariantType != Variant.Type.Dictionary) continue;
+            var ad = av.AsGodotDictionary();
+            string an = ad.TryGetValue("name", out var anv) ? anv.AsString() : "";
+            if (an.EndsWith(".apk"))
+                return ad.TryGetValue("browser_download_url", out var auv) ? auv.AsString() : "";
+        }
+        return "";
     }
 
     public static string Current()
@@ -112,7 +116,10 @@ public sealed partial class UpdateChecker : CanvasLayer
     public static void PromptInstall(Node parent)
     {
         if (!Available) return;
-        var layer = new UpdateChecker { Layer = 24 };
+        // Above EVERYTHING. This used to sit at 24, which is under SplashScreen's
+        // layer 30 — so the mandatory-update gate's own Download button spawned a card
+        // nobody could see or tap, and the updater looked completely dead (v0.30.2 fix).
+        var layer = new UpdateChecker { Layer = 200 };
         layer.SetMeta("prompt_only", true);
         parent.GetTree().Root.AddChild(layer);
         layer.ShowCard(AvailableTag, AvailableTag, "", AvailableUrl, AvailableApkUrl);
@@ -192,7 +199,16 @@ public sealed partial class UpdateChecker : CanvasLayer
         bool downloadFailed = false;
         dl.Pressed += () =>
         {
-            if (string.IsNullOrEmpty(apkUrl) || downloadFailed) { OS.ShellOpen(url); QueueFree(); return; }
+            if (string.IsNullOrEmpty(apkUrl) || downloadFailed)
+            {
+                // No in-app path available. Say so on the card instead of closing it
+                // instantly — ShellOpen can no-op on Android, and a card that just
+                // vanishes reads as "the button does nothing".
+                OS.ShellOpen(url);
+                status.Visible = true;
+                status.Text = "opening the release page in your browser…";
+                return;
+            }
             dl.Disabled = true; later.Disabled = true;
             progress.Visible = true; status.Visible = true;
             status.Text = OS.GetName() == "Android" ? "downloading…" : "downloading… (desktop build — no installer, just saves the file)";
