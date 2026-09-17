@@ -195,6 +195,22 @@ GROUPS = {
     # Per-weapon "alloy" cartridges — a clean, uniform glyph for all eleven
     # sentinels (the skillicon group only covers seven), which is what the HUD
     # and the Codex want where a full tile would be too big.
+    # Field/zone VFX. These are additive particle textures — black IS transparent for
+    # them in Unity, so they need lum_alpha (see the module docstring's gotcha).
+    "fieldfx": ("vfx", [
+        ("gameobjects/vfx/forcefield/circle.png.ab", "ff_circle"),
+        ("gameobjects/vfx/forcefield/circle02.png.ab", "ff_circle2"),
+        ("gameobjects/vfx/sustainedrelease/textures/circle102.png.ab", "zone_circle"),
+        ("gameobjects/vfx/sustainedrelease/textures/circlerainbow11.png.ab", "zone_rings"),
+        ("gameobjects/vfx/sustainedrelease/textures/glow2.png.ab", "zone_glow"),
+        ("gameobjects/vfx/sustainedrelease/textures/flash31.png.ab", "zone_flash"),
+        ("gameobjects/vfx/glowingorb/textures/circle116.png.ab", "orb_core"),
+        ("gameobjects/vfx/glowingorb/textures/flare20.png.ab", "orb_flare"),
+        ("gameobjects/vfx/glowingorb/textures/noise34.png.ab", "orb_noise"),
+        ("gameobjects/vfx/gravitynova/texture/masks/radialmask_02.png.ab", "nova_mask"),
+        ("gameobjects/vfx/gravitynova/texture/flares/flare04.png.ab", "nova_flare"),
+    ], True, 512),
+
     "alloy": ("alloy", [
         (f"ui/sprites/ultimateupgradeui/ultimate_alloy_{i}.png.ab", n) for i, n in (
             (10001, "missile"), (10002, "waterdrop"), (10003, "railgun"),

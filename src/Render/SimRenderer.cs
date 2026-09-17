@@ -302,7 +302,10 @@ public sealed partial class SimRenderer : Node2D
         var uvs = new Vector2[n];
         var cols = new Color[n];
         var tex = Sentinel.Render.Art.ShieldHex;
-        float texSpan = rad * 2f / 3.2f;   // ~3 hex tiles across the dome's diameter
+        // ~16 tiles across the dome. At the old 3.2 each hexagon was a third of the
+        // shield wide, which on screen read as two huge purple polygons stuck to the
+        // planet rather than a shield surface. PDTD's force shield is a fine mesh.
+        float texSpan = rad * 2f / 16f;
         for (int i = 0; i < n; i++)
         {
             float a = i * Mathf.Tau / n;
@@ -560,22 +563,42 @@ public sealed partial class SimRenderer : Node2D
                 if (bf != null) Blit(bf, fx.Pos, 0f, 46f * pulse, new Color(lc, 0.9f));
                 else DrawCircle(fx.Pos, 6f * pulse, new Color(lc, 0.8f));
             }
-            else if (fx.Kind == 5) // force field — PDTD Force Field: a planet-hugging damage + slow dome
+            else if (fx.Kind == 5) // force field — a placed gravity bubble
             {
+                // Drawn at fx.Pos, not the origin: the field is placed somewhere in the
+                // defence band now rather than sitting on the planet.
                 var fc = ColorForKind("force_field");
                 float life = Mathf.Clamp((fx.DieAt - gt), 0f, 1f);
                 float pulse = 0.5f + 0.5f * Mathf.Sin(gt * 4f);
-                var shield = Art.Vfx("orb_shield");
-                if (shield != null)
-                    Blit(shield, Vector2.Zero, gt * 0.25f, fx.Radius * 2.1f, new Color(fc, (0.55f + 0.2f * pulse) * life + 0.25f));
-                DrawCircle(Vector2.Zero, fx.Radius, new Color(fc, (0.06f + 0.03f * pulse) * life + 0.02f));
-                DrawArc(Vector2.Zero, fx.Radius, 0, Mathf.Tau, 64, new Color(fc, 0.55f + 0.2f * pulse), 2.4f);
-                for (int s = 0; s < 10; s++)
+                var c = fx.Pos;
+
+                // counter-rotating rings + a soft core, all PDTD's own field textures
+                var ring1 = Art.Vfx("ff_circle");
+                var ring2 = Art.Vfx("ff_circle2");
+                var glow = Art.Vfx("zone_glow");
+                if (glow != null)
+                    Blit(glow, c, 0f, fx.Radius * 2.3f, new Color(fc, (0.20f + 0.08f * pulse) * life));
+                if (ring1 != null)
+                    Blit(ring1, c, gt * 0.5f, fx.Radius * 2.05f, new Color(fc.Lightened(0.15f), (0.60f + 0.2f * pulse) * life));
+                if (ring2 != null)
+                    Blit(ring2, c, -gt * 0.8f, fx.Radius * 1.62f, new Color(fc.Lightened(0.35f), (0.45f + 0.2f * pulse) * life));
+                if (ring1 == null && ring2 == null)
                 {
-                    float aa = s * Mathf.Tau / 10f - gt * 0.6f;
-                    var p2 = Vector2.FromAngle(aa) * fx.Radius;
-                    DrawLine(p2, p2 - Vector2.FromAngle(aa) * 14f, new Color(fc, 0.7f), 2f);
+                    DrawCircle(c, fx.Radius, new Color(fc, 0.08f * life));
+                    DrawArc(c, fx.Radius, 0, Mathf.Tau, 64, new Color(fc, 0.6f * life), 2.4f);
                 }
+
+                // inward-falling gravity streaks — sells "this is pulling things in"
+                for (int s = 0; s < 12; s++)
+                {
+                    float aa = s * Mathf.Tau / 12f - gt * 0.9f;
+                    float ph = Mathf.PosMod(gt * 1.3f + s * 0.31f, 1f);
+                    float r0 = fx.Radius * (1f - ph * 0.55f);
+                    var a0 = c + Vector2.FromAngle(aa) * r0;
+                    var a1 = c + Vector2.FromAngle(aa) * (r0 - fx.Radius * 0.16f);
+                    DrawLine(a0, a1, new Color(fc.Lightened(0.4f), 0.5f * (1f - ph) * life), 2.2f);
+                }
+                DrawArc(c, fx.Radius, 0, Mathf.Tau, 64, new Color(fc.Lightened(0.3f), 0.45f * life), 2f);
             }
             else if (fx.Kind == 6) // laser burn zone — a static scorched, sparking patch at the impact point
             {
@@ -590,16 +613,48 @@ public sealed partial class SimRenderer : Node2D
                     DrawLine(fx.Pos, e, new Color(1f, 0.85f, 0.75f, 0.45f * life), 1.4f);
                 }
             }
-            else // shock orb (2) / radiation zone (3) — concentric radial shockwaves (PDTD SHOCK ORB look)
+            else // shock orb (2) / radiation zone (3)
             {
-                var col = fx.Kind == 2 ? ColorForKind("shock_orb") : ColorForKind("rad_zone");
-                DrawCircle(fx.Pos, fx.Radius, new Color(col, 0.07f));
-                for (int ring = 0; ring < 4; ring++)
+                // Both were four plain DrawArc rings, which is what made them read as
+                // "odd yellow circles". Now built from PDTD's own additive particle
+                // textures: a bright core, a rotating noise/ring shell and an expanding
+                // shockwave, with the bare arcs kept only as a fallback.
+                bool orb = fx.Kind == 2;
+                var col = orb ? ColorForKind("shock_orb") : ColorForKind("rad_zone");
+                float pulseZ = 0.5f + 0.5f * Mathf.Sin(gt * (orb ? 7f : 3f));
+
+                var zcore = Art.Vfx(orb ? "orb_core" : "zone_circle");
+                var shell = Art.Vfx(orb ? "orb_noise" : "zone_rings");
+                var glowZ = Art.Vfx("zone_glow");
+                var flareZ = Art.Vfx(orb ? "orb_flare" : "zone_flash");
+
+                if (glowZ != null)
+                    Blit(glowZ, fx.Pos, 0f, fx.Radius * 2.6f, new Color(col, 0.18f + 0.08f * pulseZ));
+                if (shell != null)
+                    Blit(shell, fx.Pos, gt * (orb ? 1.4f : -0.45f), fx.Radius * 2.0f,
+                         new Color(col, 0.42f + 0.18f * pulseZ));
+                if (zcore != null)
+                    Blit(zcore, fx.Pos, -gt * (orb ? 2.2f : 0.3f), fx.Radius * (orb ? 1.15f : 1.7f),
+                         new Color(col.Lightened(orb ? 0.45f : 0.2f), 0.75f + 0.2f * pulseZ));
+
+                // one expanding shockwave ring, textured when we have it
+                float wave = Mathf.PosMod(gt * (orb ? 1.2f : 0.7f), 1f);
+                var sw = Art.Vfx("shockwave");
+                if (sw != null)
+                    Blit(sw, fx.Pos, 0f, fx.Radius * 2.2f * (0.35f + wave), new Color(col, (1f - wave) * 0.5f));
+
+                if (zcore == null && shell == null)
                 {
-                    float ph = Mathf.PosMod(gt * (fx.Kind == 2 ? 1.6f : 0.9f) + ring * 0.25f, 1f);
-                    DrawArc(fx.Pos, fx.Radius * ph, 0, Mathf.Tau, 44, new Color(col, (1f - ph) * (fx.Kind == 2 ? 0.7f : 0.4f)), fx.Kind == 2 ? 3f : 2f);
+                    DrawCircle(fx.Pos, fx.Radius, new Color(col, 0.07f));
+                    for (int ring = 0; ring < 4; ring++)
+                    {
+                        float ph = Mathf.PosMod(gt * (orb ? 1.6f : 0.9f) + ring * 0.25f, 1f);
+                        DrawArc(fx.Pos, fx.Radius * ph, 0, Mathf.Tau, 44, new Color(col, (1f - ph) * (orb ? 0.7f : 0.4f)), orb ? 3f : 2f);
+                    }
                 }
-                DrawArc(fx.Pos, fx.Radius, 0, Mathf.Tau, 44, new Color(col, 0.45f), 2f);
+                if (flareZ != null && orb)
+                    Blit(flareZ, fx.Pos, gt * 3f, fx.Radius * 1.5f, new Color(col.Lightened(0.5f), 0.5f + 0.3f * pulseZ));
+                DrawArc(fx.Pos, fx.Radius, 0, Mathf.Tau, 44, new Color(col, 0.40f), 2f);
                 if (fx.Kind == 2)
                 {
                     // PDTD's Ball Lightning: a glowing energy core throwing real lightning arcs

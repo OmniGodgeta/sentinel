@@ -75,6 +75,22 @@ public sealed partial class SimWorld
     private const int RadFlagBurst = 1;
     private const int RadFlagNodeShot = 2;
 
+    /// <summary>Inner/outer bounds of the defence band, as fractions of SpawnRadius, that
+    /// a placed area effect may land in. Anything radius-based (force field, radiation
+    /// zone, ball lightning) drops somewhere in this ring rather than always on the same
+    /// spot — a field that appears in the same place every cast reads as scenery.</summary>
+    private const float PlaceBandInner = 0.22f;
+    private const float PlaceBandOuter = 0.62f;
+
+    /// <summary>A random point in the defence band around the planet. Deterministic: off
+    /// <see cref="Rng"/>, never GD.Randf.</summary>
+    private Vector2 RandomPlacement()
+    {
+        float a = Rng.NextFloat(0f, Mathf.Tau);
+        float r = B.SpawnRadius * Rng.NextFloat(PlaceBandInner, PlaceBandOuter);
+        return Vector2.FromAngle(a) * r;
+    }
+
     /// <summary>× DespawnRadius — the radius the relay stations orbit at.
     /// Was 0.62 (r≈558) which is why the weapon read as doing no damage at all: that far
     /// out enemies are still fanned across the full 360°, so a base two-node link — a
@@ -82,7 +98,7 @@ public sealed partial class SimWorld
     /// 24px width in a fraction of a second. Pulled in to the convergence zone just
     /// outside the planet, where every attacker has to funnel through regardless of the
     /// bearing it spawned on, which is where PDTD puts its Radiation Link too.</summary>
-    private const float RadLineRing = 0.26f;
+    private const float RadLineRing = 0.33f;
     /// <summary>Half-width of the damaging beam between two relay stations.</summary>
     private const float RadLineBeamHalfWidth = 30f;
     /// <summary>"Photon Nodes" — seconds between endpoint laser shots. PDTD's card says
@@ -101,7 +117,7 @@ public sealed partial class SimWorld
     /// planet, not just adding flat damage. Grows from a modest 64° at the base 2-node link up
     /// to 340° (deliberately short of a full 360° loop, so it still reads as a chain with two
     /// ends rather than a seamless ring) as node count climbs toward its max.</summary>
-    private static float RadLineSpreadDeg(int nodes) => Mathf.Lerp(64f, 340f, Mathf.Clamp((nodes - 2) / 8f, 0f, 1f));
+    private static float RadLineSpreadDeg(int nodes) => Mathf.Lerp(120f, 350f, Mathf.Clamp((nodes - 2) / 8f, 0f, 1f));
 
     /// <summary>Position of Radiation Line relay station <paramref name="k"/> (of
     /// <see cref="OwEffect.NodeCount"/>) right now — shared by the sim and the
@@ -325,8 +341,12 @@ public sealed partial class SimWorld
             {
                 // PDTD's Radiation Link — relay stations linked by a damage corridor, slowly
                 // orbiting the planet; higher levels add relays (more connections)
-                int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
-                float bearing = t >= 0 ? Enemies[t].Pos.Angle() : Rng.NextFloat(0f, Mathf.Tau);
+                // Placed at a random bearing each cast. It used to aim at whatever was
+                // closest, which made a short link viable but meant it always hung in the
+                // same place relative to the fight; the wider arc below is what pays for
+                // not aiming — a 120-350 degree chain covers most approaches wherever it
+                // lands.
+                float bearing = Rng.NextFloat(0f, Mathf.Tau);
                 // PDTD's Radiation Link always starts as a SINGLE link (2 relay stations).
                 // Extra links come only from "+1 Radiation Link" upgrade cards, which trade
                 // damage for reach — levelling the weapon alone never adds links.
@@ -390,11 +410,27 @@ public sealed partial class SimWorld
                 break;
             }
             case "shock_orb":
-                _owEffects.Add(new OwEffect { Kind = 2, DieAt = GameTime + dur, Dps = dmg, Radius = radius, Stun = d.StunSeconds, P0 = Rng.NextFloat(0f, Mathf.Tau) });
+                // From.X carries the orbit radius so each Ball Lightning rides its own ring
+                // rather than every cast tracing the same circle.
+                _owEffects.Add(new OwEffect
+                {
+                    Kind = 2, DieAt = GameTime + dur, Dps = dmg, Radius = radius, Stun = d.StunSeconds,
+                    P0 = Rng.NextFloat(0f, Mathf.Tau),
+                    From = new Vector2(B.SentinelOrbitRadius * Rng.NextFloat(0.62f, 1.35f), 0f),
+                });
                 break;
             case "rad_zone":
-                _owEffects.Add(new OwEffect { Kind = 3, DieAt = GameTime + dur, Dps = dmg, Radius = radius, P0 = Rng.NextFloat(0f, Mathf.Tau) });
+            {
+                // From is reused as (mid radius, wobble amplitude) for the patrol path.
+                float mid = B.SpawnRadius * Rng.NextFloat(0.34f, 0.58f);
+                _owEffects.Add(new OwEffect
+                {
+                    Kind = 3, DieAt = GameTime + dur, Dps = dmg, Radius = radius,
+                    P0 = Rng.NextFloat(0f, Mathf.Tau),
+                    From = new Vector2(mid, B.SpawnRadius * 0.12f),
+                });
                 break;
+            }
             case "waterdrop":
             {
                 // PDTD's Waterdrop (lua-decrypted/game/attack/aqua_attack.lua): a bullet that
@@ -450,8 +486,16 @@ public sealed partial class SimWorld
                 break;
             }
             case "force_field":
-                // PDTD's Force Field — a damage + slow pulse anchored on the planet itself
-                _owEffects.Add(new OwEffect { Kind = 5, DieAt = GameTime + dur, Dps = dmg, Radius = radius, Slow = d.SlowFactor > 0f ? d.SlowFactor : 1f });
+                // PDTD's Force Field — a damage + slow bubble. It used to sit on the planet
+                // itself, which made it static scenery you never noticed; it now drops at a
+                // random point in the defence band like the other placed fields, so each
+                // cast actually covers somewhere different.
+                _owEffects.Add(new OwEffect
+                {
+                    Kind = 5, DieAt = GameTime + dur, Dps = dmg, Radius = radius,
+                    Slow = d.SlowFactor > 0f ? d.SlowFactor : 1f,
+                    Pos = RandomPlacement(),
+                });
                 break;
             case "laser":
             {
@@ -599,7 +643,7 @@ public sealed partial class SimWorld
                 }
             }
         }
-        else if (fx.Kind == 5) // force field — planet-centred damage + slow aura
+        else if (fx.Kind == 5) // force field — a placed damage + slow bubble
         {
             float rSq = fx.Radius * fx.Radius;
             if (fx.Slow > 0f && fx.Slow < 1f)
@@ -607,7 +651,7 @@ public sealed partial class SimWorld
                 for (int e = 0; e < EnemyHighWater; e++)
                 {
                     ref readonly var en = ref Enemies[e];
-                    if (en.Alive && en.Pos.LengthSquared() <= rSq) ApplySlow(e, fx.Slow);
+                    if (en.Alive && en.Pos.DistanceSquaredTo(fx.Pos) <= rSq) ApplySlow(e, fx.Slow);
                 }
             }
             while (fx.Tick >= interval)
@@ -640,7 +684,8 @@ public sealed partial class SimWorld
             if (fx.Kind == 2)
             {
                 float a = fx.P0 + t * 0.9f;
-                fx.Pos = Vector2.FromAngle(a) * (B.SentinelOrbitRadius * 0.82f);
+                float orbitR = fx.From.X > 1f ? fx.From.X : B.SentinelOrbitRadius * 0.82f;
+                fx.Pos = Vector2.FromAngle(a) * orbitR;
 
                 // PDTD's real Ball Lightning (lua-decrypted/game/attack/ball_lightning_attack.lua)
                 // chain-arcs to nearby enemies, not just a plain damage circle — "continuously
@@ -660,8 +705,11 @@ public sealed partial class SimWorld
             }
             else
             {
+                // Radiation Zone drifts around the planet from wherever it was placed —
+                // From carries its spawn point, so two zones cast a minute apart patrol
+                // different arcs instead of retracing the same path.
                 float a = fx.P0 + t * 0.5f;
-                float r = B.SpawnRadius * (0.45f + 0.25f * Mathf.Sin(t * 0.7f + fx.P0));
+                float r = fx.From.X + fx.From.Y * Mathf.Sin(t * 0.7f + fx.P0);
                 fx.Pos = Vector2.FromAngle(a) * r;
             }
             float rSq = fx.Radius * fx.Radius;

@@ -16,9 +16,10 @@ public sealed partial class SimWorld
     public const int OrbitalCardBase = 100;
 
     /// <summary>How many orbital sentinels can be active at once. PDTD runs the planet's
-    /// missile battery plus five others; Beyond matches that, so the draft stops offering
-    /// new sentinels once five are live (it keeps offering upgrades to those five).</summary>
-    public const int MaxActiveSentinels = 5;
+    /// missile battery plus FOUR others — the bottom bar holds five tiles total. Beyond
+    /// was offering a fifth sentinel, which is why the bar had more cards than PDTD's.
+    /// Once this many are live the draft only offers upgrades to the ones you have.</summary>
+    public const int MaxActiveSentinels = 4;
 
     /// <summary>Draft option indices at/above this are boost cards (data/runcards.json) —
     /// PDTD-style percentage buffs and trade-offs rather than a weapon level.</summary>

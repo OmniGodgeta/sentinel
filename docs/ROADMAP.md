@@ -2206,3 +2206,27 @@ and their tags removed; this release supersedes them.
 ### Still open
 - Research as a hex tech tree rather than a list.
 - Force Shield / MotherShip tabs still hand off to the Sentinels screen.
+
+## v0.36.0 — levelling pace, placed area weapons, real field VFX
+
+- **Levelling slowed.** `run_xp_per_level` 26 -> 70. The v0.32 flattening (120 -> 26)
+  over-corrected: it was quadrupled to pay for weapons levelling every 4 picks, but with
+  PDTD's cards each pick is a real upgrade, so the draft was firing constantly.
+- **Four sentinels, not five.** `MaxActiveSentinels` 5 -> 4 — PDTD runs the missile
+  battery plus four, which is why Beyond's bottom bar had more tiles than the reference.
+- **Area weapons are placed at random, not parked.** Force Field was anchored on the
+  planet (hence "the gravity field is static"); it now drops at a random point in the
+  defence band, and the renderer draws it there. Radiation Zone patrols out from its own
+  spawn point rather than retracing one fixed path, and Ball Lightning rides its own
+  orbit radius per cast. All placement comes off the deterministic `Rng`.
+- **Radiation Link is longer and placed at random**: ring 0.26 -> 0.33 of DespawnRadius,
+  and its arc widened from 64-340 degrees to 120-350, so it reaches much further around
+  the planet. It no longer aims at the nearest enemy — the wider arc is what pays for
+  that, since a 120-degree chain covers most approaches wherever it lands.
+- **Field VFX rebuilt from PDTD's own particle textures.** The shock orb and radiation
+  zone were four plain `DrawArc` rings ("odd yellow circles") and the force field a
+  ring plus tick marks. Both now layer a bright core, a counter-rotating noise/ring
+  shell, a soft glow and an expanding shockwave, with the arcs kept only as fallback.
+- **The purple polygons are gone.** The hex shield surface tiled its texture ~3 hexes
+  across the whole dome, so each hexagon was a third of the shield wide and read as two
+  giant purple polygons stuck to the planet. Now ~16 across, like PDTD's mesh.
