@@ -124,18 +124,23 @@ jobs:
           path: build/beyond-debug.apk
           if-no-files-found: error
 
-      # Publish the release and attach the APK, with retries.
+      # Build the release as a DRAFT, attach the APK, verify it's really there, and only
+      # then publish. Ordering matters and both wrong orders have bitten this project:
       #
-      # This replaced softprops/action-gh-release@v2, which creates the release as a
-      # DRAFT, uploads the asset, then publishes. The APK is ~200MB and the upload
-      # intermittently died with "Error saving asset" — and because the publish step
-      # never ran, the release stayed a draft forever. Drafts are invisible to everyone
-      # and, worse, `/releases/latest` skips them, so the in-app updater saw no new
-      # version at all. v0.31.2, v0.32.0 and v0.33.0 were all stranded this way.
+      #  * softprops/action-gh-release@v2 (draft -> upload -> publish) left the release a
+      #    permanent invisible draft whenever the ~200MB upload failed, because its
+      #    publish step never ran. v0.31.2/v0.32.0/v0.33.0 were all stranded that way,
+      #    and since /releases/latest skips drafts the in-app updater saw nothing new.
       #
-      # Doing it by hand means the release is created published up front, so a failed
-      # upload leaves a visible release we can retry into instead of an invisible draft.
-      - name: Publish release and attach APK
+      #  * Creating it published first (the v0.34.0 attempt) is worse: the release —
+      #    and therefore the updater and the Releases page — advertises a download for
+      #    the whole duration of the upload, and anyone who taps it in that window gets
+      #    a dead link. That is exactly what happened on v0.34.0.
+      #
+      # So: draft, upload with retries, assert the asset is present and non-zero, publish
+      # last. If the upload can't be completed the draft is deleted, so a failed run
+      # leaves nothing behind rather than a stranded draft or an empty published release.
+      - name: Build draft release, attach APK, then publish
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -144,31 +149,40 @@ jobs:
           set -euo pipefail
           ls -l build/beyond-debug.apk
 
-          # Create it published (not a draft) if it doesn't exist; if a previous failed
-          # run left a draft behind, flip it to published.
+          # Start clean: drop any release left over from an earlier attempt at this tag
+          # (keep the tag itself — it's already pushed).
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --draft=false
-          else
-            gh release create "$TAG" --title "$TAG" --notes "Automated build for $TAG" --latest
+            echo "removing existing release for $TAG"
+            gh release delete "$TAG" --yes
           fi
+          gh release create "$TAG" --draft --title "$TAG" --notes "Automated build for $TAG"
 
-          # Upload with retries — a 200MB asset upload fails often enough that one
-          # attempt is not enough.
-          for attempt in 1 2 3 4; do
+          uploaded=0
+          for attempt in 1 2 3 4 5; do
             if gh release upload "$TAG" build/beyond-debug.apk --clobber; then
-              echo "uploaded on attempt $attempt"
-              break
+              # gh can exit 0 on a partial upload, so confirm the asset is actually
+              # there and matches the file on disk before trusting it.
+              want=$(stat -c%s build/beyond-debug.apk)
+              got=$(gh release view "$TAG" --json assets \
+                    --jq '.assets[] | select(.name=="beyond-debug.apk") | .size' || echo 0)
+              if [ "${got:-0}" = "$want" ]; then
+                echo "asset verified on attempt $attempt ($got bytes)"
+                uploaded=1
+                break
+              fi
+              echo "asset size mismatch on attempt $attempt (want $want, got ${got:-0})"
             fi
-            if [ "$attempt" = 4 ]; then
-              echo "::error::APK upload failed after 4 attempts"
-              exit 1
-            fi
-            echo "upload attempt $attempt failed, retrying in 20s..."
-            sleep 20
+            echo "upload attempt $attempt failed, retrying in 30s..."
+            sleep 30
           done
 
-          # Make sure it really is published and really has the asset, so a green run
-          # always means an installable release.
+          if [ "$uploaded" != 1 ]; then
+            echo "::error::APK upload failed after 5 attempts — deleting the draft so nothing half-made is left behind"
+            gh release delete "$TAG" --yes || true
+            exit 1
+          fi
+
+          # Only now does it become visible to players and to the in-app updater.
           gh release edit "$TAG" --draft=false --latest
           gh release view "$TAG" --json isDraft,assets \
-            --jq '"isDraft=\(.isDraft) assets=\(.assets | map(.name + " " + (.size|tostring)) | join(", "))"'
+            --jq '"PUBLISHED isDraft=\(.isDraft) assets=\(.assets | map(.name + " " + (.size|tostring)) | join(", "))"'
