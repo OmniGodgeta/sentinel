@@ -32,7 +32,6 @@ public sealed partial class Hud : CanvasLayer
     private Button _pause = null!;
     private Button _menuOpen = null!;
     private Button _buildToggle = null!;
-    private Button _autopilotBtn = null!;
     private Button _updateBadge = null!;
 
     /// <summary>Build/upgrade panel is showing over the play field (real-time management).</summary>
@@ -54,6 +53,7 @@ public sealed partial class Hud : CanvasLayer
     private VirtualJoystick _joystick = null!;
     private HBoxContainer _weaponRow = null!;
     private Button _autoBtn = null!;
+    private bool _lastAutoFire, _lastAutopilotOn;
 
     private ColorRect _draftDim = null!;
     private PanelContainer _draftPanel = null!;
@@ -84,7 +84,12 @@ public sealed partial class Hud : CanvasLayer
         _joystick = new VirtualJoystick
         {
             AnchorLeft = 0.45f, AnchorRight = 1f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetTop = 230, OffsetBottom = -300,
+            // Bottom bound matches GameRoot.BottomReserve exactly (not a separately-tuned
+            // number) so the joystick's drag zone can never creep over the weapon/ability
+            // card panel again if that panel's size changes — it used to be a hardcoded
+            // -300 that quietly assumed a specific card size and broke (visibly overlapping
+            // the cards) the moment the cards grew.
+            OffsetTop = 230, OffsetBottom = -Sentinel.Game.GameRoot.BottomReserve,
         };
         _joystick.OnMove = d => Root.HeroJoystick(d);
         AddChild(_joystick);
@@ -95,31 +100,31 @@ public sealed partial class Hud : CanvasLayer
         AddChild(top);
 
         // planet integrity — the primary bar, with the value drawn on it
-        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 22) };
+        _integrity = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 44) };
         _integrity.AddThemeStyleboxOverride("fill", Filled(new Color(0.30f, 0.85f, 0.55f), 5));
         _integrity.AddThemeStyleboxOverride("background", Filled(new Color(0.05f, 0.03f, 0.04f, 0.85f), 5));
         top.AddChild(_integrity);
 
         // commander level + XP bar (fills each level, pops an upgrade card)
-        _xpBar = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 0, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 9) };
+        _xpBar = new ProgressBar { MinValue = 0, MaxValue = 1, Value = 0, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 18) };
         _xpBar.AddThemeStyleboxOverride("fill", Filled(UiTheme.Accent, 4));
         _xpBar.AddThemeStyleboxOverride("background", Filled(new Color(0.03f, 0.04f, 0.07f, 0.85f), 4));
         top.AddChild(_xpBar);
 
         _status = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _status.AddThemeFontSizeOverride("font_size", 18);
+        _status.AddThemeFontSizeOverride("font_size", 36);
         top.AddChild(_status);
 
         // update-available badge — mirrors the menu card's state so a run in progress
         // (survival holds can run long) still surfaces it instead of only at launch
         _updateBadge = new Button
         {
-            Text = "⇩", CustomMinimumSize = new Vector2(48, 48),
-            AnchorLeft = 1f, AnchorRight = 1f, OffsetLeft = -58, OffsetRight = -10, OffsetTop = 8,
+            Text = "⇩", CustomMinimumSize = new Vector2(96, 96),
+            AnchorLeft = 1f, AnchorRight = 1f, OffsetLeft = -106, OffsetRight = -10, OffsetTop = 8,
             TooltipText = "Update available — tap to download",
             Visible = Sentinel.Meta.UpdateChecker.Available,
         };
-        _updateBadge.AddThemeFontSizeOverride("font_size", 22);
+        _updateBadge.AddThemeFontSizeOverride("font_size", 44);
         StyleTopButton(_updateBadge, new Color(1f, 0.75f, 0.3f));
         _updateBadge.Pressed += () => OS.ShellOpen(Sentinel.Meta.UpdateChecker.AvailableUrl);
         AddChild(_updateBadge);
@@ -130,56 +135,59 @@ public sealed partial class Hud : CanvasLayer
         // made the row spill past its right edge and read as off-centre.
         var ctl = new HBoxContainer
         {
-            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -460, OffsetTop = 96, OffsetRight = 460,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetLeft = -520, OffsetTop = 96, OffsetRight = 520,
             Alignment = BoxContainer.AlignmentMode.Center,
         };
         _ctlRow = ctl;
         ctl.Theme = UiTheme.Instance;
-        ctl.AddThemeConstantOverride("separation", 9);
+        ctl.AddThemeConstantOverride("separation", 12);
         AddChild(ctl);
-        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(88, 76) };
-        _menuOpen.AddThemeFontSizeOverride("font_size", 29);
+        _menuOpen = new Button { Text = "☰", CustomMinimumSize = new Vector2(120, 104) };
+        _menuOpen.AddThemeFontSizeOverride("font_size", 40);
         _menuOpen.Pressed += () => { if (!Root.IsPaused) { Root.TogglePause(); _pause.Text = "▶"; } };
         StyleTopButton(_menuOpen, UiTheme.Accent);
         ctl.AddChild(_menuOpen);
-        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(88, 76) };
-        _pause.AddThemeFontSizeOverride("font_size", 26);
+        _pause = new Button { Text = "❚❚", CustomMinimumSize = new Vector2(120, 104) };
+        _pause.AddThemeFontSizeOverride("font_size", 36);
         _pause.Pressed += () => { Root.TogglePause(); _pause.Text = Root.IsPaused ? "▶" : "❚❚"; };
         StyleTopButton(_pause, UiTheme.Accent);
         ctl.AddChild(_pause);
         for (int i = 0; i < 4; i++)
         {
             int mult = i + 1;
-            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(94, 76), ToggleMode = true };
-            btn.AddThemeFontSizeOverride("font_size", 24);
+            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(112, 104), ToggleMode = true };
+            btn.AddThemeFontSizeOverride("font_size", 33);
             btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); };
             StyleTopButton(btn, UiTheme.Accent);
             ctl.AddChild(btn);
             _speed[i] = btn;
         }
         UpdateSpeedButtons(1);
-        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(88, 76), ToggleMode = true };
-        _buildToggle.AddThemeFontSizeOverride("font_size", 29);
+        _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(120, 104), ToggleMode = true };
+        _buildToggle.AddThemeFontSizeOverride("font_size", 40);
         _buildToggle.TooltipText = "Build / upgrade turrets";
         StyleTopButton(_buildToggle, new Color(0.95f, 0.7f, 0.3f));
         ctl.AddChild(_buildToggle);
-        _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(100, 76), ToggleMode = true, ButtonPressed = true };
-        _autoBtn.AddThemeFontSizeOverride("font_size", 19);
-        _autoBtn.TooltipText = "Ship weapons auto-fire — tap to fire them by hand instead";
-        _autoBtn.Pressed += () => Root.RequestToggleAutoFire();
+        // Single master AUTO toggle — drives both ship weapon auto-fire AND autopilot
+        // movement together (used to be two separate buttons, ✈ + AUTO, which read as
+        // unclear/redundant since both are "automate the commander"; ⚒ stays separate
+        // since it just opens the build panel, it isn't automation at all).
+        _autoBtn = new Button { Text = "AUTO", CustomMinimumSize = new Vector2(140, 104), ToggleMode = true, ButtonPressed = true };
+        _autoBtn.AddThemeFontSizeOverride("font_size", 26);
+        _autoBtn.TooltipText = "Auto mode — the ship auto-fires its weapons and autopilots toward threats. Tap to switch to manual (steer with the joystick, tap an enemy to focus-fire).";
+        _autoBtn.Pressed += () =>
+        {
+            bool goingOn = !_lastAutoFire;
+            Root.RequestToggleAutoFire();
+            if (_lastAutopilotOn != goingOn) Root.RequestToggleAutopilot();
+        };
         StyleTopButton(_autoBtn, new Color(0.5f, 0.95f, 0.6f));
         ctl.AddChild(_autoBtn);
-        _autopilotBtn = new Button { Text = "✈", CustomMinimumSize = new Vector2(88, 76), ToggleMode = true };
-        _autopilotBtn.AddThemeFontSizeOverride("font_size", 29);
-        _autopilotBtn.TooltipText = "Autopilot — the ship flies itself toward threats; attacks always auto-fire";
-        _autopilotBtn.Pressed += () => Root.RequestToggleAutopilot();
-        StyleTopButton(_autopilotBtn, new Color(0.55f, 0.75f, 1f));
-        ctl.AddChild(_autopilotBtn);
 
         // boss bar
         _bossBar = new ProgressBar
         {
-            AnchorLeft = 0.1f, AnchorRight = 0.9f, OffsetTop = 138, CustomMinimumSize = new Vector2(0, 16),
+            AnchorLeft = 0.1f, AnchorRight = 0.9f, OffsetTop = 138, CustomMinimumSize = new Vector2(0, 32),
             MinValue = 0, MaxValue = 1, Value = 1, ShowPercentage = false, Visible = false,
         };
         _bossBar.AddThemeColorOverride("font_color", new Color(1, 0.4f, 0.4f));
@@ -187,14 +195,16 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- build panel ----
         _buildPanel = MakeBottomPanel();
+        _buildPanel.OffsetTop = -640;   // turret/upgrade buttons are now 248x152 (2x) — the
+                                         // default -298 panel was sized for the old 124x76 ones
         AddChild(_buildPanel);
         var bv = new VBoxContainer();
         _buildPanel.AddChild(bv);
         _wavePreview = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1f, 0.85f, 0.5f) };
-        _wavePreview.AddThemeFontSizeOverride("font_size", 17);
+        _wavePreview.AddThemeFontSizeOverride("font_size", 34);
         bv.AddChild(_wavePreview);
         _slotLabel = new Label { Text = "① tap an empty slot around the planet", HorizontalAlignment = HorizontalAlignment.Center };
-        _slotLabel.AddThemeFontSizeOverride("font_size", 17);
+        _slotLabel.AddThemeFontSizeOverride("font_size", 34);
         bv.AddChild(_slotLabel);
         _turretRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         _turretRow.AddThemeConstantOverride("separation", 8);
@@ -202,15 +212,15 @@ public sealed partial class Hud : CanvasLayer
         _upgradeRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         _upgradeRow.AddThemeConstantOverride("separation", 8);
         bv.AddChild(_upgradeRow);
-        _launch = new Button { Text = "▶   BEGIN DEFENSE", CustomMinimumSize = new Vector2(0, 62) };
-        _launch.AddThemeFontSizeOverride("font_size", 22);
+        _launch = new Button { Text = "▶   BEGIN DEFENSE", CustomMinimumSize = new Vector2(0, 124) };
+        _launch.AddThemeFontSizeOverride("font_size", 44);
         _launch.AddThemeColorOverride("font_color", new Color(0.6f, 1f, 0.7f));
         _launch.Pressed += () => Root.RequestLaunchWave();
         bv.AddChild(_launch);
 
         // ---- wave panel ----
         _wavePanel = MakeBottomPanel();
-        _wavePanel.OffsetTop = -340;   // weapon row + ability bar + hint (both card rows enlarged)
+        _wavePanel.OffsetTop = -500;   // weapon row + ability bar + hint — cards are 204/219px (1.5x)
         // lighter than the default theme panel — a soft backing, not a solid blue box
         _wavePanel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
@@ -238,7 +248,7 @@ public sealed partial class Hud : CanvasLayer
             _abilityBtns[i] = btn;
         }
         var hint = new Label { Text = "joystick: fly the ship   ·   tap an enemy: focus fire   ·   ⚒ : build", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
-        hint.AddThemeFontSizeOverride("font_size", 14);
+        hint.AddThemeFontSizeOverride("font_size", 28);
         wv.AddChild(hint);
 
         // big centred targeting prompt (over the play area)
@@ -248,7 +258,7 @@ public sealed partial class Hud : CanvasLayer
             HorizontalAlignment = HorizontalAlignment.Center,
             Modulate = new Color(1f, 0.92f, 0.4f), Text = "",
         };
-        _reticlePrompt.AddThemeFontSizeOverride("font_size", 26);
+        _reticlePrompt.AddThemeFontSizeOverride("font_size", 52);
         AddChild(_reticlePrompt);
 
         // ---- weapon upgrade draft (centred popup with card art) ----
@@ -260,7 +270,7 @@ public sealed partial class Hud : CanvasLayer
         _draftPanel = new PanelContainer
         {
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = 10, OffsetRight = -10, OffsetTop = -330, OffsetBottom = 330, Visible = false,
+            OffsetLeft = 10, OffsetRight = -10, OffsetTop = -660, OffsetBottom = 660, Visible = false,
         };
         AddChild(_draftPanel);
         var dv = new VBoxContainer();
@@ -268,7 +278,7 @@ public sealed partial class Hud : CanvasLayer
         _draftPanel.AddChild(dv);
         _draftHeader = new Label { Text = "WEAPONS UPGRADE", HorizontalAlignment = HorizontalAlignment.Center };
         _draftHeader.AddThemeFontOverride("font", UiTheme.Display);
-        _draftHeader.AddThemeFontSizeOverride("font_size", 22);
+        _draftHeader.AddThemeFontSizeOverride("font_size", 44);
         _draftHeader.AddThemeColorOverride("font_color", UiTheme.Accent);
         dv.AddChild(_draftHeader);
         _draftCards = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
@@ -284,7 +294,7 @@ public sealed partial class Hud : CanvasLayer
         _endCard = new PanelContainer
         {
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = 22, OffsetRight = -22, OffsetTop = -260, OffsetBottom = 260, Visible = false,
+            OffsetLeft = 22, OffsetRight = -22, OffsetTop = -520, OffsetBottom = 520, Visible = false,
         };
         AddChild(_endCard);
         _endBody = new VBoxContainer();
@@ -293,33 +303,33 @@ public sealed partial class Hud : CanvasLayer
 
         // ---- banner ----
         _banner = new Label { AnchorRight = 1f, OffsetTop = 156, HorizontalAlignment = HorizontalAlignment.Center };
-        _banner.AddThemeFontSizeOverride("font_size", 32);
+        _banner.AddThemeFontSizeOverride("font_size", 64);
         AddChild(_banner);
 
         // ---- pause / leave menu ----
         _pauseMenu = new PanelContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
-            OffsetLeft = -200, OffsetRight = 200, OffsetTop = -150, OffsetBottom = 150, Visible = false,
+            OffsetLeft = -400, OffsetRight = 400, OffsetTop = -300, OffsetBottom = 300, Visible = false,
         };
         AddChild(_pauseMenu);
         var pm = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         pm.AddThemeConstantOverride("separation", 16);
         _pauseMenu.AddChild(pm);
         var pmTitle = new Label { Text = "PAUSED", HorizontalAlignment = HorizontalAlignment.Center };
-        pmTitle.AddThemeFontSizeOverride("font_size", 26);
+        pmTitle.AddThemeFontSizeOverride("font_size", 52);
         pm.AddChild(pmTitle);
-        var pmResume = new Button { Text = "▶   Resume", CustomMinimumSize = new Vector2(320, 64), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        pmResume.AddThemeFontSizeOverride("font_size", 21);
+        var pmResume = new Button { Text = "▶   Resume", CustomMinimumSize = new Vector2(640, 128), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        pmResume.AddThemeFontSizeOverride("font_size", 42);
         pmResume.Pressed += () => { if (Root.IsPaused) { Root.TogglePause(); _pause.Text = "❚❚"; } };
         pm.AddChild(pmResume);
-        var pmLeave = new Button { Text = "◄   Leave to Main Menu", CustomMinimumSize = new Vector2(320, 64), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        pmLeave.AddThemeFontSizeOverride("font_size", 19);
+        var pmLeave = new Button { Text = "◄   Leave to Main Menu", CustomMinimumSize = new Vector2(640, 128), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        pmLeave.AddThemeFontSizeOverride("font_size", 38);
         pmLeave.AddThemeColorOverride("font_color", new Color(1f, 0.6f, 0.55f));
         pmLeave.Pressed += () => Root.GoToMenu();
         pm.AddChild(pmLeave);
         var pmHint = new Label { Text = "leaving forfeits this run's rewards", HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f) };
-        pmHint.AddThemeFontSizeOverride("font_size", 12);
+        pmHint.AddThemeFontSizeOverride("font_size", 24);
         pm.AddChild(pmHint);
 
         foreach (var n in new Control[] { _topBox, _buildPanel, _wavePanel, _draftPanel, _endCard, _pauseMenu })
@@ -346,7 +356,7 @@ public sealed partial class Hud : CanvasLayer
         float m = Mathf.Max(0f, (vp.X - designW) * 0.5f);
         float top = Root?.SafeTopInset ?? 0f;
         if (_topBox != null) { _topBox.OffsetLeft = m + 10; _topBox.OffsetRight = -(m + 10); _topBox.OffsetTop = top + 8; }
-        if (_ctlRow != null) _ctlRow.OffsetTop = top + 112;
+        if (_ctlRow != null) _ctlRow.OffsetTop = top + 150;   // _topBox's integrity/xp bars + status text grew taller (2x)
         foreach (var p in _panels) { p.OffsetLeft = m + 8; p.OffsetRight = -(m + 8); }
         if (_bossBar != null)
         {
@@ -365,8 +375,8 @@ public sealed partial class Hud : CanvasLayer
         {
             if (unlocked.Count > 0 && !unlocked.Contains(id)) continue;
             var def = Root.World.Cfg.Turret(id);
-            var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(124, 76) };
-            btn.AddThemeFontSizeOverride("font_size", 15);
+            var btn = new Button { Text = $"{def.Name}\n${def.Cost}", CustomMinimumSize = new Vector2(248, 152) };
+            btn.AddThemeFontSizeOverride("font_size", 30);
             btn.Pressed += () => { if (_selectedSlot >= 0) Root.RequestBuild(_selectedSlot, id); };
             _turretRow.AddChild(btn);
         }
@@ -465,11 +475,14 @@ public sealed partial class Hud : CanvasLayer
         _draftPanel.Visible = draft;
         _draftDim.Visible = draft;
         _buildToggle.Visible = fighting && !draft;
-        _autoBtn.Visible = fighting && !draft && w.HeroWeaponCount > 0;
+        _autoBtn.Visible = fighting && !draft;
+        // the merged button reflects auto-fire's on/off state; autopilot is tracked
+        // alongside it (not shown separately) purely so the Pressed handler above knows
+        // whether it also needs to flip autopilot to keep the two in lockstep.
         if (_autoBtn.ButtonPressed != w.HeroAutoFire) _autoBtn.ButtonPressed = w.HeroAutoFire;
         _autoBtn.Text = w.HeroAutoFire ? "AUTO" : "MANUAL";
-        _autopilotBtn.Visible = fighting && !draft;
-        if (_autopilotBtn.ButtonPressed != w.HeroAutopilotOn) _autopilotBtn.ButtonPressed = w.HeroAutopilotOn;
+        _lastAutoFire = w.HeroAutoFire;
+        _lastAutopilotOn = w.HeroAutopilotOn;
         _joystick.Visible = fighting && !BuildOpen && !draft;
         if (draft) RefreshDraft(w);
         if (fighting && !BuildOpen && !draft) RefreshWeaponRow(w);
@@ -525,7 +538,7 @@ public sealed partial class Hud : CanvasLayer
 
         var h = new Label { Text = won ? "PLANET SECURED" : "PLANET LOST", HorizontalAlignment = HorizontalAlignment.Center };
         h.AddThemeFontOverride("font", UiTheme.Display);
-        h.AddThemeFontSizeOverride("font_size", 26);
+        h.AddThemeFontSizeOverride("font_size", 52);
         h.AddThemeColorOverride("font_color", accent);
         _endBody.AddChild(h);
 
@@ -534,11 +547,11 @@ public sealed partial class Hud : CanvasLayer
             ? $"Held the full {Mathf.FloorToInt(w.Mission.Duration) / 60}:00."
             : $"Fell at {secs / 60}:{secs % 60:00}.";
         var sub = new Label { Text = result, HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.8f) };
-        sub.AddThemeFontSizeOverride("font_size", 15);
+        sub.AddThemeFontSizeOverride("font_size", 30);
         _endBody.AddChild(sub);
 
         var rHdr = new Label { Text = won ? "REWARDS   ·   ×2 VICTORY BONUS" : "REWARDS", HorizontalAlignment = HorizontalAlignment.Center };
-        rHdr.AddThemeFontSizeOverride("font_size", 13);
+        rHdr.AddThemeFontSizeOverride("font_size", 26);
         rHdr.AddThemeColorOverride("font_color", won ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.55f));
         _endBody.AddChild(rHdr);
 
@@ -546,7 +559,7 @@ public sealed partial class Hud : CanvasLayer
         {
             var row = new HBoxContainer();
             row.AddThemeConstantOverride("separation", 12);
-            var chip = new PanelContainer { CustomMinimumSize = new Vector2(38, 38) };
+            var chip = new PanelContainer { CustomMinimumSize = new Vector2(76, 76) };
             chip.AddThemeStyleboxOverride("panel", new StyleBoxFlat
             {
                 BgColor = new Color(col, 0.16f), BorderColor = new Color(col, 0.6f),
@@ -554,15 +567,15 @@ public sealed partial class Hud : CanvasLayer
                 CornerRadiusTopLeft = 9, CornerRadiusTopRight = 9, CornerRadiusBottomLeft = 9, CornerRadiusBottomRight = 9,
             });
             var ic = new Label { Text = icon, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-            ic.AddThemeFontSizeOverride("font_size", 19);
+            ic.AddThemeFontSizeOverride("font_size", 38);
             ic.AddThemeColorOverride("font_color", col);
             chip.AddChild(ic);
             row.AddChild(chip);
             var a = new Label { Text = label, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center };
-            a.AddThemeFontSizeOverride("font_size", 18);
+            a.AddThemeFontSizeOverride("font_size", 36);
             var b = new Label { Text = val, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
             b.AddThemeFontOverride("font", UiTheme.Display);
-            b.AddThemeFontSizeOverride("font_size", 23);
+            b.AddThemeFontSizeOverride("font_size", 46);
             b.AddThemeColorOverride("font_color", col);
             row.AddChild(a); row.AddChild(b);
             _endBody.AddChild(row);
@@ -580,18 +593,18 @@ public sealed partial class Hud : CanvasLayer
             HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.5f),
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         };
-        dmg.AddThemeFontSizeOverride("font_size", 12);
+        dmg.AddThemeFontSizeOverride("font_size", 24);
         _endBody.AddChild(dmg);
 
         var btns = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         btns.AddThemeConstantOverride("separation", 14);
         _endBody.AddChild(btns);
-        var retry = new Button { Text = "↻  Retry", CustomMinimumSize = new Vector2(180, 62) };
-        retry.AddThemeFontSizeOverride("font_size", 18);
+        var retry = new Button { Text = "↻  Retry", CustomMinimumSize = new Vector2(360, 124) };
+        retry.AddThemeFontSizeOverride("font_size", 36);
         retry.Pressed += () => Root.RestartMission();
         btns.AddChild(retry);
-        var menu = new Button { Text = won ? "Continue ▸" : "Menu", CustomMinimumSize = new Vector2(180, 62) };
-        menu.AddThemeFontSizeOverride("font_size", 18);
+        var menu = new Button { Text = won ? "Continue ▸" : "Menu", CustomMinimumSize = new Vector2(360, 124) };
+        menu.AddThemeFontSizeOverride("font_size", 36);
         if (won) UiTheme.StylePrimary(menu);
         menu.Pressed += () => Root.GoToMenu();
         btns.AddChild(menu);
@@ -651,7 +664,7 @@ public sealed partial class Hud : CanvasLayer
 
             var btn = new Button
             {
-                CustomMinimumSize = new Vector2(150, 470),
+                CustomMinimumSize = new Vector2(300, 940),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
                 ClipContents = true,
@@ -682,7 +695,7 @@ public sealed partial class Hud : CanvasLayer
                 Texture = CardTexture(cardId),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                CustomMinimumSize = new Vector2(0, 310),
+                CustomMinimumSize = new Vector2(0, 620),
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ClipContents = true,
@@ -691,12 +704,12 @@ public sealed partial class Hud : CanvasLayer
 
             var nm = new Label { Text = cardName.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
             nm.AddThemeFontOverride("font", UiTheme.Display);
-            nm.AddThemeFontSizeOverride("font_size", 18);
+            nm.AddThemeFontSizeOverride("font_size", 36);
             nm.AddThemeColorOverride("font_color", col.Lightened(0.3f));
             v.AddChild(nm);
 
             var tag = new Label { Text = subtitle, HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
-            tag.AddThemeFontSizeOverride("font_size", 12);
+            tag.AddThemeFontSizeOverride("font_size", 24);
             tag.AddThemeColorOverride("font_color", new Color(col, 0.7f));
             v.AddChild(tag);
 
@@ -705,7 +718,7 @@ public sealed partial class Hud : CanvasLayer
                 Text = lvl == 0 ? "UNLOCK  ·  NEW SYSTEM" : $"LEVEL {lvl}  →  {lvl + 1}",
                 HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore,
             };
-            lv.AddThemeFontSizeOverride("font_size", 15);
+            lv.AddThemeFontSizeOverride("font_size", 30);
             lv.AddThemeColorOverride("font_color", lvl == 0 ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.8f));
             v.AddChild(lv);
 
@@ -812,8 +825,8 @@ public sealed partial class Hud : CanvasLayer
         if (t.Level < 3)
         {
             int cost = w.TurretUpgradeCost(s);
-            var up = new Button { Text = $"Upgrade → L{t.Level + 1}\n${cost}", CustomMinimumSize = new Vector2(164, 66) };
-            up.AddThemeFontSizeOverride("font_size", 16);
+            var up = new Button { Text = $"Upgrade → L{t.Level + 1}\n${cost}", CustomMinimumSize = new Vector2(328, 132) };
+            up.AddThemeFontSizeOverride("font_size", 32);
             up.Disabled = cost < 0 || w.Credits < cost;
             up.Pressed += () => Root.RequestUpgrade(s);
             _upgradeRow.AddChild(up);
@@ -823,13 +836,13 @@ public sealed partial class Hud : CanvasLayer
             for (int f = 0; f < def.Forks.Count; f++)
             {
                 int fi = f;
-                var fb = new Button { Text = def.Forks[f].Name, CustomMinimumSize = new Vector2(164, 66) };
-                fb.AddThemeFontSizeOverride("font_size", 16);
+                var fb = new Button { Text = def.Forks[f].Name, CustomMinimumSize = new Vector2(328, 132) };
+                fb.AddThemeFontSizeOverride("font_size", 32);
                 fb.Pressed += () => Root.RequestFork(s, fi);
                 _upgradeRow.AddChild(fb);
             }
         }
-        var sell = new Button { Text = "Sell", CustomMinimumSize = new Vector2(92, 60) };
+        var sell = new Button { Text = "Sell", CustomMinimumSize = new Vector2(184, 120) };
         sell.Pressed += () => Root.RequestSell(s);
         _upgradeRow.AddChild(sell);
     }

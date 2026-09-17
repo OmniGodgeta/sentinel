@@ -1,6 +1,4 @@
 [
-  { "id": "kinetic_barrage", "name": "Kinetic Barrage", "kind": "barrage", "role": "offense",
-    "cooldown": 24, "duration": 3.5, "damage": 11, "tick_interval": 0.2, "arc_degrees": 70, "cast": "arc", "codex_id": "ab_barrage" },
   { "id": "orbital_lance", "name": "Orbital Lance", "kind": "lance", "role": "offense",
     "cooldown": 35, "duration": 4, "damage": 26, "tick_interval": 0.15, "radius": 60, "cast": "reticle", "codex_id": "ab_lance" },
   { "id": "nova_pulse", "name": "Nova Pulse", "kind": "nova", "role": "offense",

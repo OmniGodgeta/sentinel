@@ -326,6 +326,17 @@ public sealed class Progression
             foreach (var (key, per) in def.EffectsPerLevel) m.ApplyEffect(key, per * lvl);
         }
 
+        // equipped chips (Armory chests, data/chips.json) — "{chip_id}:{tier}" keys, effect
+        // scales linearly with tier
+        foreach (var k in _save.EquippedChips)
+        {
+            var parts = k.Split(':');
+            if (parts.Length != 2 || !int.TryParse(parts[1], out int tier)) continue;
+            var def = _cfg.Chips.Chips.Find(x => x.Id == parts[0]);
+            if (def == null || def.EffectKey == "") continue;
+            m.ApplyEffect(def.EffectKey, def.EffectPerTier * tier);
+        }
+
         // level-up cards
         foreach (var id in _save.LevelCards)
         {

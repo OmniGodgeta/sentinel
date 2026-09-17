@@ -27,7 +27,8 @@ public sealed partial class AudioManager : Node
         "explosion", "explosion_b", "explosion_big", "hit", "hit_light", "planet_hit",
         "shield", "ability_cast", "wave_start", "wave_clear", "mission_lost", "mission_won",
         "ui_click", "ui_hover", "ui_confirm", "ui_back", "ui_error", "card_pick", "hero_thrust",
-        "card_reveal",
+        "card_reveal", "orbital_laser_fire", "space_bomb_fire", "waterdrop_fire",
+        "ball_lightning_fire", "radiation_line_fire", "orbital_lightning_fire", "beam_fire",
     };
 
     public override void _Ready()

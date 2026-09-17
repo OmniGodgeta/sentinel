@@ -6,8 +6,8 @@ namespace Sentinel.UI;
 /// <summary>
 /// UPGRADES — the hub for everything that improves the planet and the commander
 /// outside of battle: the Research tree, Sentinels (orbital weapon + Planet
-/// Shield upgrades), and Planet Modules. (The cosmetic Shop and Codex have
-/// their own top-level menu buttons.)
+/// Shield upgrades), Planet Modules, and the Armory (chip chests). (The
+/// cosmetic Shop and Codex have their own top-level menu buttons.)
 ///
 /// Protocols (manual ability equip) was removed from here per user request
 /// ("unsure what it's useful for") — recovered abilities now auto-equip
@@ -37,12 +37,12 @@ public sealed partial class UpgradesScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
         var title = new Label { Text = "  UPGRADES", VerticalAlignment = VerticalAlignment.Center };
         title.AddThemeFontOverride("font", UiTheme.Display);
-        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeFontSizeOverride("font_size", 48);
         head.AddChild(title);
 
         var s = App.Save;
@@ -51,11 +51,11 @@ public sealed partial class UpgradesScreen : CanvasLayer
             Text = $"◇ {F(s.ResearchData)} RD      ✷ {s.SentinelCores} Cores      ❖ {F(s.ExoticAlloy)} Alloy",
             HorizontalAlignment = HorizontalAlignment.Center,
         };
-        wallet.AddThemeFontSizeOverride("font_size", 15);
+        wallet.AddThemeFontSizeOverride("font_size", 30);
         wallet.AddThemeColorOverride("font_color", UiTheme.Accent);
         root.AddChild(wallet);
 
-        var spacer = new Control { CustomMinimumSize = new Vector2(0, 20) };
+        var spacer = new Control { CustomMinimumSize = new Vector2(0, 40) };
         root.AddChild(spacer);
 
         root.AddChild(HubButton("⬡  RESEARCH TREE",
@@ -67,6 +67,9 @@ public sealed partial class UpgradesScreen : CanvasLayer
         root.AddChild(HubButton("⬢  PLANET MODULES",
             "Slot-in modules with varied effects — extra integrity, faster repair, spawn dampeners, reward boosters.",
             App.ShowModules));
+        root.AddChild(HubButton("◆  ARMORY",
+            "Open Silver/Gold Key chests for chips, merge duplicates up to a higher tier, and equip them for a stat boost.",
+            App.ShowChips));
     }
 
     private Control HubButton(string title, string desc, System.Action? onPress)
@@ -81,7 +84,7 @@ public sealed partial class UpgradesScreen : CanvasLayer
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10, CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
             ContentMarginLeft = 16, ContentMarginRight = 16, ContentMarginTop = 14, ContentMarginBottom = 14,
         });
-        var btn = new Button { Flat = true, CustomMinimumSize = new Vector2(0, 116) };
+        var btn = new Button { Flat = true, CustomMinimumSize = new Vector2(0, 232) };
         btn.Disabled = onPress == null;
         btn.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Click(); onPress?.Invoke(); };
         p.AddChild(btn);
@@ -93,11 +96,11 @@ public sealed partial class UpgradesScreen : CanvasLayer
         btn.AddChild(col);
         var t = new Label { Text = title, MouseFilter = Control.MouseFilterEnum.Ignore };
         t.AddThemeFontOverride("font", UiTheme.Display);
-        t.AddThemeFontSizeOverride("font_size", 21);
+        t.AddThemeFontSizeOverride("font_size", 42);
         t.AddThemeColorOverride("font_color", accent.Lightened(0.3f));
         col.AddChild(t);
         var d = new Label { Text = desc, AutowrapMode = TextServer.AutowrapMode.WordSmart, MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.65f) };
-        d.AddThemeFontSizeOverride("font_size", 14);
+        d.AddThemeFontSizeOverride("font_size", 28);
         col.AddChild(d);
         return p;
     }

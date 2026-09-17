@@ -18,25 +18,25 @@ public sealed partial class SettingsScreen : CanvasLayer
         wrap.Theme = UiTheme.Instance;
         AddChild(wrap);
 
-        var root = new VBoxContainer { CustomMinimumSize = new Vector2(560, 0) };
+        var root = new VBoxContainer { CustomMinimumSize = new Vector2(1120, 0) };
         root.AddThemeConstantOverride("separation", 18);
         wrap.AddChild(root);
 
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Back(); App.ShowMenu(); };
         head.AddChild(back);
         var title = new Label { Text = "  SETTINGS", VerticalAlignment = VerticalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeFontSizeOverride("font_size", 48);
         head.AddChild(title);
 
         var o = App.Save.Options;
 
         // sfx volume
         root.AddChild(Lbl("Sound effects"));
-        var vol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.SfxVolume, CustomMinimumSize = new Vector2(0, 48) };
+        var vol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.SfxVolume, CustomMinimumSize = new Vector2(0, 96) };
         vol.ValueChanged += v =>
         {
             o.SfxVolume = (float)v; App.Save.Save();
@@ -46,7 +46,7 @@ public sealed partial class SettingsScreen : CanvasLayer
         root.AddChild(vol);
 
         root.AddChild(Lbl("Music"));
-        var mvol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.MusicVolume, CustomMinimumSize = new Vector2(0, 48) };
+        var mvol = new HSlider { MinValue = 0, MaxValue = 1, Step = 0.05, Value = o.MusicVolume, CustomMinimumSize = new Vector2(0, 96) };
         mvol.ValueChanged += v =>
         {
             o.MusicVolume = (float)v; App.Save.Save();
@@ -71,7 +71,7 @@ public sealed partial class SettingsScreen : CanvasLayer
     private static Label Lbl(string t)
     {
         var l = new Label { Text = t.ToUpperInvariant(), Modulate = new Color(1, 1, 1, 0.6f) };
-        l.AddThemeFontSizeOverride("font_size", 16);
+        l.AddThemeFontSizeOverride("font_size", 32);
         return l;
     }
 }

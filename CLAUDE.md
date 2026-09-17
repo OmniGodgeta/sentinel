@@ -27,8 +27,12 @@ The working dir / repo is `sentinel` and the C# assembly + namespace stay
 2. **Balance values live in `data/*.json`, never in code.** If a tuning change
    needs a code edit, that's a bug — add the knob to config instead.
    `data/survival.json` holds every spawn/difficulty constant.
-3. **No monetisation surface.** No payment SDK, no loot boxes, no random rewards,
-   no premium currency, no FOMO timers — not even stubbed.
+3. **No real-money monetisation surface, ever.** No payment SDK, no premium
+   currency, no FOMO timers — not even stubbed. **Amended 2026-09-16**: the
+   ban is on money entering the loop, not on RNG itself — in-game-currency-only
+   randomized rewards (e.g. chests opened with keys earned by playing, never
+   purchasable) are fine. See `docs/ROADMAP.md`'s chip/chest system for the
+   first thing built under this amendment.
 4. **Free assets only by default** — CC0 or CC-BY (never NC / "personal use").
    Kenney is the primary source. Credit CC-BY in `assets/game/CREDITS.txt`.
    `assets/music/` is a standing exception (copyrighted, personal build) and is

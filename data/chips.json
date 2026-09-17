@@ -1,0 +1,28 @@
+{
+  "equip_slots": 4,
+  "tiers": [
+    { "tier": 1, "name": "T1", "color": "#9b9bb0", "merge_cost": 3 },
+    { "tier": 2, "name": "T2", "color": "#4fd6de", "merge_cost": 3 },
+    { "tier": 3, "name": "T3", "color": "#b06bf2", "merge_cost": 3 },
+    { "tier": 4, "name": "T4", "color": "#f5c518", "merge_cost": 0 }
+  ],
+  "chips": [
+    { "id": "chip_damage", "name": "Warhead Chip", "icon": "damage",
+      "text": "Boosts every sentinel's damage.", "effect_key": "orbital_weapon_damage", "effect_per_tier": 0.08 },
+
+    { "id": "chip_cooldown", "name": "Coolant Chip", "icon": "cooldown",
+      "text": "Speeds up every sentinel's fire rate.", "effect_key": "orbital_weapon_rate", "effect_per_tier": 0.06 },
+
+    { "id": "chip_radius", "name": "Amplifier Chip", "icon": "radius",
+      "text": "Widens every sentinel's blast/beam/zone radius.", "effect_key": "orbital_weapon_radius", "effect_per_tier": 0.07 },
+
+    { "id": "chip_shield", "name": "Aegis Chip", "icon": "shield",
+      "text": "Strengthens the Planet Shield's capacity.", "effect_key": "planet_shield_mult", "effect_per_tier": 0.06 },
+
+    { "id": "chip_hull", "name": "Plating Chip", "icon": "hull",
+      "text": "Reinforces the hero ship's hull.", "effect_key": "hero_hull", "effect_per_tier": 0.05 },
+
+    { "id": "chip_salvage", "name": "Salvage Chip", "icon": "salvage",
+      "text": "More Research Data earned per mission.", "effect_key": "rd_gain", "effect_per_tier": 0.05 }
+  ]
+}

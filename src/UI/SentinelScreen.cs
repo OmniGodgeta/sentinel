@@ -35,16 +35,16 @@ public sealed partial class SentinelScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => App.ShowUpgrades();
         head.AddChild(back);
         var title = new Label { Text = "  SENTINELS", VerticalAlignment = VerticalAlignment.Center };
         title.AddThemeFontOverride("font", UiTheme.Display);
-        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeFontSizeOverride("font_size", 48);
         head.AddChild(title);
 
         _wallet = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _wallet.AddThemeFontSizeOverride("font_size", 15);
+        _wallet.AddThemeFontSizeOverride("font_size", 30);
         _wallet.AddThemeColorOverride("font_color", UiTheme.Accent2);
         root.AddChild(_wallet);
 
@@ -81,9 +81,9 @@ public sealed partial class SentinelScreen : CanvasLayer
                 var buy = new Button
                 {
                     Text = ac > 0 ? $"Upgrade\n✦{cc}  ❖{ac}" : $"Upgrade\n✦ {cc}",
-                    CustomMinimumSize = new Vector2(150, 62),
+                    CustomMinimumSize = new Vector2(300, 124),
                 };
-                buy.AddThemeFontSizeOverride("font_size", 14);
+                buy.AddThemeFontSizeOverride("font_size", 28);
                 buy.Disabled = App.Shop.Balance < cc || s.ExoticAlloy < ac;
                 buy.Pressed += () =>
                 {
@@ -109,8 +109,8 @@ public sealed partial class SentinelScreen : CanvasLayer
             if (lvl < cap)
             {
                 var (cc, xc) = Cost(lvl + 1);
-                var buy = new Button { Text = $"Upgrade\n✦ {cc}   ✷ {xc}", CustomMinimumSize = new Vector2(150, 62) };
-                buy.AddThemeFontSizeOverride("font_size", 14);
+                var buy = new Button { Text = $"Upgrade\n✦ {cc}   ✷ {xc}", CustomMinimumSize = new Vector2(300, 124) };
+                buy.AddThemeFontSizeOverride("font_size", 28);
                 buy.Disabled = App.Shop.Balance < cc || s.SentinelCores < xc;
                 string id = w.Id;
                 buy.Pressed += () =>
@@ -148,10 +148,10 @@ public sealed partial class SentinelScreen : CanvasLayer
             Texture = CardTexture(imgId),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-            CustomMinimumSize = new Vector2(64, 64),
+            CustomMinimumSize = new Vector2(128, 128),
             ClipContents = true,
         };
-        var artFrame = new PanelContainer { CustomMinimumSize = new Vector2(64, 64) };
+        var artFrame = new PanelContainer { CustomMinimumSize = new Vector2(128, 128) };
         artFrame.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(0, 0, 0, 0.3f), BorderColor = new Color(accent, 0.7f),
@@ -167,11 +167,11 @@ public sealed partial class SentinelScreen : CanvasLayer
         row.AddChild(col);
         var nm = new Label { Text = $"{name}    ·    LV {lvl}/{max}" };
         nm.AddThemeFontOverride("font", UiTheme.Display);
-        nm.AddThemeFontSizeOverride("font_size", 16);
+        nm.AddThemeFontSizeOverride("font_size", 32);
         nm.AddThemeColorOverride("font_color", accent.Lightened(0.3f));
         col.AddChild(nm);
         var tx = new Label { Text = desc, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.7f) };
-        tx.AddThemeFontSizeOverride("font_size", 12);
+        tx.AddThemeFontSizeOverride("font_size", 24);
         col.AddChild(tx);
         return p;
     }

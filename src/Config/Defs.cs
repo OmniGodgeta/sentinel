@@ -188,6 +188,37 @@ public sealed record ModulesDb
     public System.Collections.Generic.List<ModuleDef> Modules { get; init; } = new();
 }
 
+/// <summary>A chip tier badge (data/chips.json) — T1..T4, cosmetic color + how many of
+/// this tier merge into one of the next tier up (0 = already the max tier).</summary>
+public sealed record ChipTierDef
+{
+    public int Tier { get; init; }
+    public string Name { get; init; } = "";
+    public string Color { get; init; } = "#9b9bb0";
+    public int MergeCost { get; init; } = 3;
+}
+
+/// <summary>A chip archetype (data/chips.json) — dropped from Armory chests (see
+/// `Meta/ChipVault.cs`), equipped up to `ChipsDb.EquipSlots` at a time. Effect scales
+/// linearly with the equipped instance's tier (1-4); `EffectKey` is a
+/// <see cref="Sentinel.Meta.ModifierSet.ApplyEffect"/> key.</summary>
+public sealed record ChipDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Text { get; init; } = "";
+    public string Icon { get; init; } = "";
+    public string EffectKey { get; init; } = "";
+    public float EffectPerTier { get; init; }
+}
+
+public sealed record ChipsDb
+{
+    public int EquipSlots { get; init; } = 4;
+    public System.Collections.Generic.List<ChipTierDef> Tiers { get; init; } = new();
+    public System.Collections.Generic.List<ChipDef> Chips { get; init; } = new();
+}
+
 public sealed record TurretFork
 {
     public string Id { get; init; } = "";

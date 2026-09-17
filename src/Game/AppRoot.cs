@@ -19,6 +19,7 @@ public sealed partial class AppRoot : Node
     public SaveGame Save { get; private set; } = null!;
     public Progression Prog { get; private set; } = null!;
     public Shop Shop { get; private set; } = null!;
+    public ChipVault Chips { get; private set; } = null!;
 
     private Node? _current;
 
@@ -31,6 +32,7 @@ public sealed partial class AppRoot : Node
         Save = SaveGame.Load();
         Prog = new Progression(Save, Research, Cfg);
         Shop = new Shop(Save, Cfg);
+        Chips = new ChipVault(Save, Cfg);
         Sentinel.Audio.AudioManager.Instance?.SetVolume(Save.Options.SfxVolume, Save.Options.Muted);
         Sentinel.Audio.MusicPlayer.Instance?.SetVolume(Save.Options.MusicVolume, Save.Options.Muted);
 
@@ -63,6 +65,7 @@ public sealed partial class AppRoot : Node
     {
         Prog = new Progression(Save, Research, Cfg);
         Shop = new Shop(Save, Cfg);
+        Chips = new ChipVault(Save, Cfg);
         SyncCodex();
     }
 
@@ -133,6 +136,8 @@ public sealed partial class AppRoot : Node
     public void ShowUpgrades() => SwapTo(new UpgradesScreen { App = this });
     public void ShowSentinels() => SwapTo(new SentinelScreen { App = this });
     public void ShowModules() => SwapTo(new ModulesScreen { App = this });
+    public void ShowChips() => SwapTo(new ChipScreen { App = this });
+    public void ShowEvents() => SwapTo(new EventsScreen { App = this });
     public void ShowProfile() => SwapTo(new ProfileScreen { App = this });
 
     /// <summary>Resolve the equipped ability loadout to unlocked ids + their per-ability effect/cd multipliers.</summary>
@@ -243,7 +248,7 @@ public sealed partial class AppRoot : Node
 
         if (o.MissionId == "endless")
         {
-            if (o.WavesCleared > Save.EndlessBest) Save.EndlessBest = o.WavesCleared;
+            if (o.WavesCleared > Save.EndlessBest) { Save.EndlessBest = o.WavesCleared; Save.GoldKeys += 1; }
             Save.Save();
             return;
         }
@@ -252,7 +257,7 @@ public sealed partial class AppRoot : Node
         {
             var wk = Sentinel.Meta.WeeklyChallenge.Current();
             if (Save.WeeklyId != wk.Id) { Save.WeeklyId = wk.Id; Save.WeeklyBest = 0; }
-            if (o.WavesCleared > Save.WeeklyBest) Save.WeeklyBest = o.WavesCleared;
+            if (o.WavesCleared > Save.WeeklyBest) { Save.WeeklyBest = o.WavesCleared; Save.GoldKeys += 1; }
             Save.Save();
             return;
         }
@@ -265,6 +270,9 @@ public sealed partial class AppRoot : Node
             if (firstClear) Save.ExoticAlloy += 5;   // first-clear bonus on top
             if (ascensionTier > Save.MissionBestTier.GetValueOrDefault(o.MissionId, 0))
                 Save.MissionBestTier[o.MissionId] = ascensionTier;
+            // Armory keys — earned only by playing, never purchasable (CLAUDE.md §3).
+            Save.SilverKeys += stars;
+            if (firstClear) Save.GoldKeys += 1;
         }
         Save.Save();
     }

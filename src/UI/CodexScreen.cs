@@ -30,17 +30,17 @@ public sealed partial class CodexScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
         var title = new Label { Text = "  CODEX", VerticalAlignment = VerticalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeFontSizeOverride("font_size", 48);
         head.AddChild(title);
 
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        var list = new VBoxContainer { CustomMinimumSize = new Vector2(530, 0) };
+        var list = new VBoxContainer { CustomMinimumSize = new Vector2(1060, 0) };
         list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(list);
 
@@ -53,7 +53,7 @@ public sealed partial class CodexScreen : CanvasLayer
         {
             if (hiddenInCat == 0) return;
             var s = new Label { Text = $"   {hiddenInCat} more — undiscovered", Modulate = new Color(1, 1, 1, 0.35f) };
-            s.AddThemeFontSizeOverride("font_size", 15);
+            s.AddThemeFontSizeOverride("font_size", 30);
             list.AddChild(s);
             hiddenInCat = 0;
         }
@@ -65,7 +65,7 @@ public sealed partial class CodexScreen : CanvasLayer
                 FlushHidden();
                 cat = e.Category;
                 var h = new Label { Text = "— " + cat.ToUpperInvariant() + " —", Modulate = new Color(1, 1, 1, 0.6f) };
-                h.AddThemeFontSizeOverride("font_size", 16);
+                h.AddThemeFontSizeOverride("font_size", 32);
                 list.AddChild(h);
             }
 
@@ -76,10 +76,10 @@ public sealed partial class CodexScreen : CanvasLayer
             col.AddThemeConstantOverride("separation", 2);
             panel.AddChild(col);
             var nm = new Label { Text = e.Title };
-            nm.AddThemeFontSizeOverride("font_size", 16);
+            nm.AddThemeFontSizeOverride("font_size", 32);
             col.AddChild(nm);
             var tx = new Label { Text = e.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.75f) };
-            tx.AddThemeFontSizeOverride("font_size", 16);
+            tx.AddThemeFontSizeOverride("font_size", 32);
             col.AddChild(tx);
             list.AddChild(panel);
         }

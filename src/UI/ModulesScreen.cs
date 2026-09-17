@@ -34,16 +34,16 @@ public sealed partial class ModulesScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => App.ShowUpgrades();
         head.AddChild(back);
         var title = new Label { Text = "  PLANET MODULES", VerticalAlignment = VerticalAlignment.Center };
         title.AddThemeFontOverride("font", UiTheme.Display);
-        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeFontSizeOverride("font_size", 48);
         head.AddChild(title);
 
         _wallet = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _wallet.AddThemeFontSizeOverride("font_size", 15);
+        _wallet.AddThemeFontSizeOverride("font_size", 30);
         _wallet.AddThemeColorOverride("font_color", UiTheme.Accent2);
         root.AddChild(_wallet);
 
@@ -92,11 +92,11 @@ public sealed partial class ModulesScreen : CanvasLayer
         row.AddChild(col);
         var nm = new Label { Text = $"{def.Name.ToUpperInvariant()}    ·    LV {lvl}/{def.MaxLevel}" + (equipped ? "   ✓ EQUIPPED" : "") };
         nm.AddThemeFontOverride("font", UiTheme.Display);
-        nm.AddThemeFontSizeOverride("font_size", 17);
+        nm.AddThemeFontSizeOverride("font_size", 34);
         nm.AddThemeColorOverride("font_color", accent.Lightened(0.25f));
         col.AddChild(nm);
         var tx = new Label { Text = def.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.7f) };
-        tx.AddThemeFontSizeOverride("font_size", 13);
+        tx.AddThemeFontSizeOverride("font_size", 26);
         col.AddChild(tx);
 
         var btnCol = new VBoxContainer();
@@ -106,8 +106,8 @@ public sealed partial class ModulesScreen : CanvasLayer
         double cost = App.Prog.ModuleCost(def);
         if (cost >= 0)
         {
-            var buy = new Button { Text = $"Upgrade\n◇ {cost:0}", CustomMinimumSize = new Vector2(140, 58) };
-            buy.AddThemeFontSizeOverride("font_size", 14);
+            var buy = new Button { Text = $"Upgrade\n◇ {cost:0}", CustomMinimumSize = new Vector2(280, 116) };
+            buy.AddThemeFontSizeOverride("font_size", 28);
             buy.Disabled = App.Save.ResearchData < cost;
             buy.Pressed += () => { if (App.Prog.BuyModule(def)) { Click(); Rebuild(); } };
             btnCol.AddChild(buy);
@@ -120,10 +120,10 @@ public sealed partial class ModulesScreen : CanvasLayer
         var equipBtn = new Button
         {
             Text = equipped ? "Unequip" : "Equip",
-            CustomMinimumSize = new Vector2(140, 50),
+            CustomMinimumSize = new Vector2(280, 100),
             Disabled = lvl <= 0 || (!equipped && App.Save.EquippedModules.Count >= App.Prog.ModuleSlots),
         };
-        equipBtn.AddThemeFontSizeOverride("font_size", 14);
+        equipBtn.AddThemeFontSizeOverride("font_size", 28);
         equipBtn.Pressed += () => { if (App.Prog.ToggleEquipModule(def.Id)) { Click(); Rebuild(); } };
         btnCol.AddChild(equipBtn);
 

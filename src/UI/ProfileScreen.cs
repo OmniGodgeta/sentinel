@@ -28,23 +28,23 @@ public sealed partial class ProfileScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
         var title = new Label { Text = "  COMMANDER", VerticalAlignment = VerticalAlignment.Center };
         title.AddThemeFontOverride("font", UiTheme.Display);
-        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeFontSizeOverride("font_size", 48);
         head.AddChild(title);
 
         App.RefreshProgression();
         var p = App.Prog;
         var s = App.Save;
 
-        var spacer = new Control { CustomMinimumSize = new Vector2(0, 10) };
+        var spacer = new Control { CustomMinimumSize = new Vector2(0, 20) };
         root.AddChild(spacer);
 
         // rank ring
-        var ring = new PanelContainer { CustomMinimumSize = new Vector2(120, 120), SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
+        var ring = new PanelContainer { CustomMinimumSize = new Vector2(240, 240), SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
         ring.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(0.06f, 0.10f, 0.18f, 0.92f),
@@ -53,17 +53,17 @@ public sealed partial class ProfileScreen : CanvasLayer
         });
         var rl = new Label { Text = $"{p.Commander}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         rl.AddThemeFontOverride("font", UiTheme.Display);
-        rl.AddThemeFontSizeOverride("font_size", 52);
+        rl.AddThemeFontSizeOverride("font_size", 104);
         rl.AddThemeColorOverride("font_color", UiTheme.Accent);
         ring.AddChild(rl);
         root.AddChild(ring);
 
         var sub = new Label { Text = $"COMMANDER LEVEL {p.Commander}    ·    HERO {p.Hero}/20", HorizontalAlignment = HorizontalAlignment.Center };
-        sub.AddThemeFontSizeOverride("font_size", 15);
+        sub.AddThemeFontSizeOverride("font_size", 30);
         sub.AddThemeColorOverride("font_color", new Color(1, 1, 1, 0.7f));
         root.AddChild(sub);
 
-        var spacer2 = new Control { CustomMinimumSize = new Vector2(0, 14) };
+        var spacer2 = new Control { CustomMinimumSize = new Vector2(0, 28) };
         root.AddChild(spacer2);
 
         // ---- lifetime stats ----
@@ -108,10 +108,10 @@ public sealed partial class ProfileScreen : CanvasLayer
         row.AddThemeConstantOverride("separation", 12);
         p.AddChild(row);
         var a = new Label { Text = label, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        a.AddThemeFontSizeOverride("font_size", 15);
+        a.AddThemeFontSizeOverride("font_size", 30);
         var b = new Label { Text = val, HorizontalAlignment = HorizontalAlignment.Right };
         b.AddThemeFontOverride("font", UiTheme.Display);
-        b.AddThemeFontSizeOverride("font_size", 16);
+        b.AddThemeFontSizeOverride("font_size", 32);
         b.AddThemeColorOverride("font_color", UiTheme.Accent);
         row.AddChild(a); row.AddChild(b);
         parent.AddChild(p);

@@ -12,7 +12,7 @@ namespace Sentinel.Game;
 /// </summary>
 public sealed partial class SimTest : Node
 {
-    private static readonly string[] Loadout = { "kinetic_barrage", "aegis_barrier", "overdrive" };
+    private static readonly string[] Loadout = { "ion_cascade", "aegis_barrier", "overdrive" };
 
     public override void _Ready()
     {

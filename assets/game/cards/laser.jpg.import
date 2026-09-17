@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dy555qwgb66w3"
-path="res://.godot/imported/orbital_laser.jpg-459ae0687432d6c56677a14993a47300.ctex"
+uid="uid://g37fksbfsls1"
+path="res://.godot/imported/laser.jpg-f57938ebcdf6f0cd25f0d31e5a741a7b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game/cards/orbital_laser.jpg"
-dest_files=["res://.godot/imported/orbital_laser.jpg-459ae0687432d6c56677a14993a47300.ctex"]
+source_file="res://assets/game/cards/laser.jpg"
+dest_files=["res://.godot/imported/laser.jpg-f57938ebcdf6f0cd25f0d31e5a741a7b.ctex"]
 
 [params]
 

@@ -16,10 +16,10 @@ public sealed partial class SimWorld
     private const float OwOrbit = 2.45f;   // × SentinelOrbitRadius — a clear orbit ring in open space
 
     // active timed field effects (radiation line / shock orb / radiation zone / beam laser /
-    // force field)
+    // force field / laser burn zone)
     public struct OwEffect
     {
-        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone, 4 beam_laser, 5 force_field
+        public int Kind;        // 1 rad_line, 2 shock_orb, 3 rad_zone, 4 beam_laser, 5 force_field, 6 laser zone
         public float DieAt;     // GameTime
         public float Tick;      // dps accumulator
         public float Dps;
@@ -31,13 +31,19 @@ public sealed partial class SimWorld
         public Vector2 From;    // beam_laser: the platform's current position (it keeps orbiting)
         public EnemyHandle Target;   // beam_laser: locked target
         public int WeaponIndex;      // beam_laser: which platform this beam is anchored to
-        public int NodeCount;        // rad_line: how many linked relay stations (2-5; 2 = a single link)
+        public int NodeCount;        // rad_line: how many linked relay stations (2-10; 2 = a single link)
         public float Spin;           // rad_line: angular speed the whole link chain orbits at
         public float StartTime;      // rad_line: GameTime this effect was cast
     }
 
     private const float RadLineRing = 0.62f;      // × DespawnRadius — where the relay stations sit
-    private const float RadLineSpreadDeg = 64f;    // arc the chain of stations spans
+
+    /// <summary>The arc (degrees) the whole relay chain spans for a given node count — PDTD's
+    /// Radiation Link levels up by extending/connecting more links until they nearly ring the
+    /// planet, not just adding flat damage. Grows from a modest 64° at the base 2-node link up
+    /// to 340° (deliberately short of a full 360° loop, so it still reads as a chain with two
+    /// ends rather than a seamless ring) as node count climbs toward its max.</summary>
+    private static float RadLineSpreadDeg(int nodes) => Mathf.Lerp(64f, 340f, Mathf.Clamp((nodes - 2) / 8f, 0f, 1f));
 
     /// <summary>Position of Radiation Line relay station <paramref name="k"/> (of
     /// <see cref="OwEffect.NodeCount"/>) right now — shared by the sim and the
@@ -45,7 +51,7 @@ public sealed partial class SimWorld
     public Vector2 RadLineNode(in OwEffect fx, int k)
     {
         int n = Mathf.Max(2, fx.NodeCount);
-        float spread = Mathf.DegToRad(RadLineSpreadDeg);
+        float spread = Mathf.DegToRad(RadLineSpreadDeg(n));
         float baseAngle = fx.P0 + fx.Spin * (GameTime - fx.StartTime);
         float a = baseAngle + (n == 1 ? 0f : -spread * 0.5f + spread * k / (n - 1));
         return Vector2.FromAngle(a) * (B.DespawnRadius * RadLineRing);
@@ -57,6 +63,10 @@ public sealed partial class SimWorld
     // ---- views ----
     public int OrbitalWeaponCount => _owLevel.Length;
     public int OrbitalWeaponLevel(int i) => (uint)i < (uint)_owLevel.Length ? _owLevel[i] : 0;
+    /// <summary>The weapon's <c>Kind</c> string (e.g. "beam_laser", "waterdrop") — lets the
+    /// renderer pick per-weapon color/art by kind instead of by array position, so the roster
+    /// can be reordered/added-to/removed-from without a parallel index-aligned array drifting.</summary>
+    public string OrbitalWeaponKind(int i) => (uint)i < (uint)Cfg.OrbitalWeapons.Count ? Cfg.OrbitalWeapons[i].Kind : "";
     public float OrbitalWeaponCooldownLeft(int i) => (uint)i < (uint)_owCd.Length ? _owCd[i] : 0f;
     public Vector2 OrbitalPlatformPos(int i)
     {
@@ -119,23 +129,16 @@ public sealed partial class SimWorld
     {
         var d = Cfg.OrbitalWeapons[i];
         int L = _owLevel[i];
-        float dmg = d.Damage + d.DamagePerLevel * (L - 1);
+        // chip bonuses (Mods.OrbitalWeaponDamageMult/RadiusMult) apply uniformly to every
+        // orbital weapon — see ModifierSet.cs's "orbital weapons: chip bonuses" section
+        float dmg = (d.Damage + d.DamagePerLevel * (L - 1)) * Mathf.Max(0.2f, Mods.OrbitalWeaponDamageMult);
         int cnt = Mathf.Max(1, d.Count + Mathf.FloorToInt(d.CountPerLevel * (L - 1)));
-        float radius = d.Radius + d.RadiusPerLevel * (L - 1);
+        float radius = (d.Radius + d.RadiusPerLevel * (L - 1)) * Mathf.Max(0.2f, Mods.OrbitalWeaponRadiusMult);
         float dur = d.Duration + d.DurationPerLevel * (L - 1);
         Vector2 from = OrbitalPlatformPos(i);
 
         switch (d.Kind)
         {
-            case "cannon":
-            {
-                System.Span<int> picks = stackalloc int[8];
-                int n = NearestEnemiesTo(from, System.Math.Min(cnt, 8), picks);
-                for (int m = 0; m < n; m++)
-                    DamageEnemy(picks[m], dmg, DamageSource.Orbital, armorPen: d.ArmorPierce ? 9999f : 0f);
-                if (n > 0) { _fxOwBeamLeft = 0.12f; _fxOwBeamKind = 0; _fxOwBeamFrom = from; _fxOwBeamTo = Enemies[picks[0]].Pos; }
-                break;
-            }
             case "beam_laser":
             {
                 // PDTD's Beam sentinel — locks on and burns continuously for the duration,
@@ -181,9 +184,11 @@ public sealed partial class SimWorld
                 // orbiting the planet; higher levels add relays (more connections)
                 int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
                 float bearing = t >= 0 ? Enemies[t].Pos.Angle() : Rng.NextFloat(0f, Mathf.Tau);
-                // levels up in relay stations, not just damage — 2 nodes (1 link) at L1-3,
-                // up to 5 nodes (4 links) at max level, matching PDTD's Radiation Link
-                int nodes = Mathf.Clamp(2 + (L - 1) / 3, 2, 5);
+                // levels up in relay stations, not just damage — 2 nodes (1 link, a 64° arc) at
+                // L1, growing to 10 nodes (9 links, a 340° arc — almost a full ring around the
+                // planet) by max level, matching PDTD's Radiation Link extending/connecting more
+                // links as it upgrades rather than only scaling flat damage.
+                int nodes = Mathf.Clamp(2 + (L - 1) * 8 / 11, 2, 10);
                 float spinDir = Rng.NextInt(2) == 0 ? 1f : -1f;
                 _owEffects.Add(new OwEffect
                 {
@@ -200,28 +205,44 @@ public sealed partial class SimWorld
                 break;
             case "waterdrop":
             {
-                // PDTD's Waterdrop — a single fast bolt that pierces everything in its path
-                int t = ClosestEnemyTo(from, d.Range);
-                if (t < 0) break;
-                Vector2 dir = (Enemies[t].Pos - from).Normalized();
-                Vector2 end = from + dir * d.Range;
-                for (int e = 0; e < EnemyHighWater; e++)
+                // PDTD's Waterdrop (lua-decrypted/game/attack/aqua_attack.lua): a bullet that
+                // carries "durability points" spent per hit and re-targets the next nearest
+                // enemy each time — a ricochet chain, not a straight pierce-line. Searches from
+                // the planet (not the platform) for the first target, same fix as Space Bomb.
+                int cur = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
+                if (cur < 0) break;
+                Vector2 node = from;
+                Vector2 lastPos = node;
+                System.Span<bool> hit = stackalloc bool[96];
+                for (int j = 0; j < cnt && cur >= 0; j++)
                 {
-                    ref var en = ref Enemies[e];
-                    if (!en.Alive) continue;
-                    Vector2 rel = en.Pos - from;
-                    float along = rel.Dot(dir);
-                    if (along < 0f || along > d.Range) continue;
-                    if ((rel - dir * along).Length() > 26f + en.Radius) continue;
-                    DamageEnemy(e, dmg, DamageSource.Orbital, armorPen: d.ArmorPierce ? 9999f : 0f);
+                    ref var en = ref Enemies[cur];
+                    DamageEnemy(cur, dmg, DamageSource.Orbital, armorPen: d.ArmorPierce ? 9999f : 0f);
+                    if (cur < 96) hit[cur] = true;
+                    Events.PushLine(SimEventKind.ChainArc, node, en.Pos, 3f, 2);
+                    node = en.Pos;
+                    lastPos = node;
+                    int next = -1; float best = radius * radius;
+                    for (int e = 0; e < EnemyHighWater; e++)
+                    {
+                        if (!Enemies[e].Alive || (e < 96 && hit[e])) continue;
+                        float dd = Enemies[e].Pos.DistanceSquaredTo(node);
+                        if (dd < best) { best = dd; next = e; }
+                    }
+                    cur = next;
                 }
-                _fxOwBeamLeft = 0.14f; _fxOwBeamKind = 2; _fxOwBeamFrom = from; _fxOwBeamTo = end;
+                _fxOwBeamLeft = 0.14f; _fxOwBeamKind = 2; _fxOwBeamFrom = from; _fxOwBeamTo = lastPos;
                 break;
             }
             case "space_bomb":
             {
-                // PDTD's Space Bomb — a lobbed gravity bomb, instant AoE at the impact point
-                int t = ClosestEnemyTo(from, d.Range);
+                // PDTD's Space Bomb — a lobbed gravity bomb, instant AoE at the impact point.
+                // Searches from the planet, not the platform — the platform-relative,
+                // range-capped search here used to mean this often found no target at all
+                // (the platform orbits far out, on its own independent phase, so it's
+                // frequently just out of range of wherever the enemies actually are) and
+                // silently did nothing: no damage, no animation, looked completely broken.
+                int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
                 if (t < 0) break;
                 Vector2 impact = Enemies[t].Pos;
                 float rSq = radius * radius;
@@ -238,9 +259,35 @@ public sealed partial class SimWorld
                 // PDTD's Force Field — a damage + slow pulse anchored on the planet itself
                 _owEffects.Add(new OwEffect { Kind = 5, DieAt = GameTime + dur, Dps = dmg, Radius = radius, Slow = d.SlowFactor > 0f ? d.SlowFactor : 1f });
                 break;
+            case "laser":
+            {
+                // PDTD's plain Laser (lua-decrypted/game/attack/laser.lua) — strikes several of
+                // the nearest targets at once and scorches each impact point into a short-lived
+                // burning zone (its real "LaserZoneField"/Irradiated mechanic), plus a chance to
+                // stun. Searches from the planet, not the platform, so it always finds targets
+                // regardless of the platform's current orbital phase (see waterdrop/space_bomb —
+                // a platform-relative, range-capped search is why those looked broken).
+                System.Span<int> picks = stackalloc int[8];
+                int n = NearestEnemiesTo(Vector2.Zero, System.Math.Min(cnt, 8), picks);
+                for (int m = 0; m < n; m++)
+                {
+                    int e = picks[m];
+                    DamageEnemy(e, dmg, DamageSource.Orbital);
+                    if (Enemies[e].Alive && d.StunSeconds > 0f && Rng.NextFloat() < 0.3f
+                        && !_missionEnemyDefs[Enemies[e].DefIndex].CcImmune)
+                        Enemies[e].StunLeft = Mathf.Max(Enemies[e].StunLeft, d.StunSeconds);
+                    _owEffects.Add(new OwEffect
+                    {
+                        Kind = 6, DieAt = GameTime + Mathf.Max(0.5f, d.DotSeconds), Dps = d.DotDps,
+                        Radius = 44f, Pos = Enemies[e].Pos,
+                    });
+                }
+                if (n > 0) { _fxOwBeamLeft = 0.12f; _fxOwBeamKind = 1; _fxOwBeamFrom = from; _fxOwBeamTo = Enemies[picks[0]].Pos; }
+                break;
+            }
         }
 
-        _owCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1));
+        _owCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1)) / Mathf.Max(0.2f, Mods.OrbitalWeaponRateMult);
         Events.Push(SimEventKind.HeroWeaponFired, from, radius, 10 + i);
     }
 
@@ -253,7 +300,7 @@ public sealed partial class SimWorld
         if (fx.Kind == 1) // radiation line — PDTD's Radiation Link: relay stations joined by a beam
         {
             int n = Mathf.Max(2, fx.NodeCount);
-            System.Span<Vector2> nodes = stackalloc Vector2[5];
+            System.Span<Vector2> nodes = stackalloc Vector2[10];
             for (int k = 0; k < n; k++) nodes[k] = RadLineNode(in fx, k);
 
             while (fx.Tick >= interval)
@@ -330,12 +377,42 @@ public sealed partial class SimWorld
                 }
             }
         }
+        else if (fx.Kind == 6) // laser burn zone — a static scorched patch left at each impact point
+        {
+            float rSq = fx.Radius * fx.Radius;
+            while (fx.Tick >= interval)
+            {
+                fx.Tick -= interval;
+                for (int e = 0; e < EnemyHighWater; e++)
+                {
+                    ref var en = ref Enemies[e];
+                    if (!en.Alive || en.Pos.DistanceSquaredTo(fx.Pos) > rSq) continue;
+                    DamageEnemy(e, fx.Dps * interval * 4f, DamageSource.Orbital);
+                }
+            }
+        }
         else // shock orb (2) or radiation zone (3) — a moving AoE
         {
             if (fx.Kind == 2)
             {
                 float a = fx.P0 + t * 0.9f;
                 fx.Pos = Vector2.FromAngle(a) * (B.SentinelOrbitRadius * 0.82f);
+
+                // PDTD's real Ball Lightning (lua-decrypted/game/attack/ball_lightning_attack.lua)
+                // chain-arcs to nearby enemies, not just a plain damage circle — "continuously
+                // strikes enemies with lightning" per its own flavor text. fx.Spin is otherwise
+                // unused by shock_orb, reused here as a between-zap countdown.
+                fx.Spin -= dt;
+                if (fx.Spin <= 0f)
+                {
+                    fx.Spin = 0.8f;
+                    int zt = ClosestEnemyTo(fx.Pos, fx.Radius * 2.2f);
+                    if (zt >= 0)
+                    {
+                        DamageEnemy(zt, fx.Dps * 1.4f, DamageSource.Orbital);
+                        Events.PushLine(SimEventKind.ChainArc, fx.Pos, Enemies[zt].Pos, 3f, 3);
+                    }
+                }
             }
             else
             {

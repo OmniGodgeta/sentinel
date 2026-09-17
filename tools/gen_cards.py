@@ -75,11 +75,21 @@ def glyph(draw, kind, accent, cx, cy, s):
             a = 220 - i*40
             draw.ellipse([cx-rr, cy-rr, cx+rr, cy+rr], outline=(*accent, a), width=7)
         draw.ellipse([cx-s*0.14, cy-s*0.14, cx+s*0.14, cy+s*0.14], fill=(255,255,255,230))
+    elif kind == "laser":
+        # several converging lance-lines striking down into scorched impact points
+        for i in range(3):
+            a = math.pi*0.5 + (i-1)*0.55
+            x0, y0 = cx+math.cos(a)*s*1.1, cy-s*1.15
+            x1, y1 = cx+math.cos(a)*s*0.25 + (i-1)*s*0.5, cy+s*0.55
+            line((x0, y0), (x1, y1), 9)
+            line((x0, y0), (x1, y1), 3, c=(255,255,255,230))
+            r = s*0.22
+            draw.ellipse([x1-r, y1-r, x1+r, y1+r], fill=glow, outline=col, width=4)
+        draw.ellipse([cx-s*0.14, cy-s*0.14, cx+s*0.14, cy+s*0.14], fill=(255,255,255,230))
     draw.ellipse([cx-s*1.05, cy-s*1.05, cx+s*1.05, cy+s*1.05], outline=(*accent, 90), width=2)
 
 cards = [
     ("waterdrop", "#2ec6e8", 1),
-    ("space_bomb", "#c44fe0", 2),
     ("force_field", "#9b5de5", 3),
 ]
 

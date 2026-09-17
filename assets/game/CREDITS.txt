@@ -28,8 +28,10 @@ Sound effects (assets/audio/)
   chime below). The laser shots (turret_shot / turret_shot_b) replaced
   Kenney's "Sci-Fi Sounds" pack at v0.24.0 for a punchier, more textured zap.
   mission_won / mission_lost / card_pick / ability_cast / explosion /
-  explosion_b / shield / ui_click / missile_launch / sentinel_shot were
-  replaced with real samples pulled out of Planet Defense: Space TD's own
+  explosion_b / shield / ui_click / missile_launch / sentinel_shot /
+  orbital_laser_fire / space_bomb_fire / waterdrop_fire / ball_lightning_fire /
+  radiation_line_fire (shared by radiation_zone too) / orbital_lightning_fire /
+  beam_fire were replaced with real samples pulled out of Planet Defense: Space TD's own
   FMOD sound bank (CyberJoy Games, com.cyberjoy.prjw5n2 — assets/fmod/
   SFX.bank, extracted via the `fsb5` library; see tools/extract_pdtd_audio.py
   for the full pipeline and which of the bank's 79 samples were and weren't
@@ -93,10 +95,9 @@ Level backdrops (assets/game/bg/m0*.jpg, endless.jpg, weekly.jpg)
 Upgrade-card art (assets/game/cards/*.jpg)
   Supplied by the project owner (AI-generated key art for the ship-weapon and
   planet orbital-weapon upgrade cards, and the Planet Shield). Personal build.
-  The 3 new orbital-weapon cards added when the sentinel roster was extended
-  to match PDTD's full 11-weapon list (waterdrop, space_bomb, force_field —
-  see docs/ROADMAP.md) are an exception: no AI art was supplied
-  for these, so they're procedurally generated instead (`tools/gen_cards.py`
+  2 of the orbital-weapon cards are an exception: no art was supplied for
+  these, so they're procedurally generated instead (waterdrop, force_field —
+  added to match PDTD's weapon list, see docs/ROADMAP.md). Generated via `tools/gen_cards.py`
   — radial nebula gradient + starfield + a drawn glyph, in the weapon's own
   accent color, matching the card-frame language used elsewhere). Original
   content, no third-party source.

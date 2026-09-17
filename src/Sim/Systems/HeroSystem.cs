@@ -39,9 +39,27 @@ public sealed partial class SimWorld
         Vector2 to = Enemies[t].Pos - heroPos;
         float d = to.Length();
         float standoff = Cfg.Hero.PointDefenseRange * 0.6f;
-        if (d > standoff + 24f) return to / d;
-        if (d < standoff - 24f) return -(to / Mathf.Max(d, 0.001f));
-        return Vector2.Zero;
+        Vector2 approach;
+        if (d > standoff + 24f) approach = to / d;
+        else if (d < standoff - 24f) approach = -(to / Mathf.Max(d, 0.001f));
+        else return Vector2.Zero;
+
+        // Blend toward an orbit tangent (same shape as the idle branch above) as the ship
+        // itself nears the planet, so chasing a target close to it curves around instead of
+        // flying a straight line and getting hard-stopped right at ClampHeroPos's edge —
+        // that abrupt stop is what read as "flying into the planet."
+        float minR = B.PlanetRadius + 20f;
+        const float band = 160f;   // start curving this far out from the clamp radius
+        float nearness = 1f - Mathf.Clamp((heroPos.Length() - minR) / band, 0f, 1f);
+        if (nearness > 0f)
+        {
+            Vector2 tangent = new Vector2(-heroPos.Y, heroPos.X);
+            if (tangent.LengthSquared() < 1f) tangent = Vector2.Right;
+            tangent = tangent.Normalized();
+            if (tangent.Dot(approach) < 0f) tangent = -tangent;   // curve the way that still closes on the target
+            approach = approach.Lerp(tangent, nearness * 0.85f).Normalized();
+        }
+        return approach;
     }
 
     /// <summary>Free flight: anywhere outside the planet, inside the arena.</summary>

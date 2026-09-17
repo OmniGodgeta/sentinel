@@ -5,8 +5,256 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.26.4, 2026-09-16.** Update this file when you finish or start
+Last updated: **v0.27.1, 2026-09-16.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — the chip/chest/Armory gear system, Events tab (v0.27.1)
+
+The "last, biggest, riskiest chunk" the user deliberately deferred to the end
+of the v0.27.0 session (see that entry below) — a full PDTD-style chip/chest
+gear layer, built new from scratch.
+
+**CLAUDE.md amended (2026-09-16, user-approved before any of this was built)**:
+rule #3 now bans real-money monetisation specifically, not RNG in general —
+in-game-currency-only randomized rewards (keys earned by playing, never
+purchasable) are explicitly fine. This system is the first thing built under
+that amendment.
+
+**New systems**:
+- `data/chips.json` + `ChipDef`/`ChipTierDef`/`ChipsDb` (`Config/Defs.cs`) —
+  6 chip archetypes (damage/cooldown/radius/shield/hull/salvage) × 4 tiers
+  (T1-T4, `merge_cost` copies of one tier → 1 of the next).
+- `SaveGame`: `ChipInventory` (`"{chip_id}:{tier}"` → count), `EquippedChips`
+  (list of the same key shape, capped at `ChipsDb.EquipSlots`, currently 4),
+  `SilverKeys`/`GoldKeys`.
+- `Meta/ChipVault.cs` — the only place that rolls chest drops or merges chips.
+  Silver chests roll T1/T2, Gold chests T2/T3 (small T4 chance) — 1 key per
+  chest, "Open 1"/"Open 5". `QuickMergeAll()` cascades every archetype up as
+  far as it'll go in one tap.
+- Keys are earned only by playing (`AppRoot.OnMissionEnded`): 1 Silver Key
+  per star on a mission win (so 1-3), 1 Gold Key on a mission's first clear
+  or a new Endless/Weekly depth record. Nothing purchasable, per the amended
+  rule.
+- **Chip effects apply globally across every orbital weapon**, not
+  per-weapon-slot like the PDTD reference images show — building true
+  per-slot assignment would mean threading chip bonuses through
+  `FireOrbitalWeapon`'s per-index damage/cooldown calc individually; scoped
+  down to a global multiplier for this pass. New `ModifierSet` fields
+  (`OrbitalWeaponDamageMult`/`RateMult`/`RadiusMult`, `orbital_weapon_damage`/
+  `_rate`/`_radius` effect keys) wired into `OrbitalWeapons.cs`'s
+  `FireOrbitalWeapon` damage/radius calc and cooldown-set line. **Naming
+  trap avoided**: there's already an unrelated `Mods.SentinelDamageMult`/
+  `SentinelRateMult`/`SentinelCount` — those feed a completely different,
+  older small-drone point-defense system in `PlanetDefenses.cs`
+  (`StepOrbitalSentinels`), not the PDTD-named orbital-weapon roster this
+  whole session has been about. Deliberately used an `OrbitalWeapon`-
+  prefixed name throughout to not collide with it — flagged in
+  `ModifierSet.cs` itself so a future session doesn't reuse the wrong field.
+- `Progression.BuildModifiers()` sums equipped chips' effects in, same
+  pattern as equipped Planet Modules right above it in the same method.
+
+**New screens**:
+- `UI/ChipScreen.cs` ("Armory") — key balance, 4 equip-slot buttons (tap to
+  unequip), chest-opening cards, and a scrollable list of every owned
+  chip+tier stack with Merge/Equip buttons. Reached from the Upgrades hub
+  (`UpgradesScreen.cs`, joining Research/Sentinels/Modules) — not a new
+  top-level menu button, matching where Planet Modules already lives.
+- `UI/EventsScreen.cs` — a PDTD-style expedition card list surfacing Weekly
+  Challenge / Endless Hold / Ascension (previously buried across separate nav
+  buttons/screens) as cards with a blurb + best-so-far + Enter button, plus a
+  **locked "Galaxy Arena — Coming Soon" card**. `MenuScreen`'s bottom-bar
+  "★ EVENTS" button now opens this instead of jumping straight into the
+  Weekly Challenge.
+
+**Galaxy Arena stays a roadmap entry, not built** (user explicitly asked for
+this to go on the roadmap, not be built this session): a PvE wave-survival
+arena mode with a ranking/leaderboard system, modeled on PDTD's own Galaxy
+Arena. Whoever picks this up next needs to design: how "waves" differ from
+the existing Survival director, what a ranking system even means with no
+backend/leaderboard service in this project (local-only personal build — a
+real cross-player ranking isn't possible without one), and whether it's a
+new `SimPhase`/mission type or a reskin of Endless with different pacing.
+
+**Verified**: `dotnet build` clean, `SimTest` `ALL CHECKS OK` /
+`deterministic=ok` / 1×≡4× identical and numerically byte-identical to the
+pre-chip-system run (confirms the new `Mods.OrbitalWeapon*Mult` fields are
+correctly a no-op at their 1.0 defaults when nothing's equipped — nothing
+leaked into determinism). **Not verified live**: the three new screens
+(ChipScreen/EventsScreen, plus UpgradesScreen's new Armory button) weren't
+screenshotted — `ShotRunner`/`Shots.tscn` only exercises the in-mission
+`GameRoot` flow, not `AppRoot`'s menu tree, and scripting a full
+Splash→Login→Menu→Upgrades→Armory click-through wasn't attempted this
+session. They're built to the exact same construction pattern as
+`ModulesScreen`/`ShopScreen`/`UpgradesScreen` (already-shipped, working
+screens) and compile clean, but a live on-device look is the real
+verification, same as every balance number in this project.
+
+### Still open
+
+- Per-orbital-weapon-slot chip assignment (matching the PDTD reference image
+  exactly) instead of the current global-multiplier simplification — a real
+  scope expansion if wanted later, not a bug.
+- Galaxy Arena itself (see above).
+- Force Field + Waterdrop Grok-generated card art (carried over from
+  v0.27.0, still not done).
+- Chip drop rates/merge costs/effect sizes are first-pass numbers, unverified
+  against actual play — same standing caveat as every other balance value in
+  this project.
+
+---
+
+## Recently completed — commander/sentinel rework, real PDTD audio for every sentinel, missile/battery tuning, HUD scale pass (v0.27.0)
+
+Big combined session — full plan at the top of this diff's commit; this is the
+digest. `~/Work/pdtd-reference/` (decrypted PDTD config/Lua) and the original
+PDTD XAPK (for real sprite/audio extraction) were both available on this
+machine, unlike the v0.26.3 session on a different box that got blocked on
+exactly this — several "still open, blocked on reference" items below are now
+actually done against real PDTD data instead of guessed.
+
+**Commander ability → real Laser sentinel.** `kinetic_barrage` removed
+(`data/abilities.json`, its `pro_barrage` levelcard, `SimTest.cs`'s loadout;
+T1 now opens with Aegis Barrier + Overdrive Protocol only — see
+`docs/design-spec.md`'s renumbered ability list). New `laser` orbital weapon
+added, built against the *real* PDTD Laser script
+(`lua-decrypted/game/attack/laser.lua`) instead of v0.26.0's invented
+70°-sweep guess (which v0.26.4 explicitly removed as `sweep_laser`) — real
+PDTD Laser hits several nearest targets at once and scorches each impact into
+a short burning zone (`OwEffect.Kind==6`), plus a chance to stun. Real
+extracted sound (`orbital_laser_fire.ogg`, PDTD sample "laser-fire").
+
+**Roster cleanup.** `orbital_cannon` (Railgun analog) removed outright;
+`orbital_laser` renamed to `beam` ("Beam") to resolve the naming collision
+with the new Laser sentinel — it already *was* PDTD's Beam mechanically
+since v0.21/v0.22, just confusingly named. `SimRenderer`'s `OrbitalCols` (a
+positional array index-aligned to the JSON roster order — flagged as fragile
+in the v0.26.4 notes, and this session both added and removed a weapon)
+replaced with `ColorForKind(string)`, keyed by weapon `Kind` instead of
+array position — roster reorders/adds/removes can't silently desync colors
+again. `SaveGame.NormalizeSaves` gained a `MigrateRemovedIds()` fixup so an
+existing save's `OrbitalMeta`/`Loadout` entries for the retired ids don't
+dangle.
+
+**Space Bomb and Waterdrop were both silently broken — found the real
+cause.** Both targeted via `ClosestEnemyTo(from, d.Range)` where `from` is
+the sentinel's own orbiting platform position (~465 units out) — not the
+planet. Depending on the platform's orbital phase relative to where enemies
+actually were, `d.Range` (600-650) frequently wasn't enough to reach
+anything, so both weapons silently did nothing: no damage, no animation,
+looked completely broken. Fix (both): search from the planet
+(`ClosestEnemyTo(Vector2.Zero, B.DespawnRadius)`, the same pattern
+`rad_line`/`force_field` already used correctly) instead of from the
+platform. **Waterdrop** additionally reworked from a straight pierce-line
+into a real ricochet chain (confirmed against
+`lua-decrypted/game/attack/aqua_attack.lua` — the real bullet carries
+"durability points" spent per hit and re-targets the next nearest enemy,
+i.e. a bounce chain, not a static line), new `count`/`count_per_level`
+fields controlling bounce count. Both get real extracted sound
+(`space_bomb_fire.ogg`, `waterdrop_fire.ogg`).
+
+**Shock Orb → real Ball Lightning.** Real PDTD Ball Lightning
+(`ball_lightning_attack.lua`) turned out to have satellites/chain-links/
+tracking-bomb explosions — richer than practical to fully replicate here.
+Scoped to: real extracted sound (`ball_lightning_fire.ogg`), and a new
+periodic chain-zap to 1-2 nearby enemies each tick (reusing the existing
+chain-arc pattern from the `lightning` case) so it reads as "continuously
+strikes enemies with lightning" per its own flavor text, instead of a plain
+damage circle. Mechanics (orbit path/cooldown/duration/damage) were already
+ratio-matched to PDTD in v0.26.1, untouched.
+
+**Radiation Link reworked to actually level up in reach, not just damage.**
+Was capped at 5 relay nodes / a fixed 64° arc regardless of level. Now scales
+to 10 nodes / up to a 340° arc (deliberately short of a full 360° ring) as it
+levels — `RadLineSpreadDeg(nodes)` derives the spread from node count instead
+of a fixed constant, and the `stackalloc Vector2[5]` node buffers (sim +
+renderer) grew to `[10]`. Real extracted sound (`radiation_line_fire.ogg`,
+shared by Radiation Zone too — both are radiation-type, sharing is
+thematically correct, not a shortcut).
+
+**Every remaining orbital weapon given its own real PDTD sound**, closing out
+"same [real-PDTD treatment] for all sentinels": `orbital_lightning_fire.ogg`
+(Chain Lightning), `beam_fire.ogg` (Beam); Force Field reuses the existing
+`shield.ogg` (thematically a defensive field). Every orbital weapon now has a
+distinct sound instead of the old universal `sentinel_shot.ogg` catch-all.
+
+**All sentinel cooldowns reduced ~25%** (`cooldown`/`min_cooldown` × 0.75
+across every entry in `data/orbital_weapons.json`).
+
+**Missiles**: battery salvo 3→5 (matches PDTD's Missile `atkCount`); combined
+with the battery's existing 1s interval (vs PDTD's 5s) this is already well
+above PDTD's total output, satisfying "more missiles" on top of "as many as
+PDTD." Speed reduced ~30% on all three missile sources (`battery_missile_speed`
+320→220, hero `missile_barrage` speed 330→230, `missile_silo` turret
+`projectile_speed` 300→210) — real PDTD sprite/sound for missiles were
+already in place since v0.24/v0.25, so this closes the "slower" gap. Existing
+`data/levelcards.json`/`data/cards.json` "Battery" upgrade cards (damage/
+rate/salvo/splash, already covering "as many things as possible") untouched
+— base numbers were the actual gap, not missing upgrade paths.
+
+**Enemy visuals cleaned up to match PDTD**: removed the per-enemy circular hp
+ring (`SimRenderer.DrawEnemies`) and the soft white/grey backing halo behind
+every sprite (rendered white because every `EnemyTint` entry is white,
+matching real PDTD sprites' own baked-in color since v0.25.2 — the halo
+predates that swap and stopped making sense once it happened). PDTD itself
+has neither. Enemy `max_hp`/`shield_hp` bumped +7% ("5-10% harder to kill").
+
+**Commander auto-mode**: `⚒`/`AUTO`/`✈` were three top-row buttons reading as
+unclear/redundant automation controls. `⚒` (build panel — not automation)
+stays separate; `AUTO` (`Hud.cs`) now drives both ship-weapon auto-fire and
+autopilot movement together as one master toggle. Separately, autopilot's
+engagement steering (`HeroSystem.AutopilotDir`) now blends toward an orbit
+tangent as the ship nears the planet (same shape as the existing idle-orbit
+branch), so chasing a target close to the planet curves around it instead of
+flying a straight line into the hard clamp at the planet's edge — that abrupt
+stop was what read as "flying into the planet."
+
+**HUD/menu scale pass** ("make buttons ~2x bigger"), landed in two rounds
+after live feedback: bottom weapon/ability cards ended at 204×204 / 204×219
+(1.5x, not literal 2x — the full 2x made the panel tall enough to cover the
+joystick's touch zone; `HeroWeaponButton`/`AbilityButton`'s `_Draw()` scales
+every fixed-pixel constant off `Size.X/136` so any future size change stays
+proportional automatically). `GameRoot.BottomReserve`/`Hud._wavePanel`
+resized to match; the joystick's own bottom bound now reads
+`-GameRoot.BottomReserve` directly instead of a separately-hardcoded number,
+so this class of "panel grew, joystick didn't know" bug can't recur. Top
+control row (`☰❚❚1x-4x⚒AUTO`) grown within the real 1080px device-canvas
+width budget (not literal 2x —8 buttons in one row don't fit at 2x on an
+actual phone). Same 2x-with-manual-overlap-fixes pass applied across
+`SentinelScreen`/`ShopScreen`/`ModulesScreen`/`MenuScreen`/etc. — MenuScreen's
+top-right icon row (gear/currency/codex) and StarMap's back-button+header had
+manually-positioned offsets that needed matching fixes after their buttons
+doubled (a blanket size/font regex alone isn't enough wherever layout uses
+absolute `Position`/`OffsetLeft` instead of an auto-flowing container).
+
+**Card art**: user supplied real AI art for the `space_bomb` and `laser`
+cards (cropped from their own generated key-art images down to the
+illustration only, matching the existing full-bleed-art-behind-game-text
+convention) — both removed from `tools/gen_cards.py`'s procedural-placeholder
+list. `force_field`/`waterdrop` still procedural — the user separately asked
+for Grok-generated art for those two; **not done yet**.
+
+**Verified**: `dotnet build` clean throughout, `SimTest` `ALL CHECKS OK` /
+`deterministic=ok` / 1×≡4× identical after every sim-touching change, live
+`ShotRunner` screenshots confirmed the HUD button merge and top-row sizing
+before the card-panel/joystick issue was reported and fixed (that specific
+fix and the halo/health-ring removal are verified by code+math, not a fresh
+screenshot — the dev box's screenshot runs kept timing out on later passes;
+worth a live on-device look).
+
+### Still open from this session
+
+- **Force Field + Waterdrop Grok-generated card art** — user asked for this
+  explicitly; not started. Space Bomb/Laser got real art a different way
+  (user's own generated images) in the meantime.
+- **The chip/module/key/chest gear system + Armory shop tab + Events tab +
+  Galaxy Arena roadmap entry** — the largest, last-sequenced chunk of the
+  original ask (user explicitly agreed: gameplay fixes first, this last).
+  Not started.
+- All balance-adjacent changes here (cooldowns, missile speed/salvo, enemy
+  hp) are provisional pending the user's own on-device feel-check, same
+  standing convention as every prior session.
 
 ---
 

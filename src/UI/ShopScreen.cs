@@ -36,15 +36,15 @@ public sealed partial class ShopScreen : CanvasLayer
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 12);
         root.AddChild(head);
-        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => App.ShowMenu();
         head.AddChild(back);
         var title = new Label { Text = "  SHOP", VerticalAlignment = VerticalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeFontSizeOverride("font_size", 48);
         head.AddChild(title);
 
         _wallet = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-        _wallet.AddThemeFontSizeOverride("font_size", 16);
+        _wallet.AddThemeFontSizeOverride("font_size", 32);
         _wallet.AddThemeColorOverride("font_color", UiTheme.Accent2);
         root.AddChild(_wallet);
 
@@ -57,9 +57,9 @@ public sealed partial class ShopScreen : CanvasLayer
             var b = new Button
             {
                 Text = Sentinel.Meta.Shop.TabTitle(t), ToggleMode = true,
-                CustomMinimumSize = new Vector2(184, 54),
+                CustomMinimumSize = new Vector2(368, 108),
             };
-            b.AddThemeFontSizeOverride("font_size", 15);
+            b.AddThemeFontSizeOverride("font_size", 30);
             b.Pressed += () => { _tab = tt; Rebuild(); };
             _tabs.AddChild(b);
         }
@@ -67,7 +67,7 @@ public sealed partial class ShopScreen : CanvasLayer
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        _list = new VBoxContainer { CustomMinimumSize = new Vector2(580, 0) };
+        _list = new VBoxContainer { CustomMinimumSize = new Vector2(1160, 0) };
         _list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(_list);
 
@@ -112,22 +112,22 @@ public sealed partial class ShopScreen : CanvasLayer
             var trow = new HBoxContainer();
             col.AddChild(trow);
             var nm = new Label { Text = it.Name, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, VerticalAlignment = VerticalAlignment.Center };
-            nm.AddThemeFontSizeOverride("font_size", 19);
+            nm.AddThemeFontSizeOverride("font_size", 38);
             trow.AddChild(nm);
 
             var tag = new Label { VerticalAlignment = VerticalAlignment.Center };
-            tag.AddThemeFontSizeOverride("font_size", 15);
+            tag.AddThemeFontSizeOverride("font_size", 30);
             if (equipped) { tag.Text = "EQUIPPED"; tag.AddThemeColorOverride("font_color", UiTheme.Accent); }
             else if (owned) { tag.Text = "owned"; tag.Modulate = new Color(1, 1, 1, 0.6f); }
             else { tag.Text = $"✦ {it.Cost}"; tag.AddThemeColorOverride("font_color", UiTheme.Accent2); }
             trow.AddChild(tag);
 
             var desc = new Label { Text = it.Desc, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.66f) };
-            desc.AddThemeFontSizeOverride("font_size", 14);
+            desc.AddThemeFontSizeOverride("font_size", 28);
             col.AddChild(desc);
 
-            var act = new Button { CustomMinimumSize = new Vector2(0, 54), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-            act.AddThemeFontSizeOverride("font_size", 17);
+            var act = new Button { CustomMinimumSize = new Vector2(0, 108), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            act.AddThemeFontSizeOverride("font_size", 34);
             var itc = it;
             if (equipped) { act.Text = "Equipped"; act.Disabled = true; }
             else if (owned) { act.Text = "Equip"; UiTheme.StylePrimary(act); act.Pressed += () => { App.Shop.Equip(itc); Sentinel.Audio.AudioManager.Instance?.Click(); Rebuild(); }; }
@@ -145,7 +145,7 @@ public sealed partial class ShopScreen : CanvasLayer
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = new Color(1, 1, 1, 0.4f),
         };
-        note.AddThemeFontSizeOverride("font_size", 13);
+        note.AddThemeFontSizeOverride("font_size", 26);
         _list.AddChild(note);
     }
 }

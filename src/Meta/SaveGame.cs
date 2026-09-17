@@ -48,6 +48,20 @@ public sealed class SaveGame
     /// only equipped modules contribute their effect in a run.</summary>
     public List<string> EquippedModules { get; set; } = new();
 
+    /// <summary>Chip inventory (data/chips.json) — key is <c>"{chip_id}:{tier}"</c> (e.g.
+    /// "chip_damage:2"), value is how many of that chip+tier are owned. Chests (Meta/
+    /// ChipVault.cs) add to this; merging N of one tier removes them and adds 1 of the
+    /// next tier up.</summary>
+    public Dictionary<string, int> ChipInventory { get; set; } = new();
+    /// <summary>Which chip+tier keys (same "{chip_id}:{tier}" shape as ChipInventory) are
+    /// equipped right now — capped at <c>ChipsDb.EquipSlots</c>, only equipped chips
+    /// contribute their effect in a run.</summary>
+    public List<string> EquippedChips { get; set; } = new();
+    /// <summary>Armory chest keys — earned by playing (mission/star/endless rewards),
+    /// never purchasable with real money. See CLAUDE.md's 2026-09-16 amendment.</summary>
+    public int SilverKeys { get; set; } = 0;
+    public int GoldKeys { get; set; } = 0;
+
     // level-up upgrade cards picked (Planet-Defense-TD style meta progression)
     public List<string> LevelCards { get; set; } = new();
 
@@ -72,9 +86,29 @@ public sealed class SaveGame
     public List<List<string>> LoadoutPresets { get; set; } = new();
     public int ActivePreset { get; set; }
 
+    /// <summary>One-time fixups for ids removed/renamed in later versions of the game, so an
+    /// existing save doesn't end up pointing at content that no longer exists. Idempotent —
+    /// safe to call on every load. Add an entry here (not a full migration framework) whenever
+    /// a weapon/ability id is retired or renamed; this is a personal single-save build, not a
+    /// live service, so this stays intentionally light.</summary>
+    private void MigrateRemovedIds()
+    {
+        // v0.26.x: Kinetic Barrage (commander ability) retired outright.
+        AbilityLevels.Remove("kinetic_barrage");
+        AbilityBranches.Remove("kinetic_barrage");
+        Loadout.RemoveAll(id => id == "kinetic_barrage");
+        foreach (var preset in LoadoutPresets) preset.RemoveAll(id => id == "kinetic_barrage");
+
+        // v0.26.x: Orbital Cannon (Railgun analog) retired; Orbital Laser renamed to Beam.
+        OrbitalMeta.Remove("orbital_cannon");
+        if (OrbitalMeta.Remove("orbital_laser", out int beamLevel))
+            OrbitalMeta["beam"] = System.Math.Max(beamLevel, OrbitalMeta.GetValueOrDefault("beam"));
+    }
+
     /// <summary>Ensure three presets exist and the active one matches Loadout.</summary>
     public void NormalizePresets()
     {
+        MigrateRemovedIds();
         while (LoadoutPresets.Count < PresetCount) LoadoutPresets.Add(new List<string>());
         if (LoadoutPresets.Count > PresetCount) LoadoutPresets.RemoveRange(PresetCount, LoadoutPresets.Count - PresetCount);
         ActivePreset = System.Math.Clamp(ActivePreset, 0, PresetCount - 1);

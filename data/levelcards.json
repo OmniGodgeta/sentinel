@@ -32,8 +32,6 @@
   { "id": "ars_rate", "name": "Turret Autoloaders", "cat": "Arsenal", "repeatable": true, "max_picks": 5,
     "text": "All turret fire rate +15%.", "effects": { "turret_fire_rate": 0.15 } },
 
-  { "id": "pro_barrage", "name": "Protocol: Kinetic Barrage", "cat": "Protocol", "unlock_ability": "kinetic_barrage",
-    "text": "Bring the Kinetic Barrage online — a wedge of orbital fire on a bearing." },
   { "id": "pro_aegis", "name": "Protocol: Aegis Barrier", "cat": "Protocol", "unlock_ability": "aegis_barrier",
     "text": "Bring the Aegis Barrier online — a temporary shield over the planet." },
   { "id": "pro_overdrive", "name": "Protocol: Overdrive", "cat": "Protocol", "unlock_ability": "overdrive",

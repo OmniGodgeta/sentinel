@@ -40,7 +40,7 @@ public sealed partial class GameRoot : Node2D
     // TopReserve grows by the display's safe-area inset (notch / punch-hole) so the
     // status + speed row never sits under the camera cutout.
     public float TopReserve { get; private set; } = 172f;
-    public const float BottomReserve = 408f;
+    public const float BottomReserve = 500f;   // matches Hud's _wavePanel — weapon/ability cards are 204/219px (1.5x)
     public float SafeTopInset { get; private set; }
 
     /// <summary>True while the sim is frozen only because a card draft is waiting —
@@ -245,7 +245,26 @@ public sealed partial class GameRoot : Node2D
                         case 0: sfx?.Play("turret_shot_b", -10f, 0.16f, 0.02); break;      // laser
                         case 2: sfx?.Play("sentinel_shot", -8f, 0.1f); break;              // ion
                         case 3: sfx?.Play("explosion_big", 0f, 0f); Input.VibrateHandheld(90); break; // yamato
-                        case >= 10: sfx?.Play("sentinel_shot", -12f, 0.18f, 0.06); break;  // orbital weapons
+                        case >= 10:
+                        {
+                            int owIdx = ev.I - 10;
+                            string owKind = (uint)owIdx < (uint)_cfg.OrbitalWeapons.Count ? _cfg.OrbitalWeapons[owIdx].Kind : "";
+                            string owSfx = owKind switch
+                            {
+                                "laser" => "orbital_laser_fire",
+                                "space_bomb" => "space_bomb_fire",
+                                "waterdrop" => "waterdrop_fire",
+                                "shock_orb" => "ball_lightning_fire",
+                                "rad_line" => "radiation_line_fire",
+                                "rad_zone" => "radiation_line_fire",
+                                "lightning" => "orbital_lightning_fire",
+                                "beam_laser" => "beam_fire",
+                                "force_field" => "shield",
+                                _ => "sentinel_shot",
+                            };
+                            sfx?.Play(owSfx, -12f, 0.18f, 0.06);
+                            break;
+                        }
                     }
                     break;
                 case SimEventKind.HeroShieldPop:

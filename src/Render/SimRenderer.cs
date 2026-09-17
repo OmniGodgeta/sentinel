@@ -74,7 +74,15 @@ public sealed partial class SimRenderer : Node2D
                 if (GD.Randf() < 0.2f) Push(FxKind.Spark, e.PosB, e.PosB, 7f, 0.15f, new Color(1f, 0.4f, 0.4f));
                 break;
             case SimEventKind.ChainArc:
-                Push(FxKind.Lightning, e.Pos, e.PosB, 0f, 0.16f, new Color(0.6f, 0.85f, 1f));
+                // e.I picks the arc's color family — waterdrop's ricochet (2) reads as a cyan
+                // water-bolt trail and Ball Lightning's zap (3) as a hot yellow spark, rather
+                // than the shared electric-blue lightning-chain look every other chain uses.
+                Push(FxKind.Lightning, e.Pos, e.PosB, 0f, 0.16f, e.I switch
+                {
+                    2 => new Color(0.25f, 0.82f, 0.92f),
+                    3 => new Color(0.98f, 0.82f, 0.20f),
+                    _ => new Color(0.6f, 0.85f, 1f),
+                });
                 break;
             case SimEventKind.BarrageTick:
                 Push(FxKind.Spark, e.Pos, e.Pos, 7f, 0.18f, new Color(1f, 0.85f, 0.4f));
@@ -370,17 +378,23 @@ public sealed partial class SimRenderer : Node2D
         }
     }
 
-    private static readonly Color[] OrbitalCols =
+    /// <summary>Per-weapon accent color, keyed by <c>OrbitalWeaponDef.Kind</c> — deliberately
+    /// NOT a positional array. `data/orbital_weapons.json`'s roster has already been reordered
+    /// twice in one session (a weapon added, another removed); a parallel array index-aligned
+    /// to that JSON order is a standing footgun (see the v0.26.4 commit notes) every time the
+    /// roster changes. Keying by kind means adding/removing/reordering weapons never touches this.</summary>
+    private static Color ColorForKind(string kind) => kind switch
     {
-        new(0.96f, 0.55f, 0.15f),  // cannon
-        new(0.95f, 0.28f, 0.24f),  // laser
-        new(0.98f, 0.82f, 0.20f),  // lightning
-        new(0.55f, 0.92f, 0.25f),  // rad_line
-        new(0.98f, 0.80f, 0.22f),  // shock_orb
-        new(0.55f, 0.92f, 0.25f),  // rad_zone
-        new(0.18f, 0.78f, 0.91f),  // waterdrop
-        new(0.77f, 0.31f, 0.88f),  // space_bomb
-        new(0.61f, 0.36f, 0.90f),  // force_field
+        "beam_laser" => new(0.95f, 0.28f, 0.24f),
+        "lightning" => new(0.98f, 0.82f, 0.20f),
+        "rad_line" => new(0.55f, 0.92f, 0.25f),
+        "shock_orb" => new(0.98f, 0.80f, 0.22f),
+        "rad_zone" => new(0.55f, 0.92f, 0.25f),
+        "waterdrop" => new(0.18f, 0.78f, 0.91f),
+        "space_bomb" => new(0.77f, 0.31f, 0.88f),
+        "force_field" => new(0.61f, 0.36f, 0.90f),
+        "laser" => new(1.00f, 0.36f, 0.54f),
+        _ => new(0.96f, 0.55f, 0.15f),
     };
 
     private void DrawOrbitalWeapons()
@@ -400,7 +414,7 @@ public sealed partial class SimRenderer : Node2D
         for (int i = 0; i < n; i++)
         {
             if (World.OrbitalWeaponLevel(i) <= 0) continue;
-            var c = OrbitalCols[i % OrbitalCols.Length];
+            var c = ColorForKind(World.OrbitalWeaponKind(i));
             var p = World.OrbitalPlatformPos(i);
             float ang = p.Angle() + Mathf.Pi / 2f;
             float lvl = World.OrbitalWeaponLevel(i);
@@ -425,7 +439,7 @@ public sealed partial class SimRenderer : Node2D
         if (World.FxOrbitalBeamLeft > 0f)
         {
             int bk = World.FxOrbitalBeamKind;
-            var c = bk switch { 1 => OrbitalCols[1], 2 => OrbitalCols[6], 3 => OrbitalCols[7], _ => OrbitalCols[0] };
+            var c = bk switch { 1 => ColorForKind("laser"), 2 => ColorForKind("waterdrop"), 3 => ColorForKind("space_bomb"), _ => ColorForKind("") };
             float span = bk switch { 1 => 0.16f, 2 => 0.14f, 3 => 0.24f, _ => 0.12f };
             float k = Mathf.Clamp(World.FxOrbitalBeamLeft / span, 0f, 1f);
             var from = World.FxOrbitalBeamFrom;
@@ -449,9 +463,9 @@ public sealed partial class SimRenderer : Node2D
         {
             if (fx.Kind == 1) // radiation line — PDTD Radiation Link: relay stations + a linked beam
             {
-                var gc = OrbitalCols[3];
+                var gc = ColorForKind("rad_line");
                 int nodeN = Mathf.Max(2, fx.NodeCount);
-                System.Span<Vector2> nodes = stackalloc Vector2[5];
+                System.Span<Vector2> nodes = stackalloc Vector2[10];
                 for (int k = 0; k < nodeN; k++) nodes[k] = World.RadLineNode(in fx, k);
 
                 for (int seg = 0; seg < nodeN - 1; seg++)
@@ -478,7 +492,7 @@ public sealed partial class SimRenderer : Node2D
             }
             else if (fx.Kind == 4) // beam laser — PDTD Beam sentinel: continuous locked-on burn
             {
-                var lc = OrbitalCols[1];
+                var lc = ColorForKind("beam_laser");
                 DrawLine(fx.From, fx.Pos, new Color(lc, 0.35f), 8f);
                 DrawLine(fx.From, fx.Pos, new Color(lc, 0.8f), 3.5f);
                 DrawLine(fx.From, fx.Pos, new Color(1f, 0.95f, 0.9f, 0.9f), 1.4f);
@@ -488,7 +502,7 @@ public sealed partial class SimRenderer : Node2D
             }
             else if (fx.Kind == 5) // force field — PDTD Force Field: a planet-hugging damage + slow dome
             {
-                var fc = OrbitalCols[8];
+                var fc = ColorForKind("force_field");
                 float life = Mathf.Clamp((fx.DieAt - gt), 0f, 1f);
                 float pulse = 0.5f + 0.5f * Mathf.Sin(gt * 4f);
                 DrawCircle(Vector2.Zero, fx.Radius, new Color(fc, (0.06f + 0.03f * pulse) * life + 0.02f));
@@ -500,9 +514,22 @@ public sealed partial class SimRenderer : Node2D
                     DrawLine(p2, p2 - Vector2.FromAngle(aa) * 14f, new Color(fc, 0.7f), 2f);
                 }
             }
+            else if (fx.Kind == 6) // laser burn zone — a static scorched, sparking patch at the impact point
+            {
+                var lzc = ColorForKind("laser");
+                float life = Mathf.Clamp((fx.DieAt - gt), 0f, 1f);
+                DrawCircle(fx.Pos, fx.Radius, new Color(lzc, (0.10f + 0.08f * Mathf.Sin(gt * 9f)) * life + 0.03f));
+                DrawArc(fx.Pos, fx.Radius, 0, Mathf.Tau, 24, new Color(lzc, 0.5f * life), 2f);
+                for (int s = 0; s < 5; s++)
+                {
+                    float aa = s * Mathf.Tau / 5f + gt * 3f;
+                    var e = fx.Pos + Vector2.FromAngle(aa) * fx.Radius * (0.3f + 0.5f * Mathf.Sin(gt * 6f + s * 1.7f));
+                    DrawLine(fx.Pos, e, new Color(1f, 0.85f, 0.75f, 0.45f * life), 1.4f);
+                }
+            }
             else // shock orb (2) / radiation zone (3) — concentric radial shockwaves (PDTD SHOCK ORB look)
             {
-                var col = fx.Kind == 2 ? OrbitalCols[4] : OrbitalCols[5];
+                var col = fx.Kind == 2 ? ColorForKind("shock_orb") : ColorForKind("rad_zone");
                 DrawCircle(fx.Pos, fx.Radius, new Color(col, 0.07f));
                 for (int ring = 0; ring < 4; ring++)
                 {
@@ -589,7 +616,9 @@ public sealed partial class SimRenderer : Node2D
                 }
             }
 
-            DrawCircle(drawPos, sizePx * 0.75f, new Color(tint, 0.16f));
+            // No soft backing circle behind the sprite — it read as a plain white/grey
+            // halo now that every enemy tint is near-white (real PDTD sprites carry their
+            // own baked-in color, see EnemyTint above), and PDTD itself has no such halo.
             Blit(tex, drawPos, boss && e.MechanicActive ? 0f : rot, sizePx,
                  boss && e.MechanicActive ? new Color(0.7f, 0.7f, 0.8f) : tint);
 
@@ -604,13 +633,9 @@ public sealed partial class SimRenderer : Node2D
             if (def.AuraRadius > 0f)
                 DrawArc(e.Pos, def.AuraRadius, 0, Mathf.Tau, 40, new Color(0.5f, 1f, 0.6f, 0.08f), 2f);
 
-            float hpf = e.MaxHp > 0 ? e.Hp / e.MaxHp : 1f;
-            if (hpf < 0.999f && !boss)
-            {
-                float br = sizePx * 0.62f;
-                DrawArc(e.Pos, br, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau, 20, new Color(0, 0, 0, 0.4f), 2.5f);
-                DrawArc(e.Pos, br, -Mathf.Pi / 2f, -Mathf.Pi / 2f + Mathf.Tau * hpf, 20, new Color(0.5f, 1f, 0.5f), 2.5f);
-            }
+            // No per-enemy health ring — matches PDTD's own look (no floating hp bars on
+            // regular enemies; damage reads through hit sparks/kill bursts instead). The
+            // boss's own top-of-screen bar (Hud.cs's _bossBar) is unrelated and unaffected.
         }
     }
 

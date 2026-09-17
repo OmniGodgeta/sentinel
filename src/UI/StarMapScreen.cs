@@ -39,14 +39,14 @@ public sealed partial class StarMapScreen : CanvasLayer
         }
         _nodes.Add(("endless", "res://data/missions/endless.json", "◈ ENDLESS", new Vector2(0.85f, 0.08f)));
 
-        var top = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 14, OffsetBottom = 78 };
+        var top = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 14, OffsetBottom = 138 };
         top.Theme = UiTheme.Instance;
         AddChild(top);
-        var back = new Button { Text = "‹ Back", Position = new Vector2(16, 0), CustomMinimumSize = new Vector2(150, 60) };
+        var back = new Button { Text = "‹ Back", Position = new Vector2(16, 0), CustomMinimumSize = new Vector2(300, 120) };
         back.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Back(); App.ShowMenu(); };
         top.AddChild(back);
-        var hdr = new Label { Text = App.Cfg.Arc.Name, Position = new Vector2(186, 16) };
-        hdr.AddThemeFontSizeOverride("font_size", 20);
+        var hdr = new Label { Text = App.Cfg.Arc.Name, Position = new Vector2(332, 16) };
+        hdr.AddThemeFontSizeOverride("font_size", 40);
         top.AddChild(hdr);
 
         _ascRow = new HBoxContainer { AnchorLeft = 0.5f, AnchorRight = 0.5f, OffsetTop = 90, OffsetLeft = -220, OffsetRight = 220, Alignment = BoxContainer.AlignmentMode.Center };
@@ -70,16 +70,16 @@ public sealed partial class StarMapScreen : CanvasLayer
         int max = p.AscensionMax;
         if (max <= 0) return;
         if (s.AscensionTier > max) s.AscensionTier = max;
-        var minus = new Button { Text = "−", CustomMinimumSize = new Vector2(64, 56) };
-        minus.AddThemeFontSizeOverride("font_size", 24);
+        var minus = new Button { Text = "−", CustomMinimumSize = new Vector2(128, 112) };
+        minus.AddThemeFontSizeOverride("font_size", 48);
         minus.Pressed += () => { s.AscensionTier = Mathf.Max(0, s.AscensionTier - 1); s.Save(); RebuildAsc(); };
         _ascRow.AddChild(minus);
         string nm = s.AscensionTier == 0 ? "off" : App.Cfg.Ascension.Find(a => a.Tier == s.AscensionTier)?.Name ?? "";
         var lbl = new Label { Text = $"  Ascension {s.AscensionTier}/{max} · {nm}  " };
-        lbl.AddThemeFontSizeOverride("font_size", 16);
+        lbl.AddThemeFontSizeOverride("font_size", 32);
         _ascRow.AddChild(lbl);
-        var plus = new Button { Text = "+", CustomMinimumSize = new Vector2(64, 56) };
-        plus.AddThemeFontSizeOverride("font_size", 24);
+        var plus = new Button { Text = "+", CustomMinimumSize = new Vector2(128, 112) };
+        plus.AddThemeFontSizeOverride("font_size", 48);
         plus.Pressed += () => { s.AscensionTier = Mathf.Min(max, s.AscensionTier + 1); s.Save(); RebuildAsc(); };
         _ascRow.AddChild(plus);
     }

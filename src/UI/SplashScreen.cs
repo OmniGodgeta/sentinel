@@ -53,7 +53,7 @@ public sealed partial class SplashScreen : CanvasLayer
             OffsetTop = 88, HorizontalAlignment = HorizontalAlignment.Center,
             Modulate = new Color(1, 1, 1, 0.4f),
         };
-        _checking.AddThemeFontSizeOverride("font_size", 13);
+        _checking.AddThemeFontSizeOverride("font_size", 26);
         AddChild(_checking);
 
         _fade = new ColorRect { Color = new Color(0.01f, 0.012f, 0.03f, 0f), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -122,7 +122,7 @@ public sealed partial class SplashScreen : CanvasLayer
 
         var h = new Label { Text = "UPDATE REQUIRED", HorizontalAlignment = HorizontalAlignment.Center };
         h.AddThemeFontOverride("font", UiTheme.Display);
-        h.AddThemeFontSizeOverride("font_size", 24);
+        h.AddThemeFontSizeOverride("font_size", 48);
         h.AddThemeColorOverride("font_color", new Color(1f, 0.6f, 0.4f));
         col.AddChild(h);
 
@@ -133,11 +133,11 @@ public sealed partial class SplashScreen : CanvasLayer
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = new Color(1, 1, 1, 0.82f),
         };
-        msg.AddThemeFontSizeOverride("font_size", 15);
+        msg.AddThemeFontSizeOverride("font_size", 30);
         col.AddChild(msg);
 
-        var dl = new Button { Text = "⬇   DOWNLOAD UPDATE", CustomMinimumSize = new Vector2(0, 64) };
-        dl.AddThemeFontSizeOverride("font_size", 19);
+        var dl = new Button { Text = "⬇   DOWNLOAD UPDATE", CustomMinimumSize = new Vector2(0, 128) };
+        dl.AddThemeFontSizeOverride("font_size", 38);
         UiTheme.StylePrimary(dl);
         dl.Pressed += () => OS.ShellOpen(url);
         col.AddChild(dl);
@@ -147,7 +147,7 @@ public sealed partial class SplashScreen : CanvasLayer
             Text = "install the new APK, then reopen Beyond",
             HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f),
         };
-        hint.AddThemeFontSizeOverride("font_size", 12);
+        hint.AddThemeFontSizeOverride("font_size", 24);
         col.AddChild(hint);
     }
 
@@ -160,7 +160,7 @@ public sealed partial class SplashScreen : CanvasLayer
             OffsetTop = dy, Modulate = new Color(1, 1, 1, 0),
         };
         l.AddThemeFontOverride("font", UiTheme.Display);
-        l.AddThemeFontSizeOverride("font_size", 76);
+        l.AddThemeFontSizeOverride("font_size", 152);
         l.AddThemeColorOverride("font_color", col);
         return l;
     }

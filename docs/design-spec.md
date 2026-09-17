@@ -86,18 +86,18 @@ Hero level is **persistent across runs**, not per-match. It levels from mission 
 1. **Research tree** — permanent, account-wide, never resets. Passive boosts plus ability unlocks.
 2. **Commander level** — XP from every battle, win or loss. Slow and steady. Unlocks slots, tree tiers, and content.
 3. **Hero level (cap 20)** — persistent. Stats plus the milestone unlocks above.
-4. **Sentinel abilities (12)** — each levels independently via Sentinel Cores. Equip limit forces real loadout choices.
+4. **Sentinel abilities (11)** — each levels independently via Sentinel Cores. Equip limit forces real loadout choices.
 5. **In-run temporary boosts** — card draft between waves plus drops during waves. Resets each run. This is the only non-permanent layer.
 
 ---
 
-## 6. The 12 Sentinel Abilities
+## 6. The 11 Sentinel Abilities
 
 ### Shared rules
 
-- All 12 unlock through the research tree; each levels independently via Sentinel Cores, earned every run, win or lose
-- **Equip 3–5 of 12** depending on hero level (see milestones above)
-- All are **tap-to-cast or tap-then-drag-a-reticle**. Nothing needs reflexes, so all 12 remain usable at 4x. Casts queue to the next sim tick.
+- All 11 unlock through the research tree; each levels independently via Sentinel Cores, earned every run, win or lose
+- **Equip 3–5 of 11** depending on hero level (see milestones above)
+- All are **tap-to-cast or tap-then-drag-a-reticle**. Nothing needs reflexes, so all 11 remain usable at 4x. Casts queue to the next sim tick.
 - Levels 1–20. Each level improves numbers.
 - **Levels 5, 10, 15 and 20 grant a branching choice** between two mutually exclusive modifiers, so two players with the same maxed ability play differently
 - Global soft rule: no more than one panic button off cooldown at a time. Tune cooldowns so a loadout has rhythm rather than constant spam.
@@ -108,59 +108,55 @@ Hero level is **persistent across runs**, not per-match. It levels from mission 
 *Scales:* damage, duration, pierce. *CD ~35s*
 *Branches:* longer burn / splits into two thinner beams
 
-**2. Kinetic Barrage** — Railgun slugs saturate a chosen arc sector of the orbit. The wave-clear tool.
-*Scales:* slug count, arc width, damage. *CD ~25s*
-*Branches:* wider arc / armor-shredding slugs
-
-**3. Nova Pulse** — Shockwave expands from the planet in all directions: damage plus knockback. Untargeted, instant, the "about to be overrun" button.
+**2. Nova Pulse** — Shockwave expands from the planet in all directions: damage plus knockback. Untargeted, instant, the "about to be overrun" button.
 *Scales:* damage, radius, knockback. *CD ~50s*
 *Branches:* second delayed pulse / leaves a burning ring
 
 ### Control
 
-**4. Temporal Well** — Localized slow field. Deliberately *not* a global time-slow, which would fight the speed controls.
+**3. Temporal Well** — Localized slow field. Deliberately *not* a global time-slow, which would fight the speed controls.
 *Scales:* slow %, radius, duration. *CD ~40s*
 *Branches:* near-stop in a tiny radius / mild slow over a huge one
 
-**5. Gravity Snare** — Drags enemies into a single clump and holds them. Setup tool; pairs with Barrage or Nova.
+**4. Gravity Snare** — Drags enemies into a single clump and holds them. Setup tool; pairs with Orbital Lance or Nova Pulse.
 *Scales:* pull strength, hold duration, radius. *CD ~35s*
 *Branches:* crush damage over time / longer hold
 
-**6. Ion Cascade** — Chain EMP. Strips enemy shields, disables enemy specials, stuns mechanical types.
+**5. Ion Cascade** — Chain EMP. Strips enemy shields, disables enemy specials, stuns mechanical types.
 *Scales:* chain jumps, stun duration, shield strip. *CD ~30s*
 *Branches:* more jumps / permanent shield disable on hit
 
 ### Defensive
 
-**7. Aegis Barrier** — Planetary shield absorbs a flat damage pool until spent or expired.
+**6. Aegis Barrier** — Planetary shield absorbs a flat damage pool until spent or expired.
 *Scales:* absorb pool, duration. *CD ~45s*
 *Branches:* reflects a % of absorbed damage / overflow converts to hero shield
 
-**8. Point Defense Grid** — Auto-intercepts incoming enemy projectiles. Hard counter to ranged and artillery waves.
+**7. Point Defense Grid** — Auto-intercepts incoming enemy projectiles. Hard counter to ranged and artillery waves.
 *Scales:* intercept rate, duration, coverage arc. *CD ~40s*
 *Branches:* also intercepts missiles and bombers / intercepts trigger small explosions
 
-**9. Repair Swarm** — Nanite drones heal planet integrity and hero hull over time.
+**8. Repair Swarm** — Nanite drones heal planet integrity and hero hull over time.
 *Scales:* heal rate, duration, planet/hero split. *CD ~60s*
 *Branches:* burst heal instead of over-time / lingering damage reduction after it ends
 
 ### Hero & Utility
 
-**10. Overdrive Protocol** — Buffs the battleship: missile reload, damage, movement speed. Drops the missile cooldown from 15s to roughly 6s for its duration, turning the hero into the main gun.
+**9. Overdrive Protocol** — Buffs the battleship: missile reload, damage, movement speed. Drops the missile cooldown from 15s to roughly 6s for its duration, turning the hero into the main gun.
 *Scales:* buff %, duration. *CD ~45s*
 *Branches:* huge damage but hero takes extra damage / moderate buff plus a damage shield
 
-**11. Salvage Beacon** — Field where enemy kills drop bonus research currency and XP. The farming pick.
+**10. Salvage Beacon** — Field where enemy kills drop bonus research currency and XP. The farming pick.
 *Scales:* bonus %, radius, duration. *CD ~55s*
 *Branches:* global bonus at a lower rate / stacks higher the more kills happen inside it
 
-**12. Sentinel Deployment** — Summons autonomous drone escorts that orbit the hero and fight independently. The one ability that keeps working while the player is busy repositioning.
+**11. Sentinel Deployment** — Summons autonomous drone escorts that orbit the hero and fight independently. The one ability that keeps working while the player is busy repositioning.
 *Scales:* drone count, HP, damage, duration. *CD ~50s*
 *Branches:* fewer but tougher drones / a swarm of fragile ones
 
 ### Unlock order
 
-Open with three — Kinetic Barrage, Aegis Barrier, Overdrive Protocol — so the first loadout already covers offense, defense, and hero. Then roughly one new ability every 2–3 research tiers. Salvage Beacon unlocks mid-game, once farming is a real strategy rather than the only one.
+Open with two — Aegis Barrier, Overdrive Protocol — so the first loadout already covers defense and hero; the first offense pick (Orbital Lance) follows at T3. Then roughly one new ability every 2–3 research tiers. Salvage Beacon unlocks mid-game, once farming is a real strategy rather than the only one.
 
 ---
 
@@ -324,13 +320,13 @@ Splitting Alloy out means late-tier progress requires *beating* content, not jus
 
 *Note: this branch and the hero's own level 1–20 are separate systems. Levels give milestone unlocks; research gives the tuning.*
 
-### Branch D — Sentinel Protocols (the 12 abilities)
+### Branch D — Sentinel Protocols (the 11 abilities)
 
 *Opens at Commander 15. This is the branch that unlocks abilities.*
 
 Structure it as a **hub**, not a line: the three starter abilities sit at T1, and each remaining ability is its own small unlock node hanging off the tier appropriate to its power.
 
-- **T1** — Kinetic Barrage, Aegis Barrier, Overdrive Protocol (all three, free at branch open) · Ability damage +5% (5 ranks)
+- **T1** — Aegis Barrier, Overdrive Protocol (both, free at branch open) · Ability damage +5% (5 ranks)
 - **T2** — Unlock **Repair Swarm** · Unlock **Ion Cascade** · All cooldowns −4% (5 ranks)
 - **T3** — Unlock **Orbital Lance** · Unlock **Gravity Snare** · Ability radius/duration +8% (4 ranks)
 - **T4** — Unlock **Nova Pulse** · Unlock **Point Defense Grid** · Unlock **Salvage Beacon** · Abilities start each run off cooldown
@@ -445,7 +441,7 @@ Never introduce more than one new enemy type per mission, and always debut a new
 
 Sci-fi is the reason to build this rather than a generic TD, so commit to it.
 
-**Frame:** the planet is a seed-vault world — the last archive of a civilization that already lost. The player commands a recovered pre-collapse science battleship, the **Sentinel** class, whose original crew is long dead and whose systems are only partially understood. The **Sentinel Protocols** (the 12 abilities) are recovered fragments of its original software; researching them is literally recovering lost capability. That framing makes the progression system *diegetic* — the player isn't buying upgrades, they're restoring a ship.
+**Frame:** the planet is a seed-vault world — the last archive of a civilization that already lost. The player commands a recovered pre-collapse science battleship, the **Sentinel** class, whose original crew is long dead and whose systems are only partially understood. The **Sentinel Protocols** (the 11 abilities) are recovered fragments of its original software; researching them is literally recovering lost capability. That framing makes the progression system *diegetic* — the player isn't buying upgrades, they're restoring a ship.
 
 **The enemy** shouldn't be generic aliens. Make them the **Harvest** — self-replicating machines built by the same lost civilization, still faithfully executing a resource-extraction order nobody remembers issuing. That gives a reason for the roster to look industrial rather than organic, and it makes the Carrier and the Warden make sense.
 

@@ -20,7 +20,7 @@ public sealed partial class AbilityButton : Control
     public void Configure(AbilityDef def)
     {
         _def = def;
-        CustomMinimumSize = new Vector2(136, 146);
+        CustomMinimumSize = new Vector2(204, 219);
         TooltipText = $"{def.Name}\n{def.Role}";
     }
 
@@ -47,7 +47,11 @@ public sealed partial class AbilityButton : Control
         if (_def == null) return;
         var sz = Size;
         var role = RoleColor(_def.Role);
-        float ch = 9f;                                   // corner chamfer
+        // every fixed-pixel constant below was tuned for the original 136x146 card; scale
+        // them all by k so the (now 272x292, 2x) card doesn't go thin/undersized against
+        // its own much bigger frame.
+        float k = sz.X / 136f;
+        float ch = 9f * k;                                   // corner chamfer
         var frame = new Rect2(1, 1, sz.X - 2, sz.Y - 2);
 
         // ---- outer glow when ready ----
@@ -55,21 +59,21 @@ public sealed partial class AbilityButton : Control
         {
             float pulse = 0.5f + 0.5f * Mathf.Sin(_t * 4.5f);
             for (int i = 1; i <= 3; i++)
-                CutOutline(Grow(frame, i * 2.5f), ch + i * 2.5f, new Color(role, (0.18f + 0.16f * pulse) / i), 2f);
+                CutOutline(Grow(frame, i * 2.5f * k), ch + i * 2.5f * k, new Color(role, (0.18f + 0.16f * pulse) / i), 2f * k);
         }
 
         // ---- body ----
         CutFill(frame, ch, new Color(0.06f, 0.07f, 0.10f, 0.96f));
         // faint role tint wash, stronger while ready
-        CutFill(Shrink(frame, 3f), ch - 2f, new Color(role, _ready ? 0.12f : 0.05f));
+        CutFill(Shrink(frame, 3f * k), ch - 2f * k, new Color(role, _ready ? 0.12f : 0.05f));
         // top accent header
-        DrawRect(new Rect2(frame.Position.X + ch, frame.Position.Y + 3f, frame.Size.X - ch * 2f, 3f), new Color(role, _ready ? 0.95f : 0.5f));
+        DrawRect(new Rect2(frame.Position.X + ch, frame.Position.Y + 3f * k, frame.Size.X - ch * 2f, 3f * k), new Color(role, _ready ? 0.95f : 0.5f));
         // frame edge
-        CutOutline(frame, ch, new Color(role, _ready ? 0.9f : 0.45f), 2f);
+        CutOutline(frame, ch, new Color(role, _ready ? 0.9f : 0.45f), 2f * k);
 
         // ---- corner brackets ----
         var bcol = new Color(role, _ready ? 0.95f : 0.55f);
-        DrawCornerBrackets(Shrink(frame, 4f), 10f, bcol);
+        DrawCornerBrackets(Shrink(frame, 4f * k), 10f * k, bcol);
 
         // ---- glyph ----
         var gc = sz * new Vector2(0.5f, 0.44f);
@@ -80,27 +84,27 @@ public sealed partial class AbilityButton : Control
         {
             float frac = Mathf.Clamp(_cd / _cdMax, 0f, 1f);
             DrawRect(new Rect2(frame.Position, new Vector2(frame.Size.X, frame.Size.Y * frac)), new Color(0.02f, 0.03f, 0.05f, 0.74f));
-            DrawRect(new Rect2(frame.Position.X, frame.Position.Y + frame.Size.Y * frac - 2f, frame.Size.X, 2f), new Color(role, 0.7f));
-            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 8f), Mathf.CeilToInt(_cd).ToString(),
-                       HorizontalAlignment.Center, sz.X, 25, Colors.White);
+            DrawRect(new Rect2(frame.Position.X, frame.Position.Y + frame.Size.Y * frac - 2f * k, frame.Size.X, 2f * k), new Color(role, 0.7f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 8f * k), Mathf.CeilToInt(_cd).ToString(),
+                       HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(25 * k), Colors.White);
         }
         else if (_active > 0.01f)
         {
             float m = 0.4f + 0.6f * Mathf.Abs(Mathf.Sin(_t * 5f));
-            CutOutline(Shrink(frame, 2f), ch - 1f, new Color(role, m), 2.5f);
+            CutOutline(Shrink(frame, 2f * k), ch - 1f * k, new Color(role, m), 2.5f * k);
         }
 
         // ---- armed (reticle pending) ----
         if (_armed > 0f)
         {
             float g = 0.45f + 0.55f * Mathf.Abs(Mathf.Sin(_t * 7f));
-            DrawCornerBrackets(Grow(frame, 3f), 13f, new Color(1f, 0.92f, 0.35f, g));
+            DrawCornerBrackets(Grow(frame, 3f * k), 13f * k, new Color(1f, 0.92f, 0.35f, g));
         }
 
         // ---- name plate ----
-        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 22f, frame.Size.X - 6f, 19f), new Color(0f, 0f, 0f, 0.5f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 7f), _def.Name.ToUpperInvariant(),
-                   HorizontalAlignment.Center, sz.X, 14, new Color(role.Lightened(0.3f), 0.9f));
+        DrawRect(new Rect2(frame.Position.X + 3f * k, frame.Position.Y + frame.Size.Y - 22f * k, frame.Size.X - 6f * k, 19f * k), new Color(0f, 0f, 0f, 0.5f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 7f * k), _def.Name.ToUpperInvariant(),
+                   HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(14 * k), new Color(role.Lightened(0.3f), 0.9f));
     }
 
     // ---- chamfered-rect helpers (the card frame shape) ----
@@ -127,11 +131,12 @@ public sealed partial class AbilityButton : Control
 
     private void DrawCornerBrackets(Rect2 r, float len, Color col)
     {
+        float bw = 2f * (Size.X / 136f);
         Vector2 tl = r.Position, tr = new(r.End.X, r.Position.Y), br = r.End, bl = new(r.Position.X, r.End.Y);
         void L(Vector2 corner, Vector2 a, Vector2 b)
         {
-            DrawLine(corner, corner + a * len, col, 2f);
-            DrawLine(corner, corner + b * len, col, 2f);
+            DrawLine(corner, corner + a * len, col, bw);
+            DrawLine(corner, corner + b * len, col, bw);
         }
         L(tl, Vector2.Right, Vector2.Down);
         L(tr, Vector2.Left, Vector2.Down);
@@ -141,55 +146,56 @@ public sealed partial class AbilityButton : Control
 
     private void DrawIcon(Vector2 c, float s, Color col)
     {
+        float k = Size.X / 136f;
         switch (_def!.Kind)
         {
             case "barrage":
                 for (int i = -1; i <= 1; i++)
-                    DrawLine(c + new Vector2(i * s * 0.55f, -s), c + new Vector2(i * s * 0.55f, s), col, 3f);
+                    DrawLine(c + new Vector2(i * s * 0.55f, -s), c + new Vector2(i * s * 0.55f, s), col, 3f * k);
                 break;
             case "lance":
-                DrawLine(c + new Vector2(-s, s), c + new Vector2(s, -s), col, 4f);
-                DrawCircle(c + new Vector2(s, -s), 3f, col);
+                DrawLine(c + new Vector2(-s, s), c + new Vector2(s, -s), col, 4f * k);
+                DrawCircle(c + new Vector2(s, -s), 3f * k, col);
                 break;
             case "nova":
-                DrawArc(c, s, 0, Mathf.Tau, 24, col, 3f);
-                DrawArc(c, s * 0.5f, 0, Mathf.Tau, 16, col, 2f);
+                DrawArc(c, s, 0, Mathf.Tau, 24, col, 3f * k);
+                DrawArc(c, s * 0.5f, 0, Mathf.Tau, 16, col, 2f * k);
                 break;
             case "slow":
-                DrawArc(c, s, 0, Mathf.Tau, 24, col, 3f);
-                DrawLine(c, c + new Vector2(0, -s * 0.8f), col, 2f);
-                DrawLine(c, c + new Vector2(s * 0.6f, 0), col, 2f);
+                DrawArc(c, s, 0, Mathf.Tau, 24, col, 3f * k);
+                DrawLine(c, c + new Vector2(0, -s * 0.8f), col, 2f * k);
+                DrawLine(c, c + new Vector2(s * 0.6f, 0), col, 2f * k);
                 break;
             case "snare":
                 for (int i = 0; i < 6; i++)
-                    DrawLine(c + Vector2.FromAngle(i * 1.05f) * s, c, col, 2f);
+                    DrawLine(c + Vector2.FromAngle(i * 1.05f) * s, c, col, 2f * k);
                 break;
             case "ion":
-                DrawPolyline(new[] { c + new Vector2(-s, -s), c + new Vector2(-s * 0.2f, 0), c + new Vector2(s * 0.2f, -s * 0.2f), c + new Vector2(s, s) }, col, 3f);
+                DrawPolyline(new[] { c + new Vector2(-s, -s), c + new Vector2(-s * 0.2f, 0), c + new Vector2(s * 0.2f, -s * 0.2f), c + new Vector2(s, s) }, col, 3f * k);
                 break;
             case "barrier":
-                DrawArc(c + new Vector2(0, s * 0.6f), s, Mathf.Pi, Mathf.Tau, 20, col, 4f);
+                DrawArc(c + new Vector2(0, s * 0.6f), s, Mathf.Pi, Mathf.Tau, 20, col, 4f * k);
                 break;
             case "pointdef":
-                DrawArc(c, s, 0, Mathf.Tau, 24, col, 2f);
+                DrawArc(c, s, 0, Mathf.Tau, 24, col, 2f * k);
                 for (int i = 0; i < 4; i++)
-                    DrawLine(c + Vector2.FromAngle(i * 1.57f) * s * 0.4f, c + Vector2.FromAngle(i * 1.57f) * s, col, 2f);
+                    DrawLine(c + Vector2.FromAngle(i * 1.57f) * s * 0.4f, c + Vector2.FromAngle(i * 1.57f) * s, col, 2f * k);
                 break;
             case "repair":
-                DrawLine(c + new Vector2(-s, 0), c + new Vector2(s, 0), col, 3f);
-                DrawLine(c + new Vector2(0, -s), c + new Vector2(0, s), col, 3f);
+                DrawLine(c + new Vector2(-s, 0), c + new Vector2(s, 0), col, 3f * k);
+                DrawLine(c + new Vector2(0, -s), c + new Vector2(0, s), col, 3f * k);
                 break;
             case "overdrive":
                 DrawColoredPolygon(new[] { c + new Vector2(-s * 0.3f, -s), c + new Vector2(s * 0.4f, -s * 0.1f), c + new Vector2(-s * 0.1f, 0), c + new Vector2(s * 0.3f, s), c + new Vector2(-s * 0.4f, 0f) }, col);
                 break;
             case "salvage":
-                DrawArc(c, s, 0, Mathf.Tau, 8, col, 2f);
+                DrawArc(c, s, 0, Mathf.Tau, 8, col, 2f * k);
                 DrawCircle(c, s * 0.35f, col);
                 break;
             case "drones":
                 DrawCircle(c, s * 0.35f, col);
                 for (int i = 0; i < 3; i++)
-                    DrawCircle(c + Vector2.FromAngle(i * 2.1f) * s, 3f, col);
+                    DrawCircle(c + Vector2.FromAngle(i * 2.1f) * s, 3f * k, col);
                 break;
             default:
                 DrawCircle(c, s * 0.6f, col);

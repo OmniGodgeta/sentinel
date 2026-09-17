@@ -9,7 +9,7 @@
     { "id": "missile_barrage", "name": "Missile Barrage", "kind": "missiles", "accent": "#f0821e",
       "max_level": 10, "cooldown": 14.95, "cooldown_per_level": -0.92, "min_cooldown": 5.18,
       "damage": 48, "damage_per_level": 20, "count": 6, "count_per_level": 0.8,
-      "splash": 66, "speed": 330,
+      "splash": 66, "speed": 230,
       "text": "Saturation missile salvo. Unleash hell — leave nothing standing." },
 
     { "id": "ion_cannon", "name": "Ion Cannon", "kind": "ion", "accent": "#2ea6f2",

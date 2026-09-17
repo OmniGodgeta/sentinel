@@ -76,10 +76,35 @@ SAFE_REPLACEMENTS = {
     # that a 1.6s sample is fine; do NOT reuse this length for battery_launch
     # (planet battery fires roughly every second, would overlap into mush).
     "missile_launch": (43, "未来主义榴弹发射器"),   # "futuristic grenade launcher"
-    # sentinel_shot backs every orbital weapon (cannon/laser/lightning/etc,
-    # cooldowns 0.55s-8s) — already a natural ~2.3s one-shot cannon report,
+    # sentinel_shot backs every orbital weapon except the ones broken out below
+    # (cooldowns 0.55s-8s) — already a natural ~2.3s one-shot cannon report,
     # no trim needed.
     "sentinel_shot": (57, "炮击-mcx200705112"),
+    # added 2026-09-16: giving PDTD's real "Laser" sentinel its own distinct
+    # sound instead of the generic sentinel_shot cannon report. Its min cooldown
+    # is 1.15s, comfortably above this clip's 1.95s length isn't quite true —
+    # it CAN outrun the clip at high level, same overlap tradeoff already
+    # accepted for sentinel_shot's reuse across weapons; the previous "borderline"
+    # note above was about reusing it as the universal one-shot, not as one
+    # weapon's own distinct sound, so it's fine here.
+    "orbital_laser_fire": (34, "laser-fire"),
+    # space_bomb and waterdrop were both silently broken (see docs/ROADMAP.md — a
+    # platform-relative range-capped target search meant they often did nothing at
+    # all) and got fixed + given their own distinct sound instead of sentinel_shot.
+    "space_bomb_fire": (70, "炮击-mcx200705113"),   # a heavier alternate cannon-thud take
+    "waterdrop_fire": (23, "咻的一声"),             # a quick "whoosh" bolt-launch
+    "ball_lightning_fire": (10, "electric-shock"),  # trimmed below — 9.7s raw library clip
+    "radiation_line_fire": (11, "radiation-213840"),  # trimmed below — 3.55s raw library clip
+    # "same for all sentinels" (2026-09-16) — giving the last two orbital weapons that
+    # were still on the generic sentinel_shot catch-all their own distinct sound too.
+    # radiation_zone deliberately reuses radiation_line_fire rather than mining a less
+    # fitting sample — both are radiation-type weapons, sharing the sound is thematically
+    # correct, not a shortcut.
+    "orbital_lightning_fire": (62, "thunder-sound-375727"),  # trimmed below — 60s raw library clip
+    "beam_fire": (47, "太空武器激光枪激光射击"),  # trimmed below — 3.6s raw library clip
+    # force_field intentionally has no separate extraction — it reuses the existing
+    # "shield" key (already pulled from sample 74) since Force Field is thematically a
+    # defensive field effect, same reasoning as radiation_zone sharing radiation_line's.
 }
 
 # explosion / explosion_b fire on EVERY regular enemy kill (AudioManager minGap
@@ -94,6 +119,16 @@ TRIM = {
     # very start, same heuristic as the explosion trims (no way to confirm the
     # exact onset without listening; a 1.6s prefix + short fade-out is a safe bet).
     "missile_launch": (0.0, 1.6, 1.3, 0.3, 0.0),
+    # electric-shock-97989 is a 9.7s library clip — same "transient's at the start"
+    # heuristic, trimmed to a punchy ~1.2s crackle for shock_orb's min ~3.2s cooldown.
+    "ball_lightning_fire": (0.0, 1.2, 0.9, 0.3, 0.0),
+    # radiation-213840 is a 3.55s library clip — trimmed to a ~1.4s activation hum.
+    "radiation_line_fire": (0.0, 1.4, 1.1, 0.3, 0.0),
+    # thunder-sound-375727 is a 60s raw ambience recording — the first crack is right at
+    # the start, trimmed to a ~1s punchy zap instead of the long rolling-thunder tail.
+    "orbital_lightning_fire": (0.0, 1.0, 0.75, 0.25, 0.0),
+    # 太空武器激光枪激光射击 is a 3.6s library clip — trimmed to a ~1.5s laser-fire burst.
+    "beam_fire": (0.0, 1.5, 1.2, 0.3, 0.0),
 }
 # Considered but NOT used (too long to safely reuse without FMOD event trim
 # metadata — see the module docstring): laser-fire (34, 1.9s — borderline, left

@@ -22,7 +22,7 @@ public sealed partial class HeroWeaponButton : Control
     public void Configure(string name, string kind, Color accent, bool alwaysOn)
     {
         _name = name; _kind = kind; _accent = accent; _alwaysOn = alwaysOn;
-        CustomMinimumSize = new Vector2(136, 136);
+        CustomMinimumSize = new Vector2(204, 204);
         TooltipText = name;
     }
 
@@ -47,88 +47,93 @@ public sealed partial class HeroWeaponButton : Control
     {
         var sz = Size;
         bool ready = _cd <= 0.01f;
-        float ch = 11f;
+        // every fixed-pixel constant below was tuned for the original 136px card; scale them
+        // all by k so the card can grow (it's now 272px, 2x) without every border/font/chip
+        // going thin and lost against the much bigger frame.
+        float k = sz.X / 136f;
+        float ch = 11f * k;
         var frame = new Rect2(1, 1, sz.X - 2, sz.Y - 2);
 
         if (ready && !_alwaysOn)
         {
             float pulse = 0.5f + 0.5f * Mathf.Sin(_t * 4.5f);
             for (int i = 1; i <= 3; i++)
-                CutOutline(Grow(frame, i * 2.5f), ch + i * 2.5f, new Color(_accent, (0.16f + 0.14f * pulse) / i), 2f);
+                CutOutline(Grow(frame, i * 2.5f * k), ch + i * 2.5f * k, new Color(_accent, (0.16f + 0.14f * pulse) / i), 2f * k);
         }
 
         CutFill(frame, ch, new Color(0.06f, 0.07f, 0.10f, 0.96f));
-        CutFill(Shrink(frame, 3f), ch - 2f, new Color(_accent, _alwaysOn ? 0.16f : (ready ? 0.12f : 0.05f)));
-        DrawRect(new Rect2(frame.Position.X + ch, frame.Position.Y + 3f, frame.Size.X - ch * 2f, 3f),
+        CutFill(Shrink(frame, 3f * k), ch - 2f * k, new Color(_accent, _alwaysOn ? 0.16f : (ready ? 0.12f : 0.05f)));
+        DrawRect(new Rect2(frame.Position.X + ch, frame.Position.Y + 3f * k, frame.Size.X - ch * 2f, 3f * k),
                  new Color(_accent, _alwaysOn ? 0.9f : (ready ? 0.95f : 0.5f)));
-        CutOutline(frame, ch, new Color(_accent, _alwaysOn ? 0.85f : (ready ? 0.9f : 0.45f)), 2f);
-        DrawCornerBrackets(Shrink(frame, 4f), 10f, new Color(_accent, _alwaysOn ? 0.8f : (ready ? 0.95f : 0.55f)));
+        CutOutline(frame, ch, new Color(_accent, _alwaysOn ? 0.85f : (ready ? 0.9f : 0.45f)), 2f * k);
+        DrawCornerBrackets(Shrink(frame, 4f * k), 10f * k, new Color(_accent, _alwaysOn ? 0.8f : (ready ? 0.95f : 0.55f)));
 
         var gc = sz * new Vector2(0.5f, 0.4f);
         DrawIcon(gc, Mathf.Min(sz.X, sz.Y) * 0.22f, new Color(_accent.Lightened(0.15f), _alwaysOn || ready ? 1f : 0.7f));
 
         // level chip, top-left
-        DrawRect(new Rect2(frame.Position.X + 5f, frame.Position.Y + 5f, 34f, 20f), new Color(0, 0, 0, 0.55f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(frame.Position.X + 9f, frame.Position.Y + 20f), $"L{_level}",
-                   HorizontalAlignment.Left, 34f, 16, new Color(1, 1, 1, 0.85f));
+        DrawRect(new Rect2(frame.Position.X + 5f * k, frame.Position.Y + 5f * k, 34f * k, 20f * k), new Color(0, 0, 0, 0.55f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(frame.Position.X + 9f * k, frame.Position.Y + 20f * k), $"L{_level}",
+                   HorizontalAlignment.Left, 34f * k, Mathf.RoundToInt(16 * k), new Color(1, 1, 1, 0.85f));
 
         if (_alwaysOn)
         {
-            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 30f), "ON",
-                       HorizontalAlignment.Center, sz.X, 18, new Color(0.6f, 1f, 0.7f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 30f * k), "ON",
+                       HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(18 * k), new Color(0.6f, 1f, 0.7f));
         }
         else if (!ready)
         {
             // dark cooldown curtain from the top, plus a thin cooldown LINE right under it
             float frac = Mathf.Clamp(_cd / _cdMax, 0f, 1f);
-            float curtainH = (frame.Size.Y - 20f) * frac;
+            float curtainH = (frame.Size.Y - 20f * k) * frac;
             DrawRect(new Rect2(frame.Position, new Vector2(frame.Size.X, curtainH)), new Color(0.02f, 0.03f, 0.05f, 0.76f));
-            DrawRect(new Rect2(frame.Position.X, frame.Position.Y + curtainH - 2f, frame.Size.X, 2f), new Color(_accent, 0.8f));
+            DrawRect(new Rect2(frame.Position.X, frame.Position.Y + curtainH - 2f * k, frame.Size.X, 2f * k), new Color(_accent, 0.8f));
             // the cooldown "line" — a thin bar just above the name plate
-            float lineY = frame.Position.Y + frame.Size.Y - 22f;
-            DrawRect(new Rect2(frame.Position.X + 4f, lineY, frame.Size.X - 8f, 4f), new Color(0, 0, 0, 0.5f));
-            DrawRect(new Rect2(frame.Position.X + 4f, lineY, (frame.Size.X - 8f) * (1f - frac), 4f), new Color(_accent, 0.95f));
-            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 32f), $"{_cd:0.0}s",
-                       HorizontalAlignment.Center, sz.X, 18, Colors.White);
+            float lineY = frame.Position.Y + frame.Size.Y - 22f * k;
+            DrawRect(new Rect2(frame.Position.X + 4f * k, lineY, frame.Size.X - 8f * k, 4f * k), new Color(0, 0, 0, 0.5f));
+            DrawRect(new Rect2(frame.Position.X + 4f * k, lineY, (frame.Size.X - 8f * k) * (1f - frac), 4f * k), new Color(_accent, 0.95f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(0, gc.Y + 32f * k), $"{_cd:0.0}s",
+                       HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(18 * k), Colors.White);
         }
         else
         {
-            float lineY = frame.Position.Y + frame.Size.Y - 22f;
-            DrawRect(new Rect2(frame.Position.X + 4f, lineY, frame.Size.X - 8f, 4f), new Color(_accent, 0.35f));
+            float lineY = frame.Position.Y + frame.Size.Y - 22f * k;
+            DrawRect(new Rect2(frame.Position.X + 4f * k, lineY, frame.Size.X - 8f * k, 4f * k), new Color(_accent, 0.35f));
             float m = 0.4f + 0.6f * Mathf.Abs(Mathf.Sin(_t * 5f));
-            CutOutline(Shrink(frame, 2f), ch - 1f, new Color(_accent, m * 0.6f), 2f);
+            CutOutline(Shrink(frame, 2f * k), ch - 1f * k, new Color(_accent, m * 0.6f), 2f * k);
         }
 
-        DrawRect(new Rect2(frame.Position.X + 3f, frame.Position.Y + frame.Size.Y - 20f, frame.Size.X - 6f, 17f), new Color(0f, 0f, 0f, 0.5f));
-        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 6f), _name.ToUpperInvariant(),
-                   HorizontalAlignment.Center, sz.X, 13, new Color(_accent.Lightened(0.3f), 0.9f));
+        DrawRect(new Rect2(frame.Position.X + 3f * k, frame.Position.Y + frame.Size.Y - 20f * k, frame.Size.X - 6f * k, 17f * k), new Color(0f, 0f, 0f, 0.5f));
+        DrawString(ThemeDB.FallbackFont, new Vector2(0, sz.Y - 6f * k), _name.ToUpperInvariant(),
+                   HorizontalAlignment.Center, sz.X, Mathf.RoundToInt(13 * k), new Color(_accent.Lightened(0.3f), 0.9f));
     }
 
     private void DrawIcon(Vector2 c, float s, Color col)
     {
+        float k = Size.X / 136f;
         switch (_kind)
         {
             case "laser":
                 for (int i = -1; i <= 1; i++)
-                    DrawLine(c + new Vector2(i * s * 0.5f, s), c + new Vector2(i * s * 0.2f, -s), col, 3f);
+                    DrawLine(c + new Vector2(i * s * 0.5f, s), c + new Vector2(i * s * 0.2f, -s), col, 3f * k);
                 break;
             case "missiles":
                 for (int i = -1; i <= 1; i++)
-                    DrawLine(c + new Vector2(i * s * 0.6f, s * 0.7f), c + new Vector2(i * s * 0.6f, -s), col, 3f);
-                DrawArc(c, s * 0.3f, 0, Mathf.Tau, 10, col, 2f);
+                    DrawLine(c + new Vector2(i * s * 0.6f, s * 0.7f), c + new Vector2(i * s * 0.6f, -s), col, 3f * k);
+                DrawArc(c, s * 0.3f, 0, Mathf.Tau, 10, col, 2f * k);
                 break;
             case "ion":
-                DrawPolyline(new[] { c + new Vector2(-s, -s), c + new Vector2(-s * 0.2f, 0), c + new Vector2(s * 0.2f, -s * 0.2f), c + new Vector2(s, s) }, col, 3f);
+                DrawPolyline(new[] { c + new Vector2(-s, -s), c + new Vector2(-s * 0.2f, 0), c + new Vector2(s * 0.2f, -s * 0.2f), c + new Vector2(s, s) }, col, 3f * k);
                 break;
             case "yamato":
                 DrawColoredPolygon(new[] { c + new Vector2(-s * 0.5f, s), c + new Vector2(s * 0.5f, s), c + new Vector2(0, -s) }, col);
                 break;
             case "plasma":
-                DrawArc(c, s, 0, Mathf.Tau, 24, col, 3f);
-                DrawArc(c, s * 0.5f, 0, Mathf.Tau, 16, col, 2f);
+                DrawArc(c, s, 0, Mathf.Tau, 24, col, 3f * k);
+                DrawArc(c, s * 0.5f, 0, Mathf.Tau, 16, col, 2f * k);
                 break;
             case "shield":
-                DrawArc(c + new Vector2(0, s * 0.5f), s, Mathf.Pi, Mathf.Tau, 20, col, 4f);
+                DrawArc(c + new Vector2(0, s * 0.5f), s, Mathf.Pi, Mathf.Tau, 20, col, 4f * k);
                 break;
             default:
                 DrawCircle(c, s * 0.6f, col);
@@ -160,11 +165,12 @@ public sealed partial class HeroWeaponButton : Control
 
     private void DrawCornerBrackets(Rect2 r, float len, Color col)
     {
+        float bw = 2f * (Size.X / 136f);
         Vector2 tl = r.Position, tr = new(r.End.X, r.Position.Y), br = r.End, bl = new(r.Position.X, r.End.Y);
         void L(Vector2 corner, Vector2 a, Vector2 b)
         {
-            DrawLine(corner, corner + a * len, col, 2f);
-            DrawLine(corner, corner + b * len, col, 2f);
+            DrawLine(corner, corner + a * len, col, bw);
+            DrawLine(corner, corner + b * len, col, bw);
         }
         L(tl, Vector2.Right, Vector2.Down);
         L(tr, Vector2.Left, Vector2.Down);

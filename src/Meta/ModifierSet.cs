@@ -53,6 +53,17 @@ public sealed class ModifierSet
     public System.Collections.Generic.Dictionary<string, int> OrbitalMeta = new();
     public int OrbitalMetaLevel(string id) => OrbitalMeta.TryGetValue(id, out int v) ? v : 0;
 
+    // ---- orbital weapons: chip bonuses (the PDTD-named roster — Beam/Laser/Waterdrop/
+    // etc., `data/orbital_weapons.json`/`OrbitalWeapons.cs`). NOT the same thing as
+    // SentinelDamageMult/SentinelRateMult/SentinelCount above, despite the similar name —
+    // those feed the older, separate small-drone point-defense system in
+    // `PlanetDefenses.cs`'s `StepOrbitalSentinels`. Naming collision inherited from the
+    // codebase, not introduced here — kept the "OrbitalWeapon" prefix throughout so it's
+    // unambiguous which system a field affects.
+    public float OrbitalWeaponDamageMult = 1f;
+    public float OrbitalWeaponRateMult = 1f;      // >1 = faster (cooldowns divide by this)
+    public float OrbitalWeaponRadiusMult = 1f;    // AoE/beam/zone radius, where applicable
+
     // ---- planet shield: persistent, upgraded only outside battles ----
     public int PlanetShieldLevel = 0;
 
@@ -157,6 +168,10 @@ public sealed class ModifierSet
             case "sentinel_damage": SentinelDamageMult += v; break;
             case "sentinel_rate": SentinelRateMult += v; break;
             case "ability_slot": AbilitySlotBonus += (int)v; break;
+
+            case "orbital_weapon_damage": OrbitalWeaponDamageMult += v; break;
+            case "orbital_weapon_rate": OrbitalWeaponRateMult += v; break;
+            case "orbital_weapon_radius": OrbitalWeaponRadiusMult += v; break;
         }
     }
 }
