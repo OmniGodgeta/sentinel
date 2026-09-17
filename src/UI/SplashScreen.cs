@@ -139,7 +139,7 @@ public sealed partial class SplashScreen : CanvasLayer
         var dl = new Button { Text = "⬇   DOWNLOAD UPDATE", CustomMinimumSize = new Vector2(0, 90) };
         dl.AddThemeFontSizeOverride("font_size", 27);
         UiTheme.StylePrimary(dl);
-        dl.Pressed += () => OS.ShellOpen(url);
+        dl.Pressed += () => Sentinel.Meta.UpdateChecker.PromptInstall(this);
         col.AddChild(dl);
 
         var hint = new Label

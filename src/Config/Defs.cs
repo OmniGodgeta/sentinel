@@ -212,6 +212,25 @@ public sealed record ChipDef
     public float EffectPerTier { get; init; }
 }
 
+/// <summary>An in-run draft boost card (data/runcards.json) — a PDTD-style percentage
+/// buff or trade-off, offered alongside the weapon-level cards. <see cref="Requires"/>
+/// gates it on a weapon being active: an orbital weapon <c>Kind</c> or a hero weapon id.</summary>
+public sealed record RunCardDef
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string Text { get; init; } = "";
+    public string Accent { get; init; } = "#4fd6de";
+    public int Weight { get; init; } = 12;
+    public string Requires { get; init; } = "";
+    public System.Collections.Generic.Dictionary<string, float> Effects { get; init; } = new();
+}
+
+public sealed record RunCardsDb
+{
+    public System.Collections.Generic.List<RunCardDef> Cards { get; init; } = new();
+}
+
 public sealed record ChipsDb
 {
     public int EquipSlots { get; init; } = 4;

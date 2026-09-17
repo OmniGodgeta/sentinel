@@ -30,6 +30,7 @@ public sealed partial class UpdateChecker : CanvasLayer
 
     public override void _Ready()
     {
+        if (HasMeta("prompt_only")) return;   // opened by PromptInstall, card is built by hand
         Layer = 20;
         if (_checkedThisLaunch) { QueueFree(); return; }
         _checkedThisLaunch = true;
@@ -102,6 +103,19 @@ public sealed partial class UpdateChecker : CanvasLayer
         var o = new int[3];
         for (int i = 0; i < 3 && i < parts.Length; i++) int.TryParse(parts[i], out o[i]);
         return o;
+    }
+
+    /// <summary>Open the download/install card over whatever screen is up, using the
+    /// release this launch already found. Used by the HUD's update badge and the splash
+    /// button so they run the real in-app download+install instead of kicking the player
+    /// out to a browser.</summary>
+    public static void PromptInstall(Node parent)
+    {
+        if (!Available) return;
+        var layer = new UpdateChecker { Layer = 24 };
+        layer.SetMeta("prompt_only", true);
+        parent.GetTree().Root.AddChild(layer);
+        layer.ShowCard(AvailableTag, AvailableTag, "", AvailableUrl, AvailableApkUrl);
     }
 
     private void ShowCard(string title, string tag, string notes, string url, string apkUrl)
@@ -186,7 +200,17 @@ public sealed partial class UpdateChecker : CanvasLayer
                 onProgress: f => progress.Value = f,
                 onDone: (ok, info) =>
                 {
-                    if (ok) { QueueFree(); return; }
+                    if (ok)
+                    {
+                        // Android: the system installer has the APK now and will replace us.
+                        // Quitting here means the player lands back in the NEW build instead
+                        // of a stale running copy. Desktop: relaunch ourselves.
+                        status.Text = "installing — the game will restart";
+                        var tree = GetTree();
+                        if (OS.GetName() != "Android") OS.SetRestartOnExit(true);
+                        tree.CreateTimer(1.5).Timeout += () => tree.Quit();
+                        return;
+                    }
                     downloadFailed = true;
                     status.Text = $"download failed ({info}) — tap to open the release page instead";
                     status.Modulate = new Color(1f, 0.6f, 0.55f);

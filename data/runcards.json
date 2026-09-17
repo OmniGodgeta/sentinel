@@ -1,0 +1,46 @@
+{
+  "comment": "In-run draft boost cards, PDTD-style: percentage buffs and trade-off picks, offered alongside the weapon-level cards. 'requires' gates a card on a weapon being active (kind from data/orbital_weapons.json, or a hero weapon id). Effect keys are ModifierSet.ApplyEffect keys.",
+  "cards": [
+    { "id": "boost_ow_damage", "name": "Ordnance Calibration", "accent": "#f0821e", "weight": 16,
+      "text": "All sentinels deal +60% damage.", "effects": { "orbital_weapon_damage": 0.6 } },
+
+    { "id": "boost_ow_rate", "name": "Rapid Cycling", "accent": "#4fd6de", "weight": 14,
+      "text": "All sentinels fire 35% faster.", "effects": { "orbital_weapon_rate": 0.35 } },
+
+    { "id": "boost_ow_radius", "name": "Field Amplifier", "accent": "#b06bf2", "weight": 12,
+      "text": "Sentinel blast, beam and zone radius +40%.", "effects": { "orbital_weapon_radius": 0.4 } },
+
+    { "id": "boost_radlink_add", "name": "Relay Expansion", "accent": "#7ee030", "weight": 13,
+      "requires": "rad_line",
+      "text": "+1 Radiation Link relay — but each link deals 20% less damage.",
+      "effects": { "rad_link_extra": 1, "rad_line_damage": -0.2 } },
+
+    { "id": "boost_radline_damage", "name": "Enriched Payload", "accent": "#7ee030", "weight": 12,
+      "requires": "rad_line",
+      "text": "Radiation Link damage +60%.", "effects": { "rad_line_damage": 0.6 } },
+
+    { "id": "boost_laser_refract", "name": "Refraction Optics", "accent": "#e8352f", "weight": 13,
+      "requires": "laser_volley",
+      "text": "The ship laser refracts to +5 more enemies (damage falls off per bounce).",
+      "effects": { "hero_laser_refract": 5 } },
+
+    { "id": "boost_yamato_charge", "name": "Capacitor Bank", "accent": "#f5c518", "weight": 12,
+      "requires": "yamato_cannon",
+      "text": "Yamato Cannon charges 30% faster.", "effects": { "hero_yamato_charge": 0.3 } },
+
+    { "id": "boost_battery_dmg", "name": "Warhead Uprating", "accent": "#f0a020", "weight": 14,
+      "text": "Planet missile battery damage +60%.", "effects": { "battery_damage": 0.6 } },
+
+    { "id": "boost_battery_salvo", "name": "Multi-Launch", "accent": "#f0a020", "weight": 11,
+      "text": "The battery fires +2 missiles per salvo.", "effects": { "battery_salvo": 2 } },
+
+    { "id": "boost_hero_missile", "name": "Saturation Doctrine", "accent": "#f0821e", "weight": 12,
+      "text": "Missile Barrage damage +60%.", "effects": { "hero_missile_damage": 0.6 } },
+
+    { "id": "boost_planet_hull", "name": "Reinforced Crust", "accent": "#3ca0f5", "weight": 11,
+      "text": "Planet integrity +25%.", "effects": { "planet_integrity": 0.25 } },
+
+    { "id": "boost_shield", "name": "Deflector Uprating", "accent": "#3ca0f5", "weight": 10,
+      "text": "Planet Shield capacity +50%.", "effects": { "planet_shield_mult": 0.5 } }
+  ]
+}

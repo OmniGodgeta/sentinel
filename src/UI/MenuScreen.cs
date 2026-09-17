@@ -142,37 +142,26 @@ public sealed partial class MenuScreen : CanvasLayer
     private void ShowWallet()
     {
         var s = App.Save;
-        var dlg = new AcceptDialog
-        {
-            Title = "WALLET",
-            Theme = UiTheme.Instance,
-            Unresizable = true,
-            OkButtonText = "CLOSE",
-        };
-        var box = new VBoxContainer();
-        box.AddThemeConstantOverride("separation", 14);
+        var pop = TapAwayPopup.Open(this, "WALLET", 820f);
         void Row(string label, string val, Color col)
         {
             var h = new HBoxContainer();
             h.AddThemeConstantOverride("separation", 24);
-            var a = new Label { Text = label, CustomMinimumSize = new Vector2(322, 0) };
-            a.AddThemeFontSizeOverride("font_size", 31);
-            var b = new Label { Text = val, HorizontalAlignment = HorizontalAlignment.Right, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            var a = new Label { Text = label, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+            a.AddThemeFontSizeOverride("font_size", 28);
+            var b = new Label { Text = val, HorizontalAlignment = HorizontalAlignment.Right };
             b.AddThemeFontOverride("font", UiTheme.Display);
-            b.AddThemeFontSizeOverride("font_size", 34);
+            b.AddThemeFontSizeOverride("font_size", 30);
             b.AddThemeColorOverride("font_color", col);
             h.AddChild(a); h.AddChild(b);
-            box.AddChild(h);
+            pop.Body.AddChild(h);
         }
         Row("✦  Commendations", $"{App.Shop.Balance}", UiTheme.Accent2);
         Row("◇  Research Data", F(s.ResearchData), UiTheme.Accent);
         Row("❖  Exotic Alloy", F(s.ExoticAlloy), new Color(0.95f, 0.78f, 0.42f));
         Row("✷  Sentinel Cores", $"{s.SentinelCores}", new Color(0.72f, 0.86f, 1f));
-        dlg.AddChild(box);
-        AddChild(dlg);
-        dlg.Confirmed += dlg.QueueFree;
-        dlg.Canceled += dlg.QueueFree;
-        dlg.PopupCentered(new Vector2I(1000, 640));
+        Row("🔑  Silver Keys", $"{s.SilverKeys}", new Color(0.72f, 0.76f, 0.84f));
+        Row("🔶  Gold Keys", $"{s.GoldKeys}", new Color(0.95f, 0.78f, 0.25f));
     }
 
     private (string file, string id, string name, bool cleared) NextMission()

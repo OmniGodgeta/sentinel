@@ -63,6 +63,15 @@ public sealed class ModifierSet
     public float OrbitalWeaponDamageMult = 1f;
     public float OrbitalWeaponRateMult = 1f;      // >1 = faster (cooldowns divide by this)
     public float OrbitalWeaponRadiusMult = 1f;    // AoE/beam/zone radius, where applicable
+    /// <summary>Extra Radiation Link relay stations beyond the base single link, and a
+    /// damage multiplier for that weapon specifically — the PDTD upgrade pattern is
+    /// "+1 link, -20% damage" traded against straight "+60% damage" cards.</summary>
+    public int RadLinkExtraNodes = 0;
+    public float RadLineDamageMult = 1f;
+    /// <summary>Extra enemies the ship laser refracts to beyond its first target, and a
+    /// Yamato charge-rate bonus — both PDTD card effects.</summary>
+    public int HeroLaserRefract = 0;
+    public float HeroYamatoChargeMult = 1f;
 
     // ---- planet shield: persistent, upgraded only outside battles ----
     public int PlanetShieldLevel = 0;
@@ -172,6 +181,10 @@ public sealed class ModifierSet
             case "orbital_weapon_damage": OrbitalWeaponDamageMult += v; break;
             case "orbital_weapon_rate": OrbitalWeaponRateMult += v; break;
             case "orbital_weapon_radius": OrbitalWeaponRadiusMult += v; break;
+            case "rad_link_extra": RadLinkExtraNodes += (int)v; break;
+            case "rad_line_damage": RadLineDamageMult += v; break;
+            case "hero_laser_refract": HeroLaserRefract += (int)v; break;
+            case "hero_yamato_charge": HeroYamatoChargeMult += v; break;
         }
     }
 }

@@ -174,6 +174,31 @@ public sealed class Progression
         return System.Math.Round(def.CostBase * Mathf.Pow(def.CostMult, lvl));
     }
 
+    /// <summary>Module tier from its level, PDTD-style: T1 = 1-10, T2 = 11-20, T3 = 21-30.
+    /// Tier 0 means the module hasn't been started yet.</summary>
+    public static int ModuleTier(int level) => level <= 0 ? 0 : System.Math.Min(3, (level - 1) / 10 + 1);
+    public const int ModuleLevelsPerTier = 10;
+
+    /// <summary>Chips needed for this module's next level — modules are a chip sink, not a
+    /// Research Data one (PDTD upgrades modules with chips). Cost is in "chip points":
+    /// one T1 chip = 1 point, and a higher-tier chip is worth what it took to merge it.</summary>
+    public int ModuleChipCost(ModuleDef def)
+    {
+        int lvl = ModuleLevel(def.Id);
+        if (lvl >= def.MaxLevel) return -1;
+        return 2 + lvl + ModuleTier(lvl + 1) * 2;
+    }
+
+    /// <summary>Spend chips to raise a module one level.</summary>
+    public bool UpgradeModuleWithChips(ModuleDef def, ChipVault chips)
+    {
+        int cost = ModuleChipCost(def);
+        if (cost < 0 || !chips.SpendChips(cost)) return false;
+        _save.ModuleLevels[def.Id] = ModuleLevel(def.Id) + 1;
+        _save.Save();
+        return true;
+    }
+
     public bool BuyModule(ModuleDef def)
     {
         int lvl = ModuleLevel(def.Id);

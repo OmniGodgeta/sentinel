@@ -4,18 +4,19 @@ using Sentinel.Game;
 namespace Sentinel.UI;
 
 /// <summary>
-/// PLANET MODULES — permanent, Research-Data-funded upgrades (extra integrity,
-/// faster repair, softer spawns, bigger rewards, a stronger shield), PDTD-style:
-/// levelling a module doesn't require it to be equipped, but only up to
-/// <see cref="Meta.Progression.ModuleSlots"/> equipped modules contribute their
-/// effect in a run. Reached from the Upgrades hub, not the main menu.
+/// PLANET MODULES — PDTD's module grid: six slots, each module carrying a tier (T1-T3,
+/// derived from its level) and a level, upgraded by spending chips from the Armory. The
+/// layout follows PDTD's module screen (a grid of tier-badged slot cards over the chip
+/// pool) in this project's own visual language rather than PDTD's chrome.
+/// Only equipped modules contribute their effect in a run.
 /// </summary>
 public sealed partial class ModulesScreen : CanvasLayer
 {
     public AppRoot App = null!;
 
     private Label _wallet = null!;
-    private VBoxContainer _list = null!;
+    private GridContainer _grid = null!;
+    private VBoxContainer _chipRow = null!;
 
     public override void _Ready()
     {
@@ -49,88 +50,177 @@ public sealed partial class ModulesScreen : CanvasLayer
         root.AddChild(_wallet);
 
         var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
         root.AddChild(scroll);
-        _list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _list.AddThemeConstantOverride("separation", 10);
-        scroll.AddChild(_list);
+        var body = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        body.AddThemeConstantOverride("separation", 14);
+        scroll.AddChild(body);
+
+        _grid = new GridContainer { Columns = 2, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _grid.AddThemeConstantOverride("h_separation", 12);
+        _grid.AddThemeConstantOverride("v_separation", 12);
+        body.AddChild(_grid);
+
+        _chipRow = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        _chipRow.AddThemeConstantOverride("separation", 8);
+        body.AddChild(_chipRow);
 
         Rebuild();
     }
 
     private void Rebuild()
     {
+        App.RefreshProgression();
         var p = App.Prog;
         int equipped = App.Save.EquippedModules.Count;
-        _wallet.Text = $"◇ {F(App.Save.ResearchData)}  Research Data      —      {equipped}/{p.ModuleSlots}  slots equipped";
-        foreach (Node c in _list.GetChildren()) c.QueueFree();
+        _wallet.Text = $"◆ {App.Chips.ChipPoints()} chip points      —      {equipped}/{p.ModuleSlots} slots equipped";
 
+        foreach (Node c in _grid.GetChildren()) c.QueueFree();
         foreach (var def in App.Cfg.Modules.Modules)
+            _grid.AddChild(SlotCard(def, p.ModuleLevel(def.Id), p.IsModuleEquipped(def.Id)));
+
+        foreach (Node c in _chipRow.GetChildren()) c.QueueFree();
+        var hdr = new Label { Text = "CHIPS" };
+        hdr.AddThemeFontOverride("font", UiTheme.Display);
+        hdr.AddThemeFontSizeOverride("font_size", 22);
+        hdr.AddThemeColorOverride("font_color", UiTheme.Accent);
+        _chipRow.AddChild(hdr);
+
+        var flow = new HFlowContainer();
+        flow.AddThemeConstantOverride("h_separation", 8);
+        flow.AddThemeConstantOverride("v_separation", 8);
+        _chipRow.AddChild(flow);
+
+        bool any = false;
+        foreach (var chip in App.Chips.Archetypes)
+            foreach (var td in App.Chips.Tiers)
+            {
+                int n = App.Chips.Count(chip.Id, td.Tier);
+                if (n <= 0) continue;
+                any = true;
+                flow.AddChild(ChipPip(chip.Name, td.Name, td.Color, n));
+            }
+        if (!any)
         {
-            int lvl = p.ModuleLevel(def.Id);
-            bool eq = p.IsModuleEquipped(def.Id);
-            _list.AddChild(MakeCard(def, lvl, eq));
+            var none = new Label { Text = "No chips — open chests in the Armory.", Modulate = new Color(1, 1, 1, 0.5f) };
+            none.AddThemeFontSizeOverride("font_size", 19);
+            flow.AddChild(none);
         }
+
+        var toArmory = new Button { Text = "◆  Go to Armory (chests / merge)", CustomMinimumSize = new Vector2(0, 74) };
+        toArmory.AddThemeFontSizeOverride("font_size", 22);
+        toArmory.Pressed += () => { Click(); App.ShowChips(); };
+        _chipRow.AddChild(toArmory);
     }
 
-    private Control MakeCard(Config.ModuleDef def, int lvl, bool equipped)
+    /// <summary>One module slot, PDTD-style: tier badge, level, a pip strip for progress
+    /// through the current tier, and the chip cost of the next level.</summary>
+    private Control SlotCard(Config.ModuleDef def, int lvl, bool equipped)
     {
-        var accent = equipped ? new Color(0.4f, 0.95f, 0.6f) : UiTheme.Accent;
-        var p = new PanelContainer();
+        int tier = Sentinel.Meta.Progression.ModuleTier(lvl);
+        var accent = tier switch
+        {
+            0 => new Color(0.45f, 0.48f, 0.56f),
+            1 => new Color(0.42f, 0.78f, 0.95f),
+            2 => new Color(0.72f, 0.45f, 0.95f),
+            _ => new Color(0.98f, 0.78f, 0.30f),
+        };
+
+        var p = new PanelContainer { CustomMinimumSize = new Vector2(0, 210) };
         p.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(accent, equipped ? 0.12f : 0.07f),
-            BorderColor = new Color(accent, equipped ? 0.85f : 0.5f),
+            BgColor = new Color(accent, equipped ? 0.13f : 0.06f),
+            BorderColor = new Color(accent, equipped ? 0.9f : 0.45f),
             BorderWidthLeft = 4, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
-            CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
-            ContentMarginLeft = 14, ContentMarginRight = 14, ContentMarginTop = 12, ContentMarginBottom = 12,
+            CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10, CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
+            ContentMarginLeft = 14, ContentMarginRight = 14, ContentMarginTop = 10, ContentMarginBottom = 12,
         });
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 12);
-        p.AddChild(row);
 
-        var col = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        col.AddThemeConstantOverride("separation", 3);
-        row.AddChild(col);
-        var nm = new Label { Text = $"{def.Name.ToUpperInvariant()}    ·    LV {lvl}/{def.MaxLevel}" + (equipped ? "   ✓ EQUIPPED" : "") };
+        var col = new VBoxContainer();
+        col.AddThemeConstantOverride("separation", 4);
+        p.AddChild(col);
+
+        var top = new HBoxContainer();
+        col.AddChild(top);
+        var badge = new Label { Text = tier == 0 ? "—" : $"◈ T{tier}" };
+        badge.AddThemeFontOverride("font", UiTheme.Display);
+        badge.AddThemeFontSizeOverride("font_size", 22);
+        badge.AddThemeColorOverride("font_color", accent.Lightened(0.25f));
+        top.AddChild(badge);
+        top.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
+        var lvLbl = new Label { Text = lvl <= 0 ? "not installed" : $"Lv.{lvl}" };
+        lvLbl.AddThemeFontSizeOverride("font_size", 21);
+        lvLbl.Modulate = new Color(1, 1, 1, 0.85f);
+        top.AddChild(lvLbl);
+
+        var nm = new Label { Text = def.Name.ToUpperInvariant() };
         nm.AddThemeFontOverride("font", UiTheme.Display);
         nm.AddThemeFontSizeOverride("font_size", 24);
-        nm.AddThemeColorOverride("font_color", accent.Lightened(0.25f));
+        nm.AddThemeColorOverride("font_color", accent.Lightened(0.3f));
         col.AddChild(nm);
-        var tx = new Label { Text = def.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.7f) };
-        tx.AddThemeFontSizeOverride("font_size", 18);
+
+        var tx = new Label { Text = def.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.65f) };
+        tx.AddThemeFontSizeOverride("font_size", 17);
         col.AddChild(tx);
 
-        var btnCol = new VBoxContainer();
-        btnCol.AddThemeConstantOverride("separation", 6);
-        row.AddChild(btnCol);
+        // pip strip: progress through the current tier's ten levels
+        var pips = new HBoxContainer();
+        pips.AddThemeConstantOverride("separation", 3);
+        int inTier = lvl <= 0 ? 0 : (lvl - 1) % Sentinel.Meta.Progression.ModuleLevelsPerTier + 1;
+        for (int i = 0; i < Sentinel.Meta.Progression.ModuleLevelsPerTier; i++)
+            pips.AddChild(new ColorRect
+            {
+                CustomMinimumSize = new Vector2(14, 8),
+                Color = i < inTier ? accent : new Color(1, 1, 1, 0.12f),
+            });
+        col.AddChild(pips);
 
-        double cost = App.Prog.ModuleCost(def);
-        if (cost >= 0)
-        {
-            var buy = new Button { Text = $"Upgrade\n◇ {cost:0}", CustomMinimumSize = new Vector2(196, 81) };
-            buy.AddThemeFontSizeOverride("font_size", 20);
-            buy.Disabled = App.Save.ResearchData < cost;
-            buy.Pressed += () => { if (App.Prog.BuyModule(def)) { Click(); Rebuild(); } };
-            btnCol.AddChild(buy);
-        }
-        else
-        {
-            btnCol.AddChild(new Label { Text = "MAX LEVEL", HorizontalAlignment = HorizontalAlignment.Center });
-        }
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 8);
+        col.AddChild(row);
 
-        var equipBtn = new Button
+        int cost = App.Prog.ModuleChipCost(def);
+        var up = new Button
+        {
+            Text = cost < 0 ? "MAX" : $"Upgrade  ◆ {cost}",
+            CustomMinimumSize = new Vector2(0, 66),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            Disabled = cost < 0 || App.Chips.ChipPoints() < cost,
+        };
+        up.AddThemeFontSizeOverride("font_size", 20);
+        up.Pressed += () => { if (App.Prog.UpgradeModuleWithChips(def, App.Chips)) { Click(); Rebuild(); } };
+        row.AddChild(up);
+
+        var eq = new Button
         {
             Text = equipped ? "Unequip" : "Equip",
-            CustomMinimumSize = new Vector2(196, 70),
+            CustomMinimumSize = new Vector2(150, 66),
             Disabled = lvl <= 0 || (!equipped && App.Save.EquippedModules.Count >= App.Prog.ModuleSlots),
         };
-        equipBtn.AddThemeFontSizeOverride("font_size", 20);
-        equipBtn.Pressed += () => { if (App.Prog.ToggleEquipModule(def.Id)) { Click(); Rebuild(); } };
-        btnCol.AddChild(equipBtn);
+        eq.AddThemeFontSizeOverride("font_size", 20);
+        eq.Pressed += () => { if (App.Prog.ToggleEquipModule(def.Id)) { Click(); Rebuild(); } };
+        row.AddChild(eq);
 
         return p;
     }
 
+    private static Control ChipPip(string name, string tierName, string hex, int count)
+    {
+        var accent = Color.FromHtml(hex);
+        var p = new PanelContainer();
+        p.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(accent, 0.12f), BorderColor = new Color(accent, 0.55f),
+            BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 6, CornerRadiusTopRight = 6, CornerRadiusBottomLeft = 6, CornerRadiusBottomRight = 6,
+            ContentMarginLeft = 10, ContentMarginRight = 10, ContentMarginTop = 6, ContentMarginBottom = 6,
+        });
+        var l = new Label { Text = $"{tierName} {name}  ×{count}" };
+        l.AddThemeFontSizeOverride("font_size", 17);
+        l.AddThemeColorOverride("font_color", accent.Lightened(0.3f));
+        p.AddChild(l);
+        return p;
+    }
+
     private static void Click() => Sentinel.Audio.AudioManager.Instance?.Click();
-    private static string F(double v) => Mathf.FloorToInt((float)v).ToString();
 }

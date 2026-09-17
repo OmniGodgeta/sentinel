@@ -184,15 +184,14 @@ public sealed partial class SimWorld
                 // orbiting the planet; higher levels add relays (more connections)
                 int t = ClosestEnemyTo(Vector2.Zero, B.DespawnRadius);
                 float bearing = t >= 0 ? Enemies[t].Pos.Angle() : Rng.NextFloat(0f, Mathf.Tau);
-                // levels up in relay stations, not just damage — 2 nodes (1 link, a 64° arc) at
-                // L1, growing to 10 nodes (9 links, a 340° arc — almost a full ring around the
-                // planet) by max level, matching PDTD's Radiation Link extending/connecting more
-                // links as it upgrades rather than only scaling flat damage.
-                int nodes = Mathf.Clamp(2 + (L - 1) * 8 / 11, 2, 10);
+                // PDTD's Radiation Link always starts as a SINGLE link (2 relay stations).
+                // Extra links come only from "+1 Radiation Link" upgrade cards, which trade
+                // damage for reach — levelling the weapon alone never adds links.
+                int nodes = Mathf.Clamp(2 + Mods.RadLinkExtraNodes, 2, 10);
                 float spinDir = Rng.NextInt(2) == 0 ? 1f : -1f;
                 _owEffects.Add(new OwEffect
                 {
-                    Kind = 1, DieAt = GameTime + dur, Dps = dmg, P0 = bearing,
+                    Kind = 1, DieAt = GameTime + dur, Dps = dmg * Mathf.Max(0.1f, Mods.RadLineDamageMult), P0 = bearing,
                     NodeCount = nodes, Spin = spinDir * (0.10f + 0.01f * L), StartTime = GameTime,
                 });
                 break;

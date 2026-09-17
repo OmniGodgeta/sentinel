@@ -163,7 +163,10 @@ public sealed partial class SimWorld
             default: return false;
         }
 
-        _hwCd[i] = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1));
+        float cd = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (L - 1));
+        // "Yamato charges 30% faster" cards shorten its charge specifically
+        if (d.Kind == "yamato") cd /= Mathf.Max(0.2f, Mods.HeroYamatoChargeMult);
+        _hwCd[i] = cd;
         return true;
     }
 
@@ -208,6 +211,33 @@ public sealed partial class SimWorld
         }
 
         DamageEnemy(ti, _heroBeamDps * dt, DamageSource.Hero, shieldMult: 0f);
+
+        // PDTD's refraction: the beam bounces on to nearby enemies, each bounce weaker than
+        // the last. Base is 0 extra targets — "+5 refract" cards raise Mods.HeroLaserRefract.
+        int refract = Mods.HeroLaserRefract;
+        if (refract > 0)
+        {
+            Vector2 from = Enemies[ti].Pos;
+            System.Span<bool> hit = stackalloc bool[96];
+            if (ti < 96) hit[ti] = true;
+            float falloff = 1f;
+            for (int r = 0; r < refract; r++)
+            {
+                int next = -1; float best = 260f * 260f;
+                for (int e = 0; e < EnemyHighWater; e++)
+                {
+                    if (!Enemies[e].Alive || (e < 96 && hit[e])) continue;
+                    float dd = Enemies[e].Pos.DistanceSquaredTo(from);
+                    if (dd < best) { best = dd; next = e; }
+                }
+                if (next < 0) break;
+                falloff *= 0.8f;
+                DamageEnemy(next, _heroBeamDps * dt * falloff, DamageSource.Hero, shieldMult: 0f);
+                if (next < 96) hit[next] = true;
+                if (_heroBeamTick + dt >= 0.1f) Events.PushLine(SimEventKind.BeamTick, from, Enemies[next].Pos, 1f, 1);
+                from = Enemies[next].Pos;
+            }
+        }
 
         // one beam-line event every few ticks — the renderer draws a continuous beam from
         // these and the audio layer throttles itself off the same stream

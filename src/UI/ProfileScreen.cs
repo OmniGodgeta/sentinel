@@ -82,18 +82,51 @@ public sealed partial class ProfileScreen : CanvasLayer
         list.AddThemeConstantOverride("separation", 8);
         scroll.AddChild(list);
 
-        Row(list, "★  Campaign", $"{cleared}/{missions} cleared   ·   {totalStars}/{missions * 3} stars");
-        Row(list, "∞  Endless best", Mmss(s.EndlessBest));
-        Row(list, "🗲  Weekly best", Mmss(s.WeeklyBest));
-        Row(list, "☰  Codex entries", $"{s.CodexSeen.Count}");
-        Row(list, "◇  Research Data (lifetime)", $"{F(s.ResearchData)}");
+        int perfect = 0;
+        foreach (var m in App.Cfg.Arc.Missions) if (s.Record(m.Id).Stars >= 3) perfect++;
+
+        Header(list, "CAREER");
+        Row(list, "⚔  Enemies killed", $"{s.LifetimeKills:N0}");
+        Row(list, "💥  Total damage dealt", $"{F(s.LifetimeDamage)}");
+        Row(list, "☠  Bosses killed", $"{s.LifetimeBossKills:N0}");
+        Row(list, "▶  Missions played", $"{s.MissionsPlayed:N0}");
+        Row(list, "✔  Stages cleared", $"{s.StageClears:N0}");
+
+        Header(list, "CAMPAIGN");
+        Row(list, "★  Stages beaten", $"{cleared}/{missions}");
+        Row(list, "★  Stars earned", $"{totalStars}/{missions * 3}");
+        Row(list, "🏆  100% stages (3★)", $"{perfect}/{missions}");
+
+        Header(list, "ARSENAL");
+        Row(list, "🛡  Planet Shield", $"LV {s.PlanetShieldLevel}/12");
+        int owLvl = 0; foreach (var v in s.OrbitalMeta.Values) owLvl += v;
+        Row(list, "✷  Sentinels total level", $"{owLvl}");
+        Row(list, "◆  Chips owned", $"{ChipCount(s)}");
+
+        Header(list, "BANK");
+        Row(list, "◇  Research Data", $"{F(s.ResearchData)}");
         Row(list, "✷  Sentinel Cores", $"{s.SentinelCores}");
         Row(list, "❖  Exotic Alloy", $"{F(s.ExoticAlloy)}");
         Row(list, "✦  Commendations", $"{App.Shop.Balance}");
-        Row(list, "🛡  Planet Shield", $"LV {s.PlanetShieldLevel}/12");
+        Row(list, "🔑  Keys", $"{s.SilverKeys} silver · {s.GoldKeys} gold");
+    }
 
-        int owLvl = 0; foreach (var v in s.OrbitalMeta.Values) owLvl += v;
-        Row(list, "✷  Sentinels total level", $"{owLvl}");
+    private static int ChipCount(Sentinel.Meta.SaveGame s)
+    {
+        int n = 0;
+        foreach (var v in s.ChipInventory.Values) n += v;
+        return n;
+    }
+
+    /// <summary>Section divider so the career/campaign/arsenal/bank blocks read apart.</summary>
+    private static void Header(Control parent, string text)
+    {
+        var l = new Label { Text = text };
+        l.AddThemeFontOverride("font", UiTheme.Display);
+        l.AddThemeFontSizeOverride("font_size", 22);
+        l.AddThemeColorOverride("font_color", UiTheme.Accent);
+        l.Modulate = new Color(1, 1, 1, 0.85f);
+        parent.AddChild(l);
     }
 
     private static void Row(Control parent, string label, string val)

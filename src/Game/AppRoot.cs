@@ -241,6 +241,13 @@ public sealed partial class AppRoot : Node
         var rec = Save.Record(o.MissionId);
         bool firstClear = o.Won && !rec.Cleared;
 
+        // lifetime career totals (Commander screen) — banked from every run, win or lose
+        Save.MissionsPlayed++;
+        Save.LifetimeKills += o.Kills;
+        Save.LifetimeDamage += o.Damage;
+        Save.LifetimeBossKills += o.BossKills;
+        if (o.Won) Save.StageClears++;
+
         Save.ResearchData += o.ResearchData;
         Save.Xp += o.Xp;
         Save.SentinelCores += o.Cores;

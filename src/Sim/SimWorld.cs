@@ -15,6 +15,7 @@ public struct RunStats
     public float DamageByOrbital;
     public int EnemiesKilled;
     public int EnemiesLeaked;
+    public int BossesKilled;
     public long TicksElapsed;
 
     public readonly float TotalDamage => DamageByTurrets + DamageByHero + DamageByAbilities + DamageByOrbital;
@@ -745,6 +746,7 @@ public sealed partial class SimWorld
 
             if (def.Class == "boss")
             {
+                Stats.BossesKilled++;
                 CoresEarned += Mathf.Max(1, def.CoreDrop);
                 AlloyEarned += def.AlloyDrop;
                 _bossHandle = EnemyHandle.None;

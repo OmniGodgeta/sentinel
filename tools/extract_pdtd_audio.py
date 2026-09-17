@@ -75,7 +75,7 @@ SAFE_REPLACEMENTS = {
     # Barrage volley (~6-15s cooldown depending on level) — infrequent enough
     # that a 1.6s sample is fine; do NOT reuse this length for battery_launch
     # (planet battery fires roughly every second, would overlap into mush).
-    "missile_launch": (43, "未来主义榴弹发射器"),   # "futuristic grenade launcher"
+    "missile_launch": (9, "火箭发射升空"),          # PDTD's real rocket-launch clip
     # sentinel_shot backs every orbital weapon except the ones broken out below
     # (cooldowns 0.55s-8s) — already a natural ~2.3s one-shot cannon report,
     # no trim needed.
@@ -87,7 +87,7 @@ SAFE_REPLACEMENTS = {
     # accepted for sentinel_shot's reuse across weapons; the previous "borderline"
     # note above was about reusing it as the universal one-shot, not as one
     # weapon's own distinct sound, so it's fine here.
-    "orbital_laser_fire": (34, "laser-fire"),
+    "orbital_laser_fire": (54, "Laser"),          # PDTD's own "Laser" event clip, trimmed below
     # space_bomb and waterdrop were both silently broken (see docs/ROADMAP.md — a
     # platform-relative range-capped target search meant they often did nothing at
     # all) and got fixed + given their own distinct sound instead of sentinel_shot.
@@ -118,7 +118,7 @@ TRIM = {
     # 未来主义榴弹发射器 is a 13.6s library clip — the launch transient is at the
     # very start, same heuristic as the explosion trims (no way to confirm the
     # exact onset without listening; a 1.6s prefix + short fade-out is a safe bet).
-    "missile_launch": (0.0, 1.6, 1.3, 0.3, 0.0),
+    "missile_launch": (0.0, 1.25, 0.95, 0.3, 0.0),
     # electric-shock-97989 is a 9.7s library clip — same "transient's at the start"
     # heuristic, trimmed to a punchy ~1.2s crackle for shock_orb's min ~3.2s cooldown.
     "ball_lightning_fire": (0.0, 1.2, 0.9, 0.3, 0.0),
@@ -127,6 +127,9 @@ TRIM = {
     # thunder-sound-375727 is a 60s raw ambience recording — the first crack is right at
     # the start, trimmed to a ~1s punchy zap instead of the long rolling-thunder tail.
     "orbital_lightning_fire": (0.0, 1.0, 0.75, 0.25, 0.0),
+    # PDTD's "Laser" event clip is 4.3s of sustained beam — trim to a 1.6s burst so a
+    # 3s locked beam doesn't stack copies of itself.
+    "orbital_laser_fire": (0.0, 1.6, 1.25, 0.35, 0.0),
     # 太空武器激光枪激光射击 is a 3.6s library clip — trimmed to a ~1.5s laser-fire burst.
     "beam_fire": (0.0, 1.5, 1.2, 0.3, 0.0),
 }

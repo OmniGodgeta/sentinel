@@ -85,6 +85,25 @@ public sealed partial class SimWorld
             var (w, c) = SurvThreat(id);
             _survRoster.Add(new SurvRosterEntry { DefIndex = di, Weight = w, UnlockFrac = frac, Cost = c });
         }
+
+        // If the mission didn't author unlock fractions (the fallback rosters set them all
+        // to 0), stage the roster by threat instead of dumping every enemy type in from the
+        // first second: weakest available immediately, the nastiest only past the midpoint.
+        // A mission that DOES author fracs keeps its own pacing untouched — hence "most
+        // stages ramp", not all.
+        bool authored = false;
+        foreach (var e in _survRoster) if (e.UnlockFrac > 0f) { authored = true; break; }
+        if (!authored && _survRoster.Count > 1)
+        {
+            _survRoster.Sort((a, b) => a.Cost.CompareTo(b.Cost));
+            for (int i = 0; i < _survRoster.Count; i++)
+            {
+                var e = _survRoster[i];
+                // first two types are open from the start, the rest fan in up to 55%
+                e.UnlockFrac = i < 2 ? 0f : 0.55f * (i - 1) / Mathf.Max(1, _survRoster.Count - 2);
+                _survRoster[i] = e;
+            }
+        }
     }
 
     /// <summary>0..1 across a timed hold; for endless, an open-ended ramp.</summary>

@@ -57,6 +57,14 @@ public sealed class SaveGame
     /// equipped right now — capped at <c>ChipsDb.EquipSlots</c>, only equipped chips
     /// contribute their effect in a run.</summary>
     public List<string> EquippedChips { get; set; } = new();
+    /// <summary>Lifetime career totals, shown on the Commander screen. Banked in
+    /// AppRoot.OnMissionEnded from each run's RunStats — win or lose.</summary>
+    public long LifetimeKills { get; set; }
+    public double LifetimeDamage { get; set; }
+    public int LifetimeBossKills { get; set; }
+    public int StageClears { get; set; }          // every successful clear, re-runs included
+    public int MissionsPlayed { get; set; }
+
     /// <summary>Armory chest keys — earned by playing (mission/star/endless rewards),
     /// never purchasable with real money. See CLAUDE.md's 2026-09-16 amendment.</summary>
     public int SilverKeys { get; set; } = 0;

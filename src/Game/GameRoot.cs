@@ -9,7 +9,7 @@ namespace Sentinel.Game;
 public readonly record struct MissionOutcome(
     string MissionId, bool Won, int WavesCleared, int WaveCount,
     double ResearchData, double Xp, int Cores, float PlanetIntegrityPct, bool HeroSurvived,
-    int Alloy = 0);
+    int Alloy = 0, int Kills = 0, double Damage = 0, int BossKills = 0);
 
 /// <summary>
 /// One mission: owns the config view, the sim, the clock, the renderer and the
@@ -194,7 +194,8 @@ public sealed partial class GameRoot : Node2D
                 progress, total,
                 _world.ResearchDataEarned, _world.XpEarned, _world.CoresEarned,
                 _world.PlanetIntegrityMax > 0 ? _world.PlanetIntegrity / _world.PlanetIntegrityMax : 0f,
-                _world.HeroView.Alive, _world.AlloyEarned));
+                _world.HeroView.Alive, _world.AlloyEarned,
+                _world.Stats.EnemiesKilled, _world.Stats.TotalDamage, _world.Stats.BossesKilled));
         }
     }
 
@@ -243,7 +244,7 @@ public sealed partial class GameRoot : Node2D
                 case SimEventKind.HeroWeaponFired:
                     switch (ev.I)
                     {
-                        case 0: sfx?.Play("turret_shot_b", -10f, 0.16f, 0.02); break;      // laser
+                        case 0: sfx?.Play("orbital_laser_fire", -9f, 0.10f, 0.05); break;   // ship laser — PDTD's own Laser clip
                         case 2: sfx?.Play("sentinel_shot", -8f, 0.1f); break;              // ion
                         case 3: sfx?.Play("explosion_big", 0f, 0f); Input.VibrateHandheld(90); break; // yamato
                         case >= 10:

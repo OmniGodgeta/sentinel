@@ -29,6 +29,10 @@ public sealed partial class Hud : CanvasLayer
         CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius,
     };
     private Button[] _speed = new Button[4];
+    private Button _speedMain = null!;
+    private VBoxContainer _speedMenu = null!;
+    private Control _speedCatcher = null!;
+    private int _speedNow = 1;
     private Button _pause = null!;
     private Button _menuOpen = null!;
     private Button _buildToggle = null!;
@@ -127,7 +131,7 @@ public sealed partial class Hud : CanvasLayer
         };
         _updateBadge.AddThemeFontSizeOverride("font_size", 44);
         StyleTopButton(_updateBadge, new Color(1f, 0.75f, 0.3f));
-        _updateBadge.Pressed += () => OS.ShellOpen(Sentinel.Meta.UpdateChecker.AvailableUrl);
+        _updateBadge.Pressed += () => Sentinel.Meta.UpdateChecker.PromptInstall(this);
         AddChild(_updateBadge);
 
         // speed + pause + leave + build row.
@@ -153,17 +157,14 @@ public sealed partial class Hud : CanvasLayer
         _pause.Pressed += () => { Root.TogglePause(); _pause.Text = Root.IsPaused ? "▶" : "❚❚"; };
         StyleTopButton(_pause, UiTheme.Accent);
         ctl.AddChild(_pause);
-        for (int i = 0; i < 4; i++)
-        {
-            int mult = i + 1;
-            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(112, 104), ToggleMode = true };
-            btn.AddThemeFontSizeOverride("font_size", 33);
-            btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); };
-            StyleTopButton(btn, UiTheme.Accent);
-            ctl.AddChild(btn);
-            _speed[i] = btn;
-        }
-        UpdateSpeedButtons(1);
+        // One speed button showing the CURRENT speed; the other three live in a little
+        // drop-down under it (tap the caret), which closes when you tap anywhere else.
+        // Four always-visible speed buttons were most of why this row was so crowded.
+        _speedMain = new Button { Text = "1x  ▾", CustomMinimumSize = new Vector2(150, 104) };
+        _speedMain.AddThemeFontSizeOverride("font_size", 33);
+        _speedMain.Pressed += () => ToggleSpeedMenu(!_speedMenu.Visible);
+        StyleTopButton(_speedMain, UiTheme.Accent);
+        ctl.AddChild(_speedMain);
         _buildToggle = new Button { Text = "⚒", CustomMinimumSize = new Vector2(120, 104), ToggleMode = true };
         _buildToggle.AddThemeFontSizeOverride("font_size", 40);
         _buildToggle.TooltipText = "Build / upgrade turrets";
@@ -184,6 +185,34 @@ public sealed partial class Hud : CanvasLayer
         };
         StyleTopButton(_autoBtn, new Color(0.5f, 0.95f, 0.6f));
         ctl.AddChild(_autoBtn);
+
+        // speed drop-down: a full-screen catcher (so a tap anywhere dismisses it) plus the
+        // little column of the other speeds, positioned under the speed button each time
+        // it opens.
+        _speedCatcher = new Control { Visible = false, MouseFilter = Control.MouseFilterEnum.Stop };
+        _speedCatcher.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        _speedCatcher.GuiInput += e =>
+        {
+            if (e is InputEventMouseButton { Pressed: true } or InputEventScreenTouch { Pressed: true })
+                ToggleSpeedMenu(false);
+        };
+        AddChild(_speedCatcher);
+
+        _speedMenu = new VBoxContainer { Visible = false };
+        _speedMenu.AddThemeConstantOverride("separation", 6);
+        _speedMenu.Theme = UiTheme.Instance;
+        AddChild(_speedMenu);
+        for (int i = 0; i < 4; i++)
+        {
+            int mult = i + 1;
+            var btn = new Button { Text = $"{mult}x", CustomMinimumSize = new Vector2(150, 92) };
+            btn.AddThemeFontSizeOverride("font_size", 30);
+            btn.Pressed += () => { Root.SetSpeed(mult); UpdateSpeedButtons(mult); ToggleSpeedMenu(false); };
+            StyleTopButton(btn, UiTheme.Accent);
+            _speedMenu.AddChild(btn);
+            _speed[i] = btn;
+        }
+        UpdateSpeedButtons(1);
 
         // boss bar
         _bossBar = new ProgressBar
@@ -361,7 +390,7 @@ public sealed partial class Hud : CanvasLayer
         float m = Mathf.Max(0f, (vp.X - designW) * 0.5f);
         float top = Root?.SafeTopInset ?? 0f;
         if (_topBox != null) { _topBox.OffsetLeft = m + 10; _topBox.OffsetRight = -(m + 10); _topBox.OffsetTop = top + 8; }
-        if (_ctlRow != null) _ctlRow.OffsetTop = top + 150;   // _topBox's integrity/xp bars + status text grew taller (2x)
+        if (_ctlRow != null) _ctlRow.OffsetTop = top + 182;   // clears _topBox (44px integrity + 18px xp + a 2-line 36px status)
         foreach (var p in _panels) { p.OffsetLeft = m + 8; p.OffsetRight = -(m + 8); }
         if (_bossBar != null)
         {
@@ -652,12 +681,22 @@ public sealed partial class Hud : CanvasLayer
         foreach (int idx in w.DraftOptionIndices)
         {
             int myPos = cardPos++;
+            bool boost = w.IsBoostCard(idx);
             bool orbital = w.IsOrbitalCard(idx);
             int wi = w.CardWeaponIndex(idx);
             string cardId, cardName, accent;
             int lvl;
             string subtitle;
-            if (orbital)
+            string boostText = "";
+            if (boost)
+            {
+                var bc = w.BoostCard(idx);
+                cardId = bc?.Id ?? "boost"; cardName = bc?.Name ?? "Boost"; accent = bc?.Accent ?? "#4fd6de";
+                lvl = 0;
+                subtitle = "BOOST";
+                boostText = bc?.Text ?? "";
+            }
+            else if (orbital)
             {
                 var o = w.Cfg.OrbitalWeapons[wi];
                 cardId = o.Id; cardName = o.Name; accent = o.Accent;
@@ -727,11 +766,13 @@ public sealed partial class Hud : CanvasLayer
 
             var lv = new Label
             {
-                Text = lvl == 0 ? "UNLOCK  ·  NEW SYSTEM" : $"LEVEL {lvl}  →  {lvl + 1}",
+                // boost cards state their effect instead of a level step
+                Text = boost ? boostText : (lvl == 0 ? "UNLOCK  ·  NEW SYSTEM" : $"LEVEL {lvl}  →  {lvl + 1}"),
                 HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore,
+                AutowrapMode = boost ? TextServer.AutowrapMode.WordSmart : TextServer.AutowrapMode.Off,
             };
-            lv.AddThemeFontSizeOverride("font_size", 30);
-            lv.AddThemeColorOverride("font_color", lvl == 0 ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.8f));
+            lv.AddThemeFontSizeOverride("font_size", boost ? 21 : 30);
+            lv.AddThemeColorOverride("font_color", lvl == 0 && !boost ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.85f));
             v.AddChild(lv);
 
             _draftCards.AddChild(btn);
@@ -895,7 +936,27 @@ public sealed partial class Hud : CanvasLayer
     }
 
     private static string Pct(float v, float tot) => $"{Mathf.RoundToInt(v / tot * 100f)}%";
-    private void UpdateSpeedButtons(int active) { for (int i = 0; i < 4; i++) _speed[i].ButtonPressed = (i + 1) == active; }
+    private void UpdateSpeedButtons(int active)
+    {
+        _speedNow = active;
+        if (_speedMain != null) _speedMain.Text = $"{active}x  ▾";
+        for (int i = 0; i < 4; i++)
+            if (_speed[i] != null) _speed[i].Modulate = (i + 1) == active ? Colors.White : new Color(1, 1, 1, 0.55f);
+    }
+
+    /// <summary>Show/hide the speed drop-down, parking it right under the speed button.</summary>
+    private void ToggleSpeedMenu(bool show)
+    {
+        if (_speedMenu == null) return;
+        if (show)
+        {
+            var r = _speedMain.GetGlobalRect();
+            _speedMenu.Position = new Vector2(r.Position.X, r.End.Y + 8f);
+        }
+        _speedMenu.Visible = show;
+        _speedCatcher.Visible = show;
+        if (show) MoveChild(_speedMenu, GetChildCount() - 1);   // above the catcher
+    }
 
     private SimRenderer GetRenderer()
     {

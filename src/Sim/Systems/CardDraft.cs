@@ -20,6 +20,10 @@ public sealed partial class SimWorld
     /// new sentinels once five are live (it keeps offering upgrades to those five).</summary>
     public const int MaxActiveSentinels = 5;
 
+    /// <summary>Draft option indices at/above this are boost cards (data/runcards.json) —
+    /// PDTD-style percentage buffs and trade-offs rather than a weapon level.</summary>
+    public const int BoostCardBase = 200;
+
     private int _pendingDrafts;
     private readonly List<string> _runCards = new();
     private readonly List<int> _draftOptions = new();
@@ -29,8 +33,23 @@ public sealed partial class SimWorld
     public IReadOnlyList<int> DraftOptionIndices => _draftOptions;
     public IReadOnlyList<string> RunCards => _runCards;
 
-    public bool IsOrbitalCard(int idx) => idx >= OrbitalCardBase;
+    public bool IsBoostCard(int idx) => idx >= BoostCardBase;
+    public bool IsOrbitalCard(int idx) => idx >= OrbitalCardBase && idx < BoostCardBase;
     public int CardWeaponIndex(int idx) => idx >= OrbitalCardBase ? idx - OrbitalCardBase : idx;
+    public Config.RunCardDef? BoostCard(int idx) =>
+        idx >= BoostCardBase && idx - BoostCardBase < Cfg.RunCards.Cards.Count ? Cfg.RunCards.Cards[idx - BoostCardBase] : null;
+
+    /// <summary>Is the weapon a boost card needs actually in play? `requires` names either an
+    /// orbital weapon Kind or a hero weapon id; blank means always offerable.</summary>
+    private bool BoostRequirementMet(string requires)
+    {
+        if (string.IsNullOrEmpty(requires)) return true;
+        for (int i = 0; i < Cfg.OrbitalWeapons.Count; i++)
+            if (Cfg.OrbitalWeapons[i].Kind == requires) return _owLevel[i] > 0;
+        for (int i = 0; i < Cfg.HeroWeapons.Count; i++)
+            if (Cfg.HeroWeapons[i].Id == requires) return _hwLevel[i] > 0;
+        return false;
+    }
 
     private void OfferDraftAfterWave()
     {
@@ -68,6 +87,19 @@ public sealed partial class SimWorld
             Consider(OrbitalCardBase + i, _owLevel[i], ow[i].MaxLevel);
         }
 
+        // boost cards — offered from the second draft on, so the opening picks still
+        // hand you actual weapons rather than buffs for things you don't own yet
+        if (_runCards.Count >= 1)
+        {
+            var rc = Cfg.RunCards.Cards;
+            for (int i = 0; i < rc.Count; i++)
+            {
+                if (!BoostRequirementMet(rc[i].Requires)) continue;
+                pool.Add(BoostCardBase + i);
+                weights.Add(Mathf.Max(1, rc[i].Weight));
+            }
+        }
+
         if (pool.Count == 0) { _pendingDrafts = 0; return; }
 
         int want = Mathf.Min(4, pool.Count);
@@ -88,7 +120,16 @@ public sealed partial class SimWorld
     {
         if (!_draftOptions.Contains(cardIdx)) return;
 
-        if (IsOrbitalCard(cardIdx))
+        if (IsBoostCard(cardIdx))
+        {
+            var bc = BoostCard(cardIdx);
+            if (bc != null)
+            {
+                foreach (var (key, v) in bc.Effects) Mods.ApplyEffect(key, v);
+                _runCards.Add("boost:" + bc.Id);
+            }
+        }
+        else if (IsOrbitalCard(cardIdx))
         {
             int w = cardIdx - OrbitalCardBase;
             LevelUpOrbitalWeapon(w);

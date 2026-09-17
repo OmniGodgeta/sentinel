@@ -5,8 +5,70 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.28.0, 2026-09-17.** Update this file when you finish or start
+Last updated: **v0.29.0, 2026-09-17.** Update this file when you finish or start
 anything.
+
+---
+
+## Recently completed — chip-upgraded modules, PDTD boost cards, in-app updater (v0.29.0)
+
+**The updater actually installs now.** The HUD badge and the splash button both called
+`OS.ShellOpen(releaseUrl)` — that's the "it still only brings me to GitHub" report. The
+real in-app download+install flow already existed inside `UpdateChecker`'s card; it's
+now reachable from anywhere via `UpdateChecker.PromptInstall(node)`, and both call
+sites use it. After a successful hand-off to the system installer the game quits (and
+on desktop relaunches itself) so the player comes back into the new build.
+
+**Modules reworked to PDTD's model** — six slots (was three), each module carrying a
+tier (T1 = Lv1-10, T2 = 11-20, T3 = 21-30) and upgraded by **spending chips**, not
+Research Data. `ChipVault.ChipPoints()/SpendChips()` value chips by tier (a T2 is worth what
+it cost to merge) and spends lowest-tier-first. `ModulesScreen` rebuilt as a 2x3 grid of
+tier-badged slot cards with a per-tier pip strip, the chip pool underneath, and a jump to
+the Armory — PDTD's layout in this project's own visual language. A sixth module
+(Targeting Array) was added so all six slots can be filled.
+
+**PDTD-style in-run boost cards** (`data/runcards.json`, new `RunCardDef`): the draft now
+mixes percentage buffs and trade-offs in with the weapon-level cards — "+60% sentinel
+damage", "+1 Radiation Link but -20% link damage", "Yamato charges 30% faster", "laser
+refracts to +5 more enemies", battery/hull/shield boosts. They start appearing from the
+second draft on, and a card only shows if the weapon it modifies is actually in play.
+
+**Radiation Link now starts as ONE link**, as in PDTD — levelling the weapon no longer
+adds relays; only "+1 Radiation Link" cards do, paid for with -20% link damage.
+
+**Two new weapon mechanics** behind those cards: the ship laser **refracts** to nearby
+enemies with 20% falloff per bounce (base 0, +5 per card), and Yamato's charge time
+shortens with its own card.
+
+**Commander screen rebuilt** as a career page: enemies killed, total damage, bosses
+killed, missions played, stages cleared, stars, 100% (3-star) stages, plus arsenal and
+bank blocks. Endless best / weekly best / codex count are gone, as asked. The sim now
+tracks `RunStats.BossesKilled` and the totals are banked into the save each run.
+
+**HUD/UX**: the four speed buttons collapsed into one button showing the current speed
+with a drop-down for the rest (closes on a tap anywhere); the control row was pushed
+clear of the status text it was overlapping. The wallet popup is now a `TapAwayPopup` —
+sized to its content, dismissed by tapping anywhere, no CLOSE button — and it lists keys
+too.
+
+**Sounds**: the ship/orbital laser now uses PDTD's own event-named "Laser" clip (the old
+generic `laser-fire` library clip was the one that grated), and missiles use PDTD's real
+rocket-launch clip instead of the grenade-launcher stand-in.
+
+**Stage pacing**: missions that don't author their own unlock fractions now stage the
+roster by threat — the two weakest types from the start, everything else fanning in up
+to the 55% mark — instead of every enemy type being available from second one. Missions
+that DO author fracs keep their own pacing.
+
+### Still open (asked for, not built)
+
+- **Mini-boss**: multi-segment HP bar (e.g. 5 bars = 5x HP), slow orbit closing on the
+  planet, fires a laser / drops bombs if it arrives, and on death pays out 5 face-up
+  cards with a chance-based cascade for extra draws. Substantial — its own pass.
+- **PDTD's exact upgrade-card art/animation/sounds** for the draft cards.
+- **In-run item drops** with per-rarity % chance.
+- Background art on the Research/Codex list cards (they read bland).
+- Waterdrop + Force Field card art still procedural.
 
 ---
 

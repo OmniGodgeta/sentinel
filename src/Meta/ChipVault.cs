@@ -104,6 +104,64 @@ public sealed class ChipVault
         return merges;
     }
 
+    // ---- spending chips on module upgrades (PDTD's module/chip loop) ----
+
+    /// <summary>What one chip of a tier is worth when spent. A tier-N chip counts for as
+    /// much as the chips it would take to merge up to it, so spending a T3 is never worse
+    /// than merging down.</summary>
+    public int ChipValue(int tier)
+    {
+        int v = 1;
+        foreach (var td in D.Tiers)
+        {
+            if (td.Tier >= tier) break;
+            v *= Mathf.Max(1, td.MergeCost);
+        }
+        return v;
+    }
+
+    /// <summary>Total spendable chip value held, counting every archetype and tier.</summary>
+    public int ChipPoints()
+    {
+        int total = 0;
+        foreach (var (key, count) in _save.ChipInventory)
+        {
+            var parts = key.Split(':');
+            if (parts.Length == 2 && int.TryParse(parts[1], out int tier)) total += ChipValue(tier) * count;
+        }
+        return total;
+    }
+
+    /// <summary>Spend <paramref name="points"/> worth of chips, lowest tier first so the
+    /// good ones are kept back. Returns false (spending nothing) if you can't cover it.</summary>
+    public bool SpendChips(int points)
+    {
+        if (points <= 0) return true;
+        if (ChipPoints() < points) return false;
+
+        foreach (var td in D.Tiers)   // tiers are listed low -> high
+        {
+            foreach (var chip in D.Chips)
+            {
+                string k = Key(chip.Id, td.Tier);
+                int have = _save.ChipInventory.GetValueOrDefault(k);
+                if (have <= 0) continue;
+                int worth = ChipValue(td.Tier);
+                while (have > 0 && points > 0)
+                {
+                    have--; points -= worth;
+                    _save.ChipInventory[k] = have;
+                }
+                if (_save.ChipInventory[k] <= 0) _save.ChipInventory.Remove(k);
+                if (points <= 0) break;
+            }
+            if (points <= 0) break;
+        }
+        PruneInvalidEquips();
+        _save.Save();
+        return true;
+    }
+
     // ---- equip ----
 
     public bool IsEquipped(string chipId, int tier) => _save.EquippedChips.Contains(Key(chipId, tier));
