@@ -110,6 +110,23 @@ public sealed class SaveGame
         Loadout.RemoveAll(id => id == "kinetic_barrage");
         foreach (var preset in LoadoutPresets) preset.RemoveAll(id => id == "kinetic_barrage");
 
+        // v0.31.2: the Shop's invented worlds became the real bodies they were always
+        // standing in for, and the skin ids moved with the names so the equirectangular
+        // map files line up. Without this an existing save's PlanetSkin points at an id
+        // with no map and silently falls back to the flat sprite.
+        if (Options.PlanetSkin is "ice") Options.PlanetSkin = "europa";
+        else if (Options.PlanetSkin is "volcanic") Options.PlanetSkin = "titan";
+        else if (Options.PlanetSkin is "gas") Options.PlanetSkin = "triton";
+        else if (Options.PlanetSkin is "shattered") Options.PlanetSkin = "pluto";
+
+        // v0.31.2: Salvage Beacon retired — a utility ability whose effect never read in
+        // play, and it was taking a bottom-bar slot the sentinel cards want.
+        AbilityLevels.Remove("salvage_beacon");
+        AbilityBranches.Remove("salvage_beacon");
+        Loadout.RemoveAll(id => id == "salvage_beacon");
+        foreach (var preset in LoadoutPresets) preset.RemoveAll(id => id == "salvage_beacon");
+        LevelCards.RemoveAll(id => id == "pro_salvage");
+
         // v0.26.x: Orbital Cannon (Railgun analog) retired; Orbital Laser renamed to Beam.
         OrbitalMeta.Remove("orbital_cannon");
         if (OrbitalMeta.Remove("orbital_laser", out int beamLevel))

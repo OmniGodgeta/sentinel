@@ -54,12 +54,17 @@ public sealed partial class SimWorld
                 float len = dir.Length();
                 if (len > 0.001f) dir /= len;
                 e.Pos += dir * speed * dt;
+            }
 
-                // Mini-bosses sweep around the planet as they close rather than charging
-                // straight down the radius. The tangential step is an angular rate, so the
-                // sweep looks the same whether it's far out or nearly on top of the planet
+            {
+                // Heavies, elites and the mini-boss sweep around the planet as they close
+                // rather than charging straight down the radius, and keep sweeping once
+                // they've stopped at their attack range. The tangential step is an angular
+                // rate, so the sweep looks the same far out or nearly on top of the planet
                 // (a fixed linear speed would crawl at range and whip around up close).
-                if (def.OrbitSpeedDeg != 0f && len > 0.001f)
+                // Outside the `!Standoff` block on purpose: a ranged attacker that froze
+                // solid the moment it reached standoff range read as a bug.
+                if (def.OrbitSpeedDeg != 0f && e.Pos.LengthSquared() > 1e-6f)
                 {
                     float ang = Mathf.DegToRad(def.OrbitSpeedDeg) * dt * slow;
                     e.Pos = e.Pos.Rotated(ang);
@@ -98,13 +103,27 @@ public sealed partial class SimWorld
                 continue;
             }
 
-            if (e.DistToCenter <= siegeRing && def.StandoffRange <= 0f && !def.Kamikaze)
+            // The ring is per-enemy: a Carrier's hull is three times a Skiff's, so a shared
+            // ring would leave the big ones visibly buried in the crust. Adding the enemy's
+            // own radius keeps every hull clear of the planet regardless of size.
+            float myRing = siegeRing + e.Radius;
+            if (e.DistToCenter <= myRing && def.StandoffRange <= 0f && !def.Kamikaze)
             {
                 // pin to the siege ring so the crowd forms a visible shell around the
                 // planet rather than sinking into the sprite
-                if (e.DistToCenter > 0.001f) e.Pos = e.Pos / e.DistToCenter * siegeRing;
-                e.DistToCenter = siegeRing;
+                if (e.DistToCenter > 0.001f) e.Pos = e.Pos / e.DistToCenter * myRing;
+                e.DistToCenter = myRing;
                 e.Standoff = true;
+
+                // Besiegers keep circling rather than hanging motionless. Enemies with
+                // their own OrbitSpeedDeg (the heavies and the mini-boss) keep using it;
+                // everything else drifts at the shared siege rate.
+                float orbitDeg = def.OrbitSpeedDeg != 0f ? def.OrbitSpeedDeg : B.SiegeOrbitDeg;
+                if (orbitDeg != 0f)
+                {
+                    e.Pos = e.Pos.Rotated(Mathf.DegToRad(orbitDeg) * dt);
+                    e.DistToCenter = e.Pos.Length();
+                }
 
                 e.AttackTimer -= dt;
                 if (e.AttackTimer <= 0f)

@@ -2,8 +2,11 @@ using Godot;
 
 namespace Sentinel.Render;
 
-/// <summary>The defended planet. "earth" is a shader-rendered rotating globe from
-/// NASA Blue Marble maps; other skins are Kenney planet sprites, slowly spun.</summary>
+/// <summary>The defended planet. Every skin is now a shader-rendered rotating globe:
+/// "earth" uses <c>earth.gdshader</c> (day + cloud + night-lights maps), and the Shop's
+/// worlds use <c>planet.gdshader</c> with that body's real equirectangular map from
+/// <c>tools/fetch_planet_maps.py</c>. They used to be flat sprites spun about their
+/// centre, which read as a turning picture rather than a turning world.</summary>
 public sealed partial class PlanetView : Node2D
 {
     public string Skin = "earth";
@@ -30,13 +33,15 @@ public sealed partial class PlanetView : Node2D
 
     public override void _Ready()
     {
-        if (Skin == "earth")
+        var mat = Skin == "earth" ? Art.EarthMaterial() : Art.PlanetMaterial(Skin);
+        if (mat != null)
         {
-            _disc = new EarthDisc { Owner2D = this, Material = Art.EarthMaterial() };
+            _disc = new EarthDisc { Owner2D = this, Material = mat };
             AddChild(_disc);
         }
         else
         {
+            // no equirectangular map for this skin — fall back to the old flat sprite
             string p = $"res://assets/game/planets/{Skin}.png";
             _skinTex = ResourceLoader.Exists(p) ? GD.Load<Texture2D>(p) : null;
         }

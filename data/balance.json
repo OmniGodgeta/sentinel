@@ -1,8 +1,8 @@
 {
   "planet_radius": 120,
-  "siege_standoff": 26,
-  "siege_interval": 1.4,
-  "siege_damage_mult": 0.20,
+  "siege_standoff": 80,
+  "siege_interval": 1.6,
+  "siege_damage_mult": 0.09,
   "planet_integrity": 1100,
   "turret_ring_radius": 150,
   "hero_orbit_min": 200,
@@ -18,10 +18,10 @@
   "xp_per_wave": 12,
   "xp_mission_clear": 100,
   "xp_kill_mult": 1.15,
-
   "battery_damage": 13,
   "battery_interval": 1.15,
   "battery_salvo": 5,
   "battery_missile_speed": 176,
-  "battery_range": 760
+  "battery_range": 760,
+  "siege_orbit_deg": 7
 }

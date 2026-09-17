@@ -187,18 +187,16 @@ public sealed partial class ShopScreen : CanvasLayer
         col.Theme = UiTheme.Instance;
         layer.AddChild(col);
 
-        var tex = GD.Load<Texture2D>($"res://assets/game/planets/{planetId}.png")
-                  ?? GD.Load<Texture2D>("res://assets/game/earth_day.png");
-        if (tex != null)
-        {
-            col.AddChild(new TextureRect
-            {
-                Texture = tex,
-                CustomMinimumSize = new Vector2(0, 420),
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-            });
-        }
+        // The live rotating globe, not a still — it's the thing being sold, so the
+        // preview should show exactly what lands in the mission.
+        var stage = new Control { CustomMinimumSize = new Vector2(0, 420) };
+        col.AddChild(stage);
+        // PlanetView is a Node2D, so it can't be anchored — centre it on the Control by
+        // hand and keep it centred when the layout settles.
+        var globe = new Render.PlanetView { Skin = planetId, Diameter = 380f };
+        stage.AddChild(globe);
+        stage.Resized += () => globe.Position = stage.Size * 0.5f;
+        globe.Position = stage.Size * 0.5f;
 
         var nm = new Label { Text = name.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center };
         nm.AddThemeFontOverride("font", UiTheme.Display);

@@ -112,6 +112,45 @@ public static class Art
         return t;
     }
 
+    /// <summary>Per-body look for the Shop's worlds: rim/atmosphere colour and strength,
+    /// a tint that restores true colour to the greyscale Voyager/Galileo/Cassini mosaics,
+    /// and a spin rate. Null for a skin with no map, so the caller can fall back.</summary>
+    private static readonly Dictionary<string, (Color atmo, float atmoStr, Color tint, float spin, float bright)> PlanetLook = new()
+    {
+        // thin CO2 haze, already-red map so barely any tint
+        ["mars"] = (new Color(0.85f, 0.45f, 0.28f), 0.22f, new Color(1.00f, 0.95f, 0.90f), 0.012f, 1.00f),
+        // airless ice; the SSI mosaic is greyscale, real Europa is off-white with rust bands
+        ["europa"] = (new Color(0.55f, 0.70f, 0.90f), 0.10f, new Color(1.00f, 0.93f, 0.84f), 0.010f, 1.05f),
+        // thick orange nitrogen haze — the radar mosaic is greyscale, so nearly all the
+        // colour here is the tint plus a very strong rim
+        ["titan"] = (new Color(1.00f, 0.62f, 0.18f), 0.70f, new Color(1.00f, 0.74f, 0.38f), 0.008f, 1.00f),
+        // tenuous nitrogen atmosphere, pinkish cantaloupe crust
+        ["triton"] = (new Color(0.75f, 0.72f, 0.85f), 0.16f, new Color(1.00f, 0.96f, 0.92f), 0.007f, 1.05f),
+        // almost no atmosphere; the New Horizons mosaic is already true colour
+        ["pluto"] = (new Color(0.72f, 0.60f, 0.55f), 0.12f, new Color(1.00f, 0.98f, 0.95f), 0.006f, 1.10f),
+    };
+
+    /// <summary>A rotating-globe material for a Shop world, or null when that skin has no
+    /// equirectangular map extracted (caller falls back to the flat sprite).</summary>
+    public static ShaderMaterial? PlanetMaterial(string skin)
+    {
+        string map = $"res://assets/game/planets/{skin}_map.png";
+        if (!ResourceLoader.Exists(map)) return null;
+
+        var look = PlanetLook.TryGetValue(skin, out var l)
+            ? l
+            : (new Color(0.4f, 0.55f, 0.85f), 0.2f, Colors.White, 0.010f, 1f);
+
+        var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://assets/game/planet.gdshader") };
+        m.SetShaderParameter("day_tex", GD.Load<Texture2D>(map));
+        m.SetShaderParameter("atmo_color", look.Item1);
+        m.SetShaderParameter("atmosphere", look.Item2);
+        m.SetShaderParameter("tint", look.Item3);
+        m.SetShaderParameter("spin", look.Item4);
+        m.SetShaderParameter("brightness", look.Item5);
+        return m;
+    }
+
     public static ShaderMaterial EarthMaterial()
     {
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://assets/game/earth.gdshader") };

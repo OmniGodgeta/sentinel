@@ -719,6 +719,71 @@ public sealed partial class Hud : CanvasLayer
         return tex;
     }
 
+    /// <summary>What taking this Sentinel card actually gives you, worded like PDTD's own
+    /// cards. Level 0 is the unlock and gets PDTD's "Release a X Sentinel to deal [Type]
+    /// DMG" phrasing; every level after states the real deltas computed off the def, so
+    /// the card can never drift out of sync with the numbers in data/.</summary>
+    private static string OrbitalUpgradeText(Config.OrbitalWeaponDef d, int lvl)
+    {
+        if (lvl <= 0)
+        {
+            string dmgType = d.Kind switch
+            {
+                "laser" or "beam_laser" => "Energy",
+                "rad_line" or "rad_zone" => "Radiation",
+                "lightning" or "shock_orb" => "Electric",
+                "space_bomb" or "force_field" => "Gravity",
+                _ => "Physical",
+            };
+            return $"Release a {d.Name} Sentinel to deal [{dmgType}] DMG";
+        }
+
+        var parts = new System.Collections.Generic.List<string>();
+
+        float cur = d.Damage + d.DamagePerLevel * (lvl - 1);
+        if (d.DamagePerLevel != 0f && cur > 0.01f)
+            parts.Add($"DMG +{d.DamagePerLevel / cur * 100f:0}%");
+
+        // cooldown_per_level is negative (faster); show it as a cooldown-speed gain, which
+        // is how PDTD words it, and respect min_cooldown so a maxed weapon doesn't claim a
+        // speed-up it can't actually take.
+        float cdCur = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (lvl - 1));
+        float cdNext = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * lvl);
+        if (cdNext < cdCur - 0.001f && cdNext > 0.01f)
+            parts.Add($"cooldown speed +{(cdCur / cdNext - 1f) * 100f:0}%");
+
+        if (d.CountPerLevel > 0f)
+        {
+            int before = Mathf.FloorToInt(d.CountPerLevel * (lvl - 1));
+            int after = Mathf.FloorToInt(d.CountPerLevel * lvl);
+            if (after > before) parts.Add("+1 target");
+        }
+        if (d.RadiusPerLevel != 0f && d.Radius > 0.01f)
+            parts.Add($"radius +{d.RadiusPerLevel / d.Radius * 100f:0}%");
+        if (d.DurationPerLevel != 0f && d.Duration > 0.01f)
+            parts.Add($"duration +{d.DurationPerLevel / d.Duration * 100f:0}%");
+
+        return parts.Count == 0 ? $"{d.Name} improves" : string.Join("\n", parts);
+    }
+
+    /// <summary>Same idea for the ship's own weapons.</summary>
+    private static string HeroUpgradeText(Config.HeroWeaponDef d, int lvl)
+    {
+        if (lvl <= 0) return $"Equip {d.Name}";
+
+        var parts = new System.Collections.Generic.List<string>();
+        float cur = d.Damage + d.DamagePerLevel * (lvl - 1);
+        if (d.DamagePerLevel != 0f && cur > 0.01f)
+            parts.Add($"DMG +{d.DamagePerLevel / cur * 100f:0}%");
+
+        float cdCur = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * (lvl - 1));
+        float cdNext = Mathf.Max(d.MinCooldown, d.Cooldown + d.CooldownPerLevel * lvl);
+        if (cdNext < cdCur - 0.001f && cdNext > 0.01f)
+            parts.Add($"cooldown speed +{(cdCur / cdNext - 1f) * 100f:0}%");
+
+        return parts.Count == 0 ? $"{d.Name} improves" : string.Join("\n", parts);
+    }
+
     private static Color HexColor(string hex, Color fallback)
     {
         try { return new Color(hex); } catch { return fallback; }
@@ -750,11 +815,14 @@ public sealed partial class Hud : CanvasLayer
         // display entirely. Work out what each card may occupy from the actual viewport.
         int n = Mathf.Max(1, w.DraftOptionIndices.Count);
         var vp = GetViewport().GetVisibleRect().Size;
-        const float sep = 14f, sideMargin = 28f;
-        float cardW = Mathf.Clamp((vp.X - sideMargin - sep * (n - 1)) / n, 120f, 260f);
+        // PDTD deals three cards, not four, and they fill most of the screen's width —
+        // that's what makes the art readable. Beyond's were capped at 260px and squeezed
+        // by a four-wide hand. Tighter margins plus a higher cap get them to PDTD's scale.
+        const float sep = 10f, sideMargin = 16f;
+        float cardW = Mathf.Clamp((vp.X - sideMargin - sep * (n - 1)) / n, 120f, 340f);
         // keep the card's portrait proportions, but never taller than the space left
         // under the header inside the dimmed screen
-        float cardH = Mathf.Min(cardW * 3.14f, vp.Y - 260f);
+        float cardH = Mathf.Min(cardW * 3.14f, vp.Y - 190f);
         float artH = cardH * 0.63f;
         float k = cardW / 220f;   // font scale, so text shrinks with the card
 
@@ -783,6 +851,7 @@ public sealed partial class Hud : CanvasLayer
                 cardId = o.Id; cardName = o.Name; accent = o.Accent;
                 lvl = w.OrbitalWeaponLevel(wi);
                 subtitle = "SENTINEL";
+                boostText = OrbitalUpgradeText(o, lvl);
             }
             else
             {
@@ -790,6 +859,7 @@ public sealed partial class Hud : CanvasLayer
                 cardId = hh.Id; cardName = hh.Name; accent = hh.Accent;
                 lvl = w.HeroWeaponLevel(wi);
                 subtitle = "SHIP";
+                boostText = HeroUpgradeText(hh, lvl);
             }
             var col = HexColor(accent, UiTheme.Accent);
             int i2 = idx;
@@ -924,14 +994,16 @@ public sealed partial class Hud : CanvasLayer
             tag.AddThemeColorOverride("font_color", new Color(col, 0.7f));
             v.AddChild(tag);
 
+            // Every card says what it DOES, the way PDTD's do ("Radiation Link DMG +60%").
+            // "LV 1 → 2" told you a number changed without telling you which one or by how
+            // much, which is useless at the moment you have to choose between three cards.
             var lv = new Label
             {
-                // boost cards state their effect instead of a level step
-                Text = boost ? boostText : (lvl == 0 ? "UNLOCK" : $"LV {lvl} → {lvl + 1}"),
+                Text = boostText,
                 HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore,
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
             };
-            lv.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt((boost ? 16 : 21) * k));
+            lv.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(16 * k));
             lv.AddThemeColorOverride("font_color", lvl == 0 && !boost ? new Color(1f, 0.9f, 0.5f) : new Color(1, 1, 1, 0.85f));
             v.AddChild(lv);
 

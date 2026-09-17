@@ -18,6 +18,10 @@ public sealed record BalanceDef
     /// <summary>Default siege damage as a fraction of the enemy's ContactDamage. A parked
     /// enemy hits many times instead of once, so this is well under 1.</summary>
     public float SiegeDamageMult { get; init; } = 0.34f;
+    /// <summary>Degrees/second a parked besieger drifts around the planet when its own
+    /// EnemyDef doesn't set OrbitSpeedDeg. Keeps the siege ring alive rather than a
+    /// motionless wall of hulls.</summary>
+    public float SiegeOrbitDeg { get; init; } = 7f;
     public float PlanetIntegrity { get; init; } = 1000f;
     public float TurretRingRadius { get; init; } = 150f;
     public float HeroOrbitMin { get; init; } = 200f;
@@ -138,6 +142,12 @@ public sealed record HeroWeaponDef
     public float Absorb { get; init; }              // shield: fraction of incoming damage soaked
     public bool ShieldPierce { get; init; }
     public bool ArmorPierce { get; init; }
+    /// <summary>Yamato spread: how far past <see cref="Radius"/> the blast still hurts,
+    /// as a multiple of it. 1 (the default) = the old hard-edged circle.</summary>
+    public float SpreadRadiusMult { get; init; } = 1f;
+    /// <summary>Fraction of full damage dealt at the very edge of the spread; damage
+    /// tapers linearly from 1.0 at the core edge down to this.</summary>
+    public float SpreadDamageFrac { get; init; } = 0.35f;
 }
 
 public sealed record HeroWeaponsDef

@@ -56,6 +56,20 @@ public sealed partial class SplashScreen : CanvasLayer
         _checking.AddThemeFontSizeOverride("font_size", 18);
         AddChild(_checking);
 
+        // Always-visible build number. Without it there's no way to tell from the device
+        // whether a fix actually shipped or the old APK is still installed, which made
+        // chasing the "Download does nothing" report much harder than it needed to be.
+        var ver = new Label
+        {
+            Text = $"v{UpdateChecker.Current()}",
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
+            OffsetTop = -40, OffsetBottom = -12,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Modulate = new Color(1, 1, 1, 0.35f),
+        };
+        ver.AddThemeFontSizeOverride("font_size", 16);
+        AddChild(ver);
+
         _fade = new ColorRect { Color = new Color(0.01f, 0.012f, 0.03f, 0f), MouseFilter = Control.MouseFilterEnum.Ignore };
         _fade.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(_fade);
@@ -138,19 +152,95 @@ public sealed partial class SplashScreen : CanvasLayer
         msg.AddThemeFontSizeOverride("font_size", 21);
         col.AddChild(msg);
 
+        // Progress + status live INSIDE the gate panel. The previous two attempts routed
+        // this button through UpdateChecker.PromptInstall, which builds a second
+        // CanvasLayer over the top — and any way that can go wrong (layer ordering, the
+        // node not being added, an exception before the card renders) produces exactly
+        // one symptom: the button does nothing at all, with nothing on screen to say why.
+        // Downloading in place removes that whole class of failure, and every branch below
+        // writes to `status`, so the button can never again be silently inert.
+        var progress = new ProgressBar
+        {
+            MinValue = 0, MaxValue = 1, Value = 0, ShowPercentage = false,
+            CustomMinimumSize = new Vector2(0, 10), Visible = false,
+        };
+        col.AddChild(progress);
+
+        var status = new Label
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Visible = false,
+        };
+        status.AddThemeFontSizeOverride("font_size", 18);
+        col.AddChild(status);
+
         var dl = new Button { Text = "⬇   DOWNLOAD UPDATE", CustomMinimumSize = new Vector2(0, 90) };
         dl.AddThemeFontSizeOverride("font_size", 27);
         UiTheme.StylePrimary(dl);
-        dl.Pressed += () => Sentinel.Meta.UpdateChecker.PromptInstall(this);
         col.AddChild(dl);
 
         var hint = new Label
         {
-            Text = "install the new APK, then reopen Beyond",
-            HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.45f),
+            Text = $"installed build v{UpdateChecker.Current()} — install the new APK, then reopen Beyond",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Modulate = new Color(1, 1, 1, 0.45f),
         };
         hint.AddThemeFontSizeOverride("font_size", 17);
         col.AddChild(hint);
+
+        bool busy = false;
+        dl.Pressed += () =>
+        {
+            if (busy) return;
+            busy = true;
+            status.Visible = true;
+            status.Modulate = new Color(1, 1, 1, 0.8f);
+            Sentinel.Audio.AudioManager.Instance?.Click();
+
+            string apk = UpdateChecker.AvailableApkUrl;
+            if (string.IsNullOrEmpty(apk))
+            {
+                // No asset URL (release still building, or the API response had no .apk).
+                // Say so and hand them the page rather than appearing to do nothing.
+                status.Text = "no APK on that release yet — opening the release page";
+                OS.ShellOpen(url);
+                busy = false;
+                return;
+            }
+
+            dl.Disabled = true;
+            progress.Visible = true;
+            status.Text = OS.GetName() == "Android"
+                ? "downloading…"
+                : "downloading… (desktop build — saves the file, no installer)";
+
+            UpdateDownloader.Start(this, apk,
+                onProgress: f =>
+                {
+                    progress.Value = f;
+                    status.Text = $"downloading… {f * 100f:0}%";
+                },
+                onDone: (ok, info) =>
+                {
+                    if (ok)
+                    {
+                        status.Text = "handing it to the installer — the game will close";
+                        var tree = GetTree();
+                        if (OS.GetName() != "Android") OS.SetRestartOnExit(true);
+                        tree.CreateTimer(1.5).Timeout += () => tree.Quit();
+                        return;
+                    }
+                    status.Text = $"download failed: {info}\ntap again to open the release page in your browser";
+                    status.Modulate = new Color(1f, 0.62f, 0.55f);
+                    dl.Disabled = false;
+                    dl.Text = "OPEN RELEASE PAGE";
+                    busy = false;
+                    // next press goes to the browser
+                    UpdateChecker.ClearApkUrl();
+                });
+        };
     }
 
     private static Label MakeTitle(Color col, float dy)

@@ -28,6 +28,10 @@ public sealed partial class UpdateChecker : CanvasLayer
         Available = true; AvailableTag = tag; AvailableUrl = url; AvailableApkUrl = apkUrl;
     }
 
+    /// <summary>Forget the direct APK URL after a failed download, so the next press falls
+    /// through to opening the release page instead of retrying a fetch that just failed.</summary>
+    public static void ClearApkUrl() => AvailableApkUrl = "";
+
     public override void _Ready()
     {
         if (HasMeta("prompt_only")) return;   // opened by PromptInstall, card is built by hand

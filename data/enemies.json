@@ -23,7 +23,8 @@
     "radius": 30,
     "bounty": 22,
     "color": 0.62,
-    "codex_id": "en_hauler"
+    "codex_id": "en_hauler",
+    "orbit_speed_deg": -11
   },
   {
     "id": "interceptor",
@@ -53,7 +54,8 @@
     "radius": 22,
     "bounty": 20,
     "color": 0.52,
-    "codex_id": "en_aegis"
+    "codex_id": "en_aegis",
+    "orbit_speed_deg": 14
   },
   {
     "id": "bombard",
@@ -85,7 +87,8 @@
     "radius": 34,
     "bounty": 40,
     "color": 0.6,
-    "codex_id": "en_carrier"
+    "codex_id": "en_carrier",
+    "orbit_speed_deg": 9
   },
   {
     "id": "phase_runner",
@@ -145,7 +148,8 @@
     "radius": 28,
     "bounty": 34,
     "color": 0.66,
-    "codex_id": "en_siege"
+    "codex_id": "en_siege",
+    "orbit_speed_deg": -12
   },
   {
     "id": "miniboss_siege_warden",
@@ -154,7 +158,7 @@
     "max_hp": 980,
     "hp_segments": 5,
     "speed": 26,
-    "orbit_speed_deg": 17.0,
+    "orbit_speed_deg": 18,
     "armor": 4,
     "contact_damage": 180,
     "radius": 40,
@@ -185,6 +189,7 @@
     "core_drop": 3,
     "alloy_drop": 12,
     "color": 0.98,
-    "codex_id": "en_boss_gate"
+    "codex_id": "en_boss_gate",
+    "orbit_speed_deg": 6
   }
 ]

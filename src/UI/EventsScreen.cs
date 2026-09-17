@@ -49,21 +49,40 @@ public sealed partial class EventsScreen : CanvasLayer
         list.AddChild(Card(
             "WEEKLY CHALLENGE", wk.Title, wk.MutatorBlurb,
             $"deepest so far: wave {App.Save.WeeklyBest}", new Color(0.86f, 0.27f, 0.57f),
-            () => App.StartWeekly(), locked: false));
+            () => App.StartWeekly(), locked: false,
+            rewards: new[]
+            {
+                ("loot/gold_key", "×1 on a new best"),
+                ("loot/research_core", "bonus Research Data"),
+                ("loot/medal", "Commendations"),
+            }));
 
         list.AddChild(Card(
             "ENDLESS HOLD", "One planet. No end.", "Survive as long as you can against an endlessly escalating hold.",
             $"best: wave {App.Save.EndlessBest}", UiTheme.Accent,
-            () => App.StartMission("res://data/missions/endless.json", "endless"), locked: false));
+            () => App.StartMission("res://data/missions/endless.json", "endless"), locked: false,
+            rewards: new[]
+            {
+                ("loot/silver_key", "×1 every 10 waves"),
+                ("loot/gold_key", "×1 on a new best"),
+                ("loot/exp", "Commander XP"),
+            }));
 
         list.AddChild(Card(
             "ASCENSION", "Harder mission tiers, bigger rewards.", "Re-run a cleared mission at a tougher Ascension tier for better payouts.",
             "pick a stage on the Star Map", new Color(0.95f, 0.78f, 0.25f),
-            () => App.ShowLevels(), locked: false));
+            () => App.ShowLevels(), locked: false,
+            rewards: new[]
+            {
+                ("loot/silver_key", "×1 per star"),
+                ("loot/coin", "Credits"),
+                ("loot/research_core", "Research Data"),
+            }));
 
         list.AddChild(Card(
             "GALAXY ARENA", "Coming soon", "PvE wave-survival arena with a ranking system — see docs/ROADMAP.md. Not built yet.",
-            "", new Color(0.5f, 0.5f, 0.6f), null, locked: true));
+            "", new Color(0.5f, 0.5f, 0.6f), null, locked: true,
+            rewards: new[] { ("loot/chest", "Armory chests"), ("loot/medal", "Rank rewards") }));
 
         var note = new Label
         {
@@ -76,7 +95,11 @@ public sealed partial class EventsScreen : CanvasLayer
         list.AddChild(note);
     }
 
-    private Control Card(string kicker, string title, string blurb, string footer, Color accent, System.Action? onEnter, bool locked)
+    /// <summary>One expedition card. <paramref name="rewards"/> is the PDTD touch — an
+    /// event list that doesn't say what's in it for you is just a menu, so each card ends
+    /// with a strip of real loot icons and what earns them.</summary>
+    private Control Card(string kicker, string title, string blurb, string footer, Color accent,
+                         System.Action? onEnter, bool locked, (string sprite, string label)[]? rewards = null)
     {
         var p = new PanelContainer();
         p.AddThemeStyleboxOverride("panel", new StyleBoxFlat
@@ -123,6 +146,42 @@ public sealed partial class EventsScreen : CanvasLayer
         enter.AddThemeFontSizeOverride("font_size", 18);
         if (!locked && onEnter != null) enter.Pressed += () => { Sentinel.Audio.AudioManager.Instance?.Confirm(); onEnter(); };
         row.AddChild(enter);
+
+        if (rewards is { Length: > 0 })
+        {
+            var sep = new HSeparator { Modulate = new Color(accent, 0.28f) };
+            col.AddChild(sep);
+
+            var rHead = new Label { Text = "REWARDS", Modulate = new Color(accent, locked ? 0.45f : 0.8f) };
+            rHead.AddThemeFontSizeOverride("font_size", 14);
+            col.AddChild(rHead);
+
+            var rRow = new HBoxContainer();
+            rRow.AddThemeConstantOverride("separation", 18);
+            col.AddChild(rRow);
+
+            foreach (var (sprite, label) in rewards)
+            {
+                var cell = new HBoxContainer();
+                cell.AddThemeConstantOverride("separation", 7);
+                var tex = Render.Art.Pdtd(sprite);
+                if (tex != null)
+                {
+                    cell.AddChild(new TextureRect
+                    {
+                        Texture = tex,
+                        CustomMinimumSize = new Vector2(34, 34),
+                        ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                        StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                        Modulate = new Color(1, 1, 1, locked ? 0.45f : 1f),
+                    });
+                }
+                var l = new Label { Text = label, VerticalAlignment = VerticalAlignment.Center, Modulate = new Color(1, 1, 1, locked ? 0.4f : 0.72f) };
+                l.AddThemeFontSizeOverride("font_size", 15);
+                cell.AddChild(l);
+                rRow.AddChild(cell);
+            }
+        }
 
         return p;
     }

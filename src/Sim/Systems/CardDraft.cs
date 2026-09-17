@@ -97,7 +97,12 @@ public sealed partial class SimWorld
         GenerateDraftOptions(Mathf.Clamp(cards, 1, 6));
     }
 
-    private void GenerateDraftOptions(int want = 4)
+    /// <summary>Default hand size. PDTD deals THREE — which is what lets its cards be
+    /// big enough to read the art and the effect text at a glance. Four cards on a phone
+    /// forced each one narrow enough that the text had to shrink to fit.</summary>
+    private const int DefaultDraftOptions = 3;
+
+    private void GenerateDraftOptions(int want = DefaultDraftOptions)
     {
         _draftOptions.Clear();
 

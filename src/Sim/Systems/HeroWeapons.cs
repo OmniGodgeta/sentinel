@@ -309,16 +309,34 @@ public sealed partial class SimWorld
 
         float r = d.Radius + d.RadiusPerLevel * (L - 1);
         float rSq = r * r;
+        // Spread: past the core blast the shot keeps hurting, tapering to
+        // SpreadDamageFrac at the outer edge. Yamato used to be a hard-edged circle —
+        // everything inside took the full hit and one pixel outside took nothing — which
+        // made a huge, slow, expensive weapon feel narrow.
+        float spreadR = r * Mathf.Max(1f, d.SpreadRadiusMult);
+        float spreadSq = spreadR * spreadR;
         for (int i = 0; i < EnemyHighWater; i++)
         {
             ref var e = ref Enemies[i];
-            if (!e.Alive || e.Pos.DistanceSquaredTo(aim) > rSq) continue;
-            DamageEnemy(i, dmg, DamageSource.Hero, armorPen: d.ArmorPierce ? 9999f : 0f, shieldMult: d.ShieldPierce ? 0f : 1f);
+            if (!e.Alive) continue;
+            float dSq = e.Pos.DistanceSquaredTo(aim);
+            if (dSq > spreadSq) continue;
+
+            float hit = dmg;
+            if (dSq > rSq && spreadR > r + 0.01f)
+            {
+                // linear taper from full damage at the core edge to SpreadDamageFrac out
+                float t = (Mathf.Sqrt(dSq) - r) / (spreadR - r);
+                hit = dmg * Mathf.Lerp(1f, Mathf.Clamp(d.SpreadDamageFrac, 0f, 1f), Mathf.Clamp(t, 0f, 1f));
+            }
+            DamageEnemy(i, hit, DamageSource.Hero, armorPen: d.ArmorPierce ? 9999f : 0f, shieldMult: d.ShieldPierce ? 0f : 1f);
             if (!_missionEnemyDefs[e.DefIndex].CcImmune)
             {
                 Vector2 outward = (e.Pos - aim);
                 outward = outward.LengthSquared() > 1f ? outward.Normalized() : Vector2.Up;
-                e.Pos += outward * 60f;
+                // shove scales down across the spread too, so the outer ring is nudged
+                // rather than flung
+                e.Pos += outward * (dSq <= rSq ? 60f : 26f);
                 e.DistToCenter = e.Pos.Length();
                 e.Standoff = false;
             }

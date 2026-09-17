@@ -257,6 +257,10 @@ public sealed partial class AppRoot : Node
 
         if (o.MissionId == "endless")
         {
+            // A Silver Key every 10 waves, so a long hold pays out even when it doesn't
+            // beat your record — the Events card promises this, and a mode whose only
+            // reward is beating your own best stops paying the moment you plateau.
+            Save.SilverKeys += o.WavesCleared / EndlessKeyEveryWaves;
             if (o.WavesCleared > Save.EndlessBest) { Save.EndlessBest = o.WavesCleared; Save.GoldKeys += 1; }
             Save.Save();
             return;
@@ -287,6 +291,9 @@ public sealed partial class AppRoot : Node
     }
 
     // remember the current speed choice whenever it changes mid-mission
+    /// <summary>Endless pays a Silver Key at every multiple of this many waves.</summary>
+    private const int EndlessKeyEveryWaves = 10;
+
     public void RememberSpeed(int s) { Save.Options.Speed = s; }
 
     private void SwapTo(Node next)

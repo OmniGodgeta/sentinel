@@ -2060,3 +2060,56 @@ Download button did nothing; keys showed the wrong art.
 - Shock Orb / Orbital Lightning art+card alignment to Ball Lightning / Chain Lightning.
 - Missing card art: Field Amplifier, Warfield Upgrading, Ordnance Calibration,
   Deflection Uprating, Saturation Doctrine.
+
+## v0.31.2 — updater downloads inline, real rotating worlds, cards say what they do
+
+- **Updater reworked again.** The previous two attempts both routed the splash gate's
+  Download button through `UpdateChecker.PromptInstall`, which builds a second
+  CanvasLayer over the top — and every way that can fail produces one symptom: the
+  button does nothing, with nothing on screen explaining why. The gate now owns its own
+  progress bar and status label and downloads **in place**; every branch writes to the
+  status label, so it can't be silently inert again. The splash also prints the running
+  build number, so "did the fix ship or is the old APK still installed?" is answerable
+  from the device.
+- **Salvage Beacon removed** (ability, its level card, and a save migration).
+- **Enemies orbit instead of touching the planet.** The siege ring is now per-enemy
+  (`planet radius + siege_standoff + the enemy's own radius`), so big hulls stay clear
+  of the crust, and parked besiegers keep circling — heavies and the mini-boss on their
+  own `orbit_speed_deg`, everything else on `balance.json`'s `siege_orbit_deg`.
+  Orbiting also continues at standoff range now, where ranged attackers used to freeze.
+- **Difficulty pass**, because stages had become unfinishable: enemies besieging instead
+  of being consumed means the population accumulates, which the old spawn rate wasn't
+  written for. `siege_standoff` 26 -> 80 (the ring was inside the orbital weapons'
+  coverage, so anything that reached it was nearly untouchable), siege damage softened,
+  and eps/soft-cap pulled down. m01-m06 now win; m07/m08 remain lost as they were before
+  this session.
+  - Root-caused one regression properly: giving Bombard an orbit made it circle *while*
+    shelling, so it stopped dying — and m05/m07/m08 are exactly the Bombard-heavy
+    missions. Orbits are for heavies only now.
+- **Cards say what they do.** "LV 1 → 2" told you a number changed but not which or by
+  how much. Level cards now state the real deltas computed off the def (DMG +46%,
+  cooldown speed +12%, +1 target), and an unlock uses PDTD's own phrasing: "Release a
+  Waterdrop Sentinel to deal [Physical] DMG".
+- **Bigger cards, three per hand** — PDTD deals three, which is what lets them be large
+  enough to read. Width cap 260 -> 340 with tighter margins.
+- **Yamato spreads.** It was a hard-edged circle: full damage inside, nothing one pixel
+  out. Damage now tapers from the core edge out to `spread_radius_mult` x radius.
+- **The Shop's worlds are real planets that actually rotate.** Renaming them in v0.31.1
+  left the old flat sprites in place. `tools/fetch_planet_maps.py` pulls genuine
+  equirectangular maps (NASA/USGS public domain, plus one CC BY) and
+  `assets/game/planet.gdshader` spins them the way Earth already span. Skin ids moved
+  with the names, with a save migration. Preview and the Profile avatar both render the
+  live globe.
+- **Events cards show their rewards** as real loot icons, and Endless now actually pays
+  a Silver Key every 10 waves rather than only rewarding a new personal best.
+
+### Still open
+- `data/skillcards.json` (187 PDTD cards) not yet wired into the draft; star levels
+  (3 pips, 4th promotes, purple above L1) go in with it.
+- Sentinel ultimates (charge at ~90-120s, card animates when ready).
+- Missing upgrade cards for Shock Orb / Multi-Launch / Field Amplifier / Saturation
+  Doctrine / Radiation Zone, and Shock Orb -> Ball Lightning + Orbital Lightning ->
+  Chain Lightning art alignment.
+- Upgrades screen on PDTD's layout: Chip tab, Planet tab (missile + ultimate upgrades
+  consuming Ultimate Alloy / Unobtainium Alloy), planet-skin tab. Gold chests to roll
+  5-10% for alloy.

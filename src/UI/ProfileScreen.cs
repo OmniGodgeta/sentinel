@@ -44,7 +44,8 @@ public sealed partial class ProfileScreen : CanvasLayer
         var spacer = new Control { CustomMinimumSize = new Vector2(0, 14) };
         root.AddChild(spacer);
 
-        // rank ring
+        // rank ring — the avatar is the world you're currently flying, rendered live on
+        // the same rotating globe the mission uses, with the commander rank over it.
         var ring = new PanelContainer { CustomMinimumSize = new Vector2(168, 168), SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
         ring.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
@@ -52,10 +53,21 @@ public sealed partial class ProfileScreen : CanvasLayer
             BorderColor = UiTheme.Accent, BorderWidthLeft = 3, BorderWidthRight = 3, BorderWidthTop = 3, BorderWidthBottom = 3,
             CornerRadiusTopLeft = 60, CornerRadiusTopRight = 60, CornerRadiusBottomLeft = 60, CornerRadiusBottomRight = 60,
         });
+
+        var avatar = new Control { ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
+        ring.AddChild(avatar);
+        string skin = string.IsNullOrEmpty(s.Options.PlanetSkin) ? "earth" : s.Options.PlanetSkin;
+        var globe = new Render.PlanetView { Skin = skin, Diameter = 150f };
+        avatar.AddChild(globe);
+        avatar.Resized += () => globe.Position = avatar.Size * 0.5f;
+        globe.Position = new Vector2(84, 84);
+
         var rl = new Label { Text = $"{p.Commander}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         rl.AddThemeFontOverride("font", UiTheme.Display);
         rl.AddThemeFontSizeOverride("font_size", 73);
         rl.AddThemeColorOverride("font_color", UiTheme.Accent);
+        rl.AddThemeConstantOverride("outline_size", 10);
+        rl.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.04f, 0.08f, 0.9f));
         ring.AddChild(rl);
         root.AddChild(ring);
 
