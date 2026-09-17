@@ -105,14 +105,32 @@ public sealed partial class SimWorld
                 if (e.AttackTimer <= 0f)
                 {
                     e.AttackTimer = def.RangedInterval;
-                    Vector2 dir = (-e.Pos).Normalized();
-                    // aim at a nearby turret if one lies roughly ahead, else the planet
-                    int slot = TurretRoughlyAhead(e.Pos, dir);
-                    Vector2 aim = slot >= 0 ? Turrets[slot].Pos : Vector2.Zero;
-                    Vector2 v = (aim - e.Pos).Normalized() * 260f;
-                    int p = SpawnProjectile(2, e.Pos, v, def.RangedDamage, 18f, EnemyHandle.None, 254, life: 4f);
-                    if (p >= 0) Projectiles[p].SourceTurret = 254;
-                    Events.Push(SimEventKind.TurretFired, e.Pos, 0f, -1);
+
+                    // A mini-boss alternates its two attacks — a lobbed bomb, then a beam
+                    // fired straight down onto the planet. Alternating (rather than rolling
+                    // each time) means you always see both, which is what makes it read as
+                    // an elite rather than a big Bombard.
+                    bool beam = def.HpSegments > 1 && ((int)e.MechanicPhase & 1) == 1;
+                    e.MechanicPhase += 1f;
+
+                    if (beam)
+                    {
+                        // Hitscan: no travel time, nothing to shoot down — it just lands.
+                        // Hits harder than the bomb to pay for being unavoidable.
+                        DamagePlanet(def.RangedDamage * 1.6f);
+                        Events.PushLine(SimEventKind.BeamTick, e.Pos, Vector2.Zero, 4f, 1);
+                    }
+                    else
+                    {
+                        Vector2 dir = (-e.Pos).Normalized();
+                        // aim at a nearby turret if one lies roughly ahead, else the planet
+                        int slot = TurretRoughlyAhead(e.Pos, dir);
+                        Vector2 aim = slot >= 0 ? Turrets[slot].Pos : Vector2.Zero;
+                        Vector2 v = (aim - e.Pos).Normalized() * 260f;
+                        int p = SpawnProjectile(2, e.Pos, v, def.RangedDamage, 18f, EnemyHandle.None, 254, life: 4f);
+                        if (p >= 0) Projectiles[p].SourceTurret = 254;
+                        Events.Push(SimEventKind.TurretFired, e.Pos, 0f, -1);
+                    }
                 }
             }
         }

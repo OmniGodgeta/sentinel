@@ -5,12 +5,12 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.30.0, 2026-09-17.** Update this file when you finish or start
+Last updated: **v0.30.1, 2026-09-17.** Update this file when you finish or start
 anything.
 
 ---
 
-## Recently completed — mini-boss, item drops, PDTD card frames (v0.30.0)
+## Recently completed — mini-boss, item drops, PDTD card frames (v0.30.0-v0.30.1)
 
 **Mini-boss.** `miniboss_siege_warden` (class `miniboss`, `data/enemies.json`) — a
 multi-bar elite on a repeating timer through every hold (`miniboss_first_seconds` /
@@ -18,7 +18,8 @@ multi-bar elite on a repeating timer through every hold (`miniboss_first_seconds
 `HpSegments` is both the number of bars drawn over it *and* a plain multiplier on its
 hull, so five bars really is five times the health; `OrbitSpeedDeg` adds a tangential
 sweep so it circles the planet while closing instead of charging straight in; it stops at
-`standoff_range` and shells the planet rather than ramming. `SimRenderer.DrawSegmentedHpBar`
+`standoff_range` and then alternates its two attacks — a lobbed bomb, then a hitscan beam
+straight down onto the planet (unavoidable, so it hits 1.6x harder). `SimRenderer.DrawSegmentedHpBar`
 draws the stacked bars. Art is PDTD's `wind_cruiser_boss` hull.
 
 **Mini-boss payout — a face-up hand with cascade draws.** `OpenBossReward(cards, chance)`
