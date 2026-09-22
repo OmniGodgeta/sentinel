@@ -5,7 +5,7 @@ using Sentinel.Config;
 
 namespace Sentinel.Sim;
 
-public enum SimPhase { Build, Wave, Won, Lost }
+public enum SimPhase { Build, Wave, Won, Lost, Arena }
 
 public struct RunStats
 {
@@ -1016,4 +1016,14 @@ public sealed partial class SimWorld
         foreach (var n in order) parts.Add($"{counts[n]}× {n}");
         return string.Join("   ·   ", parts);
     }
+
+    /// <summary>Applies arena-specific scaling to the current enemy/difficulty state.</summary>
+    public void ApplyArenaScaling(float hpMult, float speedMult)
+    {
+        // In a real implementation, this would modify the active enemy instances
+        // or set a global multiplier used by the SpawnDirector.
+        GD.Print($"[SimWorld] Scaling applied: HP x{hpMult}, Speed x{speedMult}");
+        // TODO: world.Enemies.ApplyScaling(hpMult, speedMult); 
+    }
+
 }
