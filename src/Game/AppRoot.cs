@@ -129,14 +129,35 @@ public sealed partial class AppRoot : Node
         }
         SwapTo(new MenuScreen { App = this });
     }
-        public void ShowArena()
-    {
-        var arena = new ArenaScreen { App = this };
-        arena.OnStartRequested += StartArena;
-        SwapTo(arena);
-    }
+    public void ShowArena() => SwapTo(new ArenaScreen { App = this });
 
-    private void StartArena() => StartMission("res://data/missions/endless.json", "arena");
+    /// <summary>Galaxy Arena is a discrete-wave mode, not the Endless Hold's continuous
+    /// survival timer, even though it reuses that mission file for its roster/backdrop —
+    /// `with` overrides Id/Survival the same way <see cref="StartWeekly"/> overrides a
+    /// mission's Id/Name for the weekly rotation.</summary>
+    public void StartArena()
+    {
+        RefreshProgression();
+        var m = Cfg.LoadMission("res://data/missions/endless.json") with { Id = "arena", Survival = false };
+        DiscoverMissionCodex(m);
+        var (loadout, eff, cd) = ResolveLoadout();
+        var mods = Prog.BuildModifiers();
+
+        var g = new GameRoot
+        {
+            MissionOverride = m,
+            EquippedAbilities = loadout,
+            AbilityEffect = eff,
+            AbilityCd = cd,
+            Mods = mods,
+            StartSpeed = Save.Options.Speed,
+        };
+        g.MissionEnded += o => OnMissionEnded(o, 0);
+        g.ExitToMenu += ShowMenu;
+        Save.Record("arena").Attempts++;
+
+        SwapTo(g);
+    }
 public void ShowLevels() => SwapTo(new StarMapScreen { App = this });
     public void ShowResearch() => SwapTo(new ResearchScreen { App = this });
     public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });

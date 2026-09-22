@@ -300,9 +300,11 @@ public sealed partial class SimWorld
         // toggle. Jump straight into the fight (BeginWave is idempotent here — it
         // just re-applies the same reset + flips Phase to Wave).
         if (Mission.Survival) BeginWave();
-        else if (Mission.Id == "arena") 
+        else if (Mission.Id == "arena")
         {
             _arenaDirector = new Systems.ArenaDirector();
+            Phase = SimPhase.Arena;
+            PhaseTimer = 0f;
             _arenaDirector.StartNextWave(this);
         }
     }
@@ -356,6 +358,12 @@ public sealed partial class SimWorld
                 StepProjectiles();
                 StepAbilities();
                 StepItemDrops(SimClock.TickDelta);
+                if (_arenaDirector != null && !_arenaDirector.IsIntermission && _aliveThisWave <= 0)
+                {
+                    WavesCleared++;
+                    Events.Push(SimEventKind.WaveCleared, Vector2.Zero, 0f, _arenaDirector.CurrentWave);
+                    _arenaDirector.TriggerIntermission(this);
+                }
                 if (PlanetIntegrity <= 0f) { PlanetIntegrity = 0f; Phase = SimPhase.Lost; AccrueRewards(false); }
                 break;
         }
@@ -1054,18 +1062,5 @@ public sealed partial class SimWorld
         return string.Join("   ·   ", parts);
     }
 
-    /// <summary>Applies arena-specific scaling to the current enemy/difficulty state.</summary>
-    public void ApplyArenaScaling(float hpMult, float speedMult)
-    {
-        GD.Print($"[SimWorld] Scaling applied: HP x{hpMult}, Speed x{speedMult}");
-        for (int i = 0; i < EnemyHighWater; i++)
-        {
-            var e = Enemies[i];
-            e.MaxHp *= hpMult;
-            e.Hp *= hpMult;
-            e.BaseSpeed *= speedMult;
-            Enemies[i] = e;
-        }
-    }
 
 }

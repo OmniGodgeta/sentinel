@@ -3,7 +3,7 @@
   "name": "Galaxy Arena Test",
   "intro": "One planet. No timer. See how deep you can hold.",
   "seed": 77000,
-  "survival": true,
+  "survival": false,
   "endless": true,
   "duration": 0,
   "level": 4,

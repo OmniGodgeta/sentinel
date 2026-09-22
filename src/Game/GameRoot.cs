@@ -59,6 +59,14 @@ public sealed partial class GameRoot : Node2D
     private Hud _hud = null!;
     public ScreenFx Fx => _fx;
 
+    // Galaxy Arena intermission overlay — only ever built/shown for the "arena"
+    // mission id; every other mission never touches these fields.
+    private CanvasLayer? _arenaOverlay;
+    private ArenaShopManager? _arenaShop;
+    private Label? _arenaTimerLabel;
+    private Label? _arenaGoldLabel;
+    private bool _arenaOverlayShown;
+
     // input state
     private bool _dragging;
     private Vector2 _pressPos;
@@ -184,6 +192,7 @@ public sealed partial class GameRoot : Node2D
         ConsumeSimEvents();
         _renderer.QueueRedraw();
         _hud.Refresh();
+        if (_world.Mission.Id == "arena") RefreshArenaOverlay();
 
         if (!_outcomeReported && _world.Phase is SimPhase.Won or SimPhase.Lost)
         {
@@ -206,6 +215,71 @@ public sealed partial class GameRoot : Node2D
     public void TogglePause() => _clock.Paused = !_clock.Paused;
     public bool IsPaused => _clock.Paused;
     public void GoToMenu() => ExitToMenu?.Invoke();
+
+    /// <summary>Shows/hides the Galaxy Arena intermission panel (wave countdown +
+    /// turret-upgrade shop) in step with <see cref="SimWorld.ArenaIsIntermission"/>.
+    /// Built lazily on first call so non-arena missions never allocate it.</summary>
+    private void RefreshArenaOverlay()
+    {
+        if (_arenaOverlay == null) BuildArenaOverlay();
+
+        bool inter = _world.ArenaIsIntermission;
+        if (inter != _arenaOverlayShown)
+        {
+            _arenaOverlayShown = inter;
+            _arenaOverlay!.Visible = inter;
+            if (inter) _arenaShop!.RefreshShop();
+        }
+        if (inter)
+        {
+            _arenaTimerLabel!.Text = $"Wave {_world.ArenaWave + 1} begins in {Mathf.CeilToInt(_world.ArenaIntermissionTimeLeft)}s";
+            _arenaGoldLabel!.Text = $"Arena Gold: {_world.ArenaGold}";
+        }
+    }
+
+    private void BuildArenaOverlay()
+    {
+        _arenaOverlay = new CanvasLayer { Layer = 12, Visible = false };
+        AddChild(_arenaOverlay);
+
+        var dim = new ColorRect { Color = new Color(0.01f, 0.015f, 0.03f, 0.82f) };
+        dim.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        _arenaOverlay.AddChild(dim);
+
+        var col = new VBoxContainer
+        {
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
+            OffsetLeft = -420, OffsetRight = 420, OffsetTop = 80, OffsetBottom = -40,
+        };
+        col.AddThemeConstantOverride("separation", 12);
+        col.Theme = UiTheme.Instance;
+        _arenaOverlay.AddChild(col);
+
+        var title = new Label { Text = "WAVE CLEARED", HorizontalAlignment = HorizontalAlignment.Center };
+        title.AddThemeFontOverride("font", UiTheme.Display);
+        title.AddThemeFontSizeOverride("font_size", 32);
+        title.AddThemeColorOverride("font_color", UiTheme.Accent);
+        col.AddChild(title);
+
+        _arenaTimerLabel = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        _arenaTimerLabel.AddThemeFontSizeOverride("font_size", 20);
+        col.AddChild(_arenaTimerLabel);
+
+        _arenaGoldLabel = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        _arenaGoldLabel.AddThemeFontSizeOverride("font_size", 22);
+        _arenaGoldLabel.AddThemeColorOverride("font_color", UiTheme.Accent2);
+        col.AddChild(_arenaGoldLabel);
+
+        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        col.AddChild(scroll);
+        var list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        list.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(list);
+
+        _arenaShop = new ArenaShopManager();
+        AddChild(_arenaShop);
+        _arenaShop.Initialize(_world, list);
+    }
 
     private void ConsumeSimEvents()
     {

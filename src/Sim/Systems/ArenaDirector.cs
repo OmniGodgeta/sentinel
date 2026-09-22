@@ -22,7 +22,9 @@ public partial class ArenaDirector : Node
         return WaveArchetype.Siege;
     }
 
-    public int CurrentWave { get; private set; } = 1;
+    // Starts at 0 so the first StartNextWave() call (from SimWorld.Load) lands on
+    // wave 1, not 2 — StartNextWave always increments before using the number.
+    public int CurrentWave { get; private set; } = 0;
     public bool IsIntermission { get; private set; } = false;
     public float IntermissionTimer { get; private set; } = 0f;
     
@@ -57,8 +59,9 @@ public partial class ArenaDirector : Node
         }
         
         GD.Print($"Arena: Wave {CurrentWave} [{archetype}] (HP x{hpMultiplier:F2}, Speed x{speedMultiplier:F2})");
-        
-        world.ApplyArenaScaling(hpMultiplier, speedMultiplier);
+
+        world.ArenaSpawnWave(CurrentWave, hpMultiplier, speedMultiplier);
+        world.Events.Push(SimEventKind.ArenaWaveStart, Vector2.Zero, 0f, CurrentWave);
     }
 
     public void TriggerIntermission(SimWorld world)
@@ -66,6 +69,7 @@ public partial class ArenaDirector : Node
         IsIntermission = true;
         IntermissionTimer = INTERMISSION_DURATION;
         GD.Print($"Arena: Wave Cleared. Intermission active for {INTERMISSION_DURATION}s.");
+        world.Events.Push(SimEventKind.ArenaIntermission, Vector2.Zero);
     }
 
     public void Update(SimWorld world, float delta)

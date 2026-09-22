@@ -5,10 +5,87 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **v0.30.1, 2026-09-17.** Update this file when you finish or start
-anything.
+Last updated: **2026-09-22, Galaxy Arena finished below. Version is still
+`0.36.0` (no release cut since — see note at the end of that section).**
+Update this file when you finish or start anything.
 
 ---
+
+## Recently completed — Galaxy Arena: a real wave loop, intermission turret shop (unreleased)
+
+The scaffold from three earlier commits (`7bf6ca7`, `d739a1d`, `0ff94f2`) plus
+an uncommitted local diff turned out to be far less finished than it looked on
+a first read — reachable from nowhere in the menu, no actual enemy spawning,
+and a shop UI that was never wired to anything live. This entry replaces the
+"verify this was wanted" status-check note that used to sit here: **the user
+confirmed continuing and finishing it was correct** (three commits of real
+work already existed; throwing it away would have wasted more than finishing
+it costs). What shipped:
+
+- **The mode is now actually reachable.** The `EVENTS` screen's "GALAXY ARENA"
+  card was a permanently `locked: true` teaser with no click handler — it now
+  opens a real `ArenaScreen` (rewritten from a bare, never-populated `Control`
+  into a proper coded `CanvasLayer` screen, matching every other menu screen's
+  construction style) with an Enter button.
+- **`AppRoot.StartArena()` was structurally dead code.** It called
+  `StartMission("res://data/missions/endless.json", "arena")`, but `missionId`
+  there only tags the save-stats record — the loaded `Mission.Id` still came
+  from the JSON file itself ("endless"), so `SimWorld.Load()`'s
+  `else if (Mission.Id == "arena")` branch could never run; every "arena" run
+  was silently just another Endless Hold. Fixed the same way `StartWeekly()`
+  already overrides a loaded mission's `Id`/`Name`: `Cfg.LoadMission(...) with
+  { Id = "arena", Survival = false }`, passed through `GameRoot.MissionOverride`.
+- **There was no enemy spawning at all in `SimPhase.Arena`.** `ArenaDirector.
+  StartNextWave` only rescaled *already-alive* enemies (zero, on wave 1) and
+  never called any spawn path — the arena would sit empty forever.
+  `ArenaDirector.TriggerIntermission` (the wave-clear → shop → next-wave
+  transition) was likewise never called from anywhere. New
+  `src/Sim/Systems/ArenaSpawn.cs` (a separate partial-class file, touching
+  nothing in the existing ticket-based `SpawnSystem.cs`) spawns a full wave as
+  an immediate burst using the same deterministic procedural composition
+  Endless mode already uses (`GenerateEndlessWave`), applies the archetype's
+  HP/speed multiplier per spawned enemy, and `SimWorld.StepTick`'s `Arena`
+  case now detects `_aliveThisWave <= 0` itself and calls
+  `TriggerIntermission` — fully isolated from the classic `Wave`/`Survival`
+  paths every other mission uses, so nothing here could regress them (see
+  Verified below). Also fixed an off-by-one: `ArenaDirector.CurrentWave`
+  started at 1 and was pre-incremented, so the player's first wave was
+  mislabeled "Wave 2."
+- **The turret-upgrade shop was a disconnected stub.** `ArenaShopManager.cs`
+  existed but was untracked, unwired into any scene, and depended on an
+  `[Export] PackedScene ButtonPrefab` nobody had ever assigned. Rewritten to
+  build its `Button` rows directly in code (matching how every other list-style
+  screen in this codebase, e.g. `ShopScreen`, builds its rows) and instantiated
+  by `GameRoot` itself as a small overlay — shown only while
+  `SimWorld.ArenaIsIntermission` is true, listing every built turret under
+  level 3 with its upgrade cost, spending the run's `ArenaGold` (bounty × 5 per
+  kill, already existed) via the existing `SimWorld.TryUpgradeArenaTurret`.
+  This overlay is fully gated on `Mission.Id == "arena"` — no other mission
+  ever allocates or sees it.
+- **Verified**: `dotnet build Sentinel.csproj` — clean. `scenes/SimTest.tscn`
+  headless — `ALL CHECKS OK`, every existing mission (m01–m08, progression,
+  endless, weekly, 1×≡4× speed identity) still deterministic and
+  byte-identical to before this change, confirming the new Arena-only code
+  path leaked into nothing else. `scenes/ArenaTester.tscn` (its own
+  `data/missions/arena_test.json` fixture had the identical "Survival stays
+  true" bug baked in — fixed to `"survival": false` to actually exercise the
+  arena branch instead of silently falling into Endless) — a real 5-minute
+  headless run cleared 7 waves cycling all four archetypes
+  (Swarm→Balanced→Elite→Siege), spawned and killed 154 enemies, and correctly
+  paused for a 15s intermission after every clear. Turret purchases
+  themselves weren't exercised by this headless run (it has no player acting
+  on the shop) — a live on-device/editor playthrough is still the real
+  verification for that piece, same standing caveat as every other UI screen
+  in this project.
+- **Still open, deliberately not attempted here**: any kind of cross-player
+  ranking/leaderboard (this is a local-only personal build with no backend —
+  the original design note's question); per-wave visual/audio polish beyond
+  what `WaveCleared`/`ArenaWaveStart`/`ArenaIntermission` events already drive
+  generically; a persisted "best wave reached" stat (would need a new
+  `SaveData` field — skipped to avoid touching the save schema in the same
+  pass as everything else above). No `config/version`/`export_presets.cfg`
+  bump or `v*` tag was cut for this — that's a separate decision for whoever
+  wants to ship it.
 
 ## Recently completed — mini-boss, item drops, PDTD card frames (v0.30.0-v0.30.1)
 
@@ -342,7 +419,8 @@ verification, same as every balance number in this project.
 - Per-orbital-weapon-slot chip assignment (matching the PDTD reference image
   exactly) instead of the current global-multiplier simplification — a real
   scope expansion if wanted later, not a bug.
-- Galaxy Arena itself (see above).
+- ~~Galaxy Arena itself~~ — **done, 2026-09-22**, see the "Galaxy Arena: a real
+  wave loop, intermission turret shop" entry at the top of this file.
 - Force Field + Waterdrop Grok-generated card art (carried over from
   v0.27.0, still not done).
 - Chip drop rates/merge costs/effect sizes are first-pass numbers, unverified

@@ -26,6 +26,8 @@ public enum SimEventKind : byte
     WaveCleared,
     MissionWon,
     MissionLost,
+    ArenaWaveStart,
+    ArenaIntermission
 }
 
 public struct SimEvent

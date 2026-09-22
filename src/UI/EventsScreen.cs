@@ -5,9 +5,8 @@ namespace Sentinel.UI;
 
 /// <summary>
 /// EVENTS — a PDTD-style "Expedition" list surfacing the game's rotating/long-form
-/// modes (Weekly Challenge, Endless Hold, Ascension) as cards instead of buried nav
-/// buttons, plus a locked teaser for Galaxy Arena (see docs/ROADMAP.md — a deferred,
-/// not-yet-built PvE wave-survival arena + ranking mode).
+/// modes (Weekly Challenge, Endless Hold, Ascension, Galaxy Arena) as cards instead
+/// of buried nav buttons. See docs/ROADMAP.md for Galaxy Arena's design.
 /// </summary>
 public sealed partial class EventsScreen : CanvasLayer
 {
@@ -80,8 +79,8 @@ public sealed partial class EventsScreen : CanvasLayer
             }));
 
         list.AddChild(Card(
-            "GALAXY ARENA", "Coming soon", "PvE wave-survival arena with a ranking system — see docs/ROADMAP.md. Not built yet.",
-            "", new Color(0.5f, 0.5f, 0.6f), null, locked: true,
+            "GALAXY ARENA", "No end, just waves.", "PvE wave-survival — turret upgrades between waves, paid for with Arena Gold. No cross-player ranking (local build, no backend).",
+            "", UiTheme.Accent, () => App.ShowArena(), locked: false,
             rewards: new[] { ("loot/chest", "Armory chests"), ("loot/medal", "Rank rewards") }));
 
         var note = new Label
