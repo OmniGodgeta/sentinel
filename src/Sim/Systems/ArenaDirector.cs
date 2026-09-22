@@ -12,6 +12,16 @@ namespace Sentinel.Sim.Systems;
 /// </summary>
 public partial class ArenaDirector : Node
 {
+    public enum WaveArchetype { Swarm, Balanced, Elite, Siege }
+
+    private WaveArchetype GetArchetype(int wave)
+    {
+        if (wave % 4 == 1) return WaveArchetype.Swarm;
+        if (wave % 4 == 2) return WaveArchetype.Balanced;
+        if (wave % 4 == 3) return WaveArchetype.Elite;
+        return WaveArchetype.Siege;
+    }
+
     public int CurrentWave { get; private set; } = 1;
     public bool IsIntermission { get; private set; } = false;
     public float IntermissionTimer { get; private set; } = 0f;
@@ -25,13 +35,29 @@ public partial class ArenaDirector : Node
         IntermissionTimer = 0f;
         
         // Calculate wave difficulty scaling
-        // Wave 1 is baseline, each wave increases enemy HP and speed
         float hpMultiplier = 1.0f + (CurrentWave - 1) * 0.15f;
         float speedMultiplier = 1.0f + (CurrentWave - 1) * 0.05f;
         
-        GD.Print($"Arena: Starting Wave {CurrentWave} (HP x{hpMultiplier:F2}, Speed x{speedMultiplier:F2})");
+        // Apply archetype-specific shifts
+        WaveArchetype archetype = GetArchetype(CurrentWave);
+        switch (archetype)
+        {
+            case WaveArchetype.Swarm:
+                hpMultiplier *= 0.8f; speedMultiplier *= 1.5f;
+                break;
+            case WaveArchetype.Balanced:
+                hpMultiplier *= 1.1f; speedMultiplier *= 1.1f;
+                break;
+            case WaveArchetype.Elite:
+                hpMultiplier *= 2.0f; speedMultiplier *= 0.8f;
+                break;
+            case WaveArchetype.Siege:
+                hpMultiplier *= 1.5f; speedMultiplier *= 0.5f;
+                break;
+        }
         
-        // TODO: Apply these multipliers to the active enemy pool in SimWorld
+        GD.Print($"Arena: Wave {CurrentWave} [{archetype}] (HP x{hpMultiplier:F2}, Speed x{speedMultiplier:F2})");
+        
         world.ApplyArenaScaling(hpMultiplier, speedMultiplier);
     }
 

@@ -1,0 +1,36 @@
+{
+  "id": "arena",
+  "name": "Galaxy Arena Test",
+  "intro": "One planet. No timer. See how deep you can hold.",
+  "seed": 77000,
+  "survival": true,
+  "endless": true,
+  "duration": 0,
+  "level": 4,
+  "backdrop": "endless",
+  "music": "eve_11",
+  "roster": {
+    "skiff": 0.0,
+    "hauler": 0.03,
+    "interceptor": 0.06,
+    "aegis_cruiser": 0.1,
+    "bombard": 0.13,
+    "carrier": 0.18,
+    "phase_runner": 0.2,
+    "leech": 0.22,
+    "warden": 0.28,
+    "siege_crawler": 0.3
+  },
+  "endless_roster": [
+    "skiff",
+    "hauler",
+    "interceptor",
+    "aegis_cruiser",
+    "bombard",
+    "carrier",
+    "phase_runner",
+    "leech",
+    "warden",
+    "siege_crawler"
+  ]
+}

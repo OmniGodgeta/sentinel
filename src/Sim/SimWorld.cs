@@ -30,6 +30,8 @@ public sealed partial class SimWorld
 {
     // ---- config (immutable for the run) ----
     public readonly ConfigDb Cfg;
+    public float CurrentGold { get; private set; } = 100f;
+    public void AddGold(float amount) => CurrentGold += amount;
     internal readonly BalanceDef B;
     internal readonly TurretDef[] TurretDefs;
     internal readonly EnemyDef[] EnemyDefs;
@@ -59,6 +61,7 @@ public sealed partial class SimWorld
     public MissionDef Mission { get; private set; } = new();
     public SimPhase Phase { get; private set; } = SimPhase.Build;
     public long Tick { get; private set; }               // sim ticks since Load
+    private Systems.ArenaDirector? _arenaDirector;
     public float GameTime => Tick * SimClock.TickDelta;
     public int WaveIndex { get; private set; }          // 0-based index of current/next wave
     private bool _endless;
@@ -97,6 +100,7 @@ public sealed partial class SimWorld
     /// <summary>Planet shield HP granted by meta level n (0 = none). ~12 levels.</summary>
     public static float PlanetShieldStrength(int lvl) => lvl <= 0 ? 0f : 320f * lvl + 55f * lvl * lvl;
     public int Credits { get; private set; }
+    public int ArenaGold { get; private set; }
     public int WavesCleared { get; private set; }
     public float ResearchDataEarned { get; private set; }
     public float XpEarned { get; private set; }
@@ -296,6 +300,11 @@ public sealed partial class SimWorld
         // toggle. Jump straight into the fight (BeginWave is idempotent here — it
         // just re-applies the same reset + flips Phase to Wave).
         if (Mission.Survival) BeginWave();
+        else if (Mission.Id == "arena") 
+        {
+            _arenaDirector = new Systems.ArenaDirector();
+            _arenaDirector.StartNextWave(this);
+        }
     }
 
     public void Enqueue(in SimCommand cmd) => _commands.Enqueue(cmd);
@@ -333,6 +342,21 @@ public sealed partial class SimWorld
                 StepAbilities();
                 StepItemDrops(SimClock.TickDelta);
                 CheckWaveEnd();
+                break;
+            case SimPhase.Arena:
+                PhaseTimer += SimClock.TickDelta;
+                _arenaDirector?.Update(this, SimClock.TickDelta);
+                StepEnemies();
+                StepHero();
+                StepHeroWeapons(SimClock.TickDelta);
+                StepPlanetBattery();
+                StepOrbitalSentinels();
+                StepOrbitalWeapons(SimClock.TickDelta);
+                StepTurrets();
+                StepProjectiles();
+                StepAbilities();
+                StepItemDrops(SimClock.TickDelta);
+                if (PlanetIntegrity <= 0f) { PlanetIntegrity = 0f; Phase = SimPhase.Lost; AccrueRewards(false); }
                 break;
         }
 
@@ -459,6 +483,18 @@ public sealed partial class SimWorld
         if (cost < 0 || Credits < cost) return;
         Credits -= cost;
         Turrets[slot].Level++;
+    }
+
+    public bool TryUpgradeArenaTurret(int slot, out int cost)
+    {
+        cost = TurretUpgradeCost(slot);
+        if (cost < 0 || !InSlot(slot) || !Turrets[slot].Built || Turrets[slot].Level >= 3 || ArenaGold < cost)
+        {
+            return false;
+        }
+        ArenaGold -= cost;
+        Turrets[slot].Level++;
+        return true;
     }
 
     private void TryForkTurret(int slot, int forkIndex)
@@ -752,6 +788,7 @@ public sealed partial class SimWorld
         {
             Stats.EnemiesKilled++;
             Credits += Mathf.RoundToInt(e.Bounty * Mathf.Max(0.2f, Mods.CreditsGainMult));
+            ArenaGold += Mathf.RoundToInt(e.Bounty * 5f);
             if (Mission.Survival) GainRunXp(e.Bounty * B.XpKillMult);
 
             // Salvage Beacon: kills inside the field pay bonus RD + XP
@@ -1020,10 +1057,15 @@ public sealed partial class SimWorld
     /// <summary>Applies arena-specific scaling to the current enemy/difficulty state.</summary>
     public void ApplyArenaScaling(float hpMult, float speedMult)
     {
-        // In a real implementation, this would modify the active enemy instances
-        // or set a global multiplier used by the SpawnDirector.
         GD.Print($"[SimWorld] Scaling applied: HP x{hpMult}, Speed x{speedMult}");
-        // TODO: world.Enemies.ApplyScaling(hpMult, speedMult); 
+        for (int i = 0; i < EnemyHighWater; i++)
+        {
+            var e = Enemies[i];
+            e.MaxHp *= hpMult;
+            e.Hp *= hpMult;
+            e.BaseSpeed *= speedMult;
+            Enemies[i] = e;
+        }
     }
 
 }

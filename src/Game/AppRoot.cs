@@ -129,7 +129,14 @@ public sealed partial class AppRoot : Node
         }
         SwapTo(new MenuScreen { App = this });
     }
-        public void ShowArena() => SwapTo(new ArenaScreen { App = this });
+        public void ShowArena()
+    {
+        var arena = new ArenaScreen { App = this };
+        arena.OnStartRequested += StartArena;
+        SwapTo(arena);
+    }
+
+    private void StartArena() => StartMission("res://data/missions/endless.json", "arena");
 public void ShowLevels() => SwapTo(new StarMapScreen { App = this });
     public void ShowResearch() => SwapTo(new ResearchScreen { App = this });
     public void ShowAbilities() => SwapTo(new AbilityScreen { App = this });

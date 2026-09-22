@@ -99,7 +99,7 @@ public sealed partial class SimWorld
             if (def.Kamikaze && e.DistToCenter <= arrival)
             {
                 DamagePlanet(e.ContactDamage, leaked: true);
-                KillEnemy(i, leaked: true);
+                KillEnemy(i, leaked: true); AddGold(10f);
                 continue;
             }
 
