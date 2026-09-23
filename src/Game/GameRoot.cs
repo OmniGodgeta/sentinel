@@ -406,7 +406,7 @@ public sealed partial class GameRoot : Node2D
         {
             if (_pressPos.DistanceTo(drag.Position) > 12f) _dragging = true;
             // dragging on the field (not the joystick) also flies the ship there
-            if (_dragging && _world.Phase == SimPhase.Wave && !_hud.BuildOpen && _pendingReticleSlot < 0)
+            if (_dragging && _world.Phase is SimPhase.Wave or SimPhase.Arena && !_hud.BuildOpen && _pendingReticleSlot < 0)
                 _world.Enqueue(SimCommand.HeroTarget(ScreenToWorld(drag.Position)));
         }
     }
@@ -418,7 +418,7 @@ public sealed partial class GameRoot : Node2D
     {
         // A HUD control that handled the press will have consumed the event; here
         // we only see taps on the play field.
-        if (_world.Phase == SimPhase.Wave)
+        if (_world.Phase is SimPhase.Wave or SimPhase.Arena)
         {
             if (_dragging)
             {

@@ -441,7 +441,7 @@ public sealed partial class SimWorld
 
     /// <summary>Turrets and cards can be edited in the build phase, and — in survival —
     /// at any time during the hold (real-time base management).</summary>
-    private bool CanEdit => Phase == SimPhase.Build || (Mission.Survival && Phase == SimPhase.Wave);
+    private bool CanEdit => Phase == SimPhase.Build || (Mission.Survival && Phase == SimPhase.Wave) || Phase == SimPhase.Arena;
 
     private void TryBuildTurret(int slot, string? id)
     {

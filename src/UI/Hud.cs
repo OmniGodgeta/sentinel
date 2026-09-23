@@ -494,7 +494,11 @@ public sealed partial class Hud : CanvasLayer
         bool ended = w.Phase is SimPhase.Won or SimPhase.Lost;
         bool draft = w.HasPendingDraft && !ended;
         bool prep = w.Phase == SimPhase.Build && !draft;
-        bool fighting = w.Phase == SimPhase.Wave && !ended;
+        // Galaxy Arena's continuous-combat phase is its own SimPhase (not Wave), but it
+        // needs the same "combat is live" HUD state — joystick, auto/autopilot toggle,
+        // wave panel, turret slots. Omitting it here left Arena runs with an invisible,
+        // unusable joystick and no way to build/upgrade turrets in real time.
+        bool fighting = (w.Phase == SimPhase.Wave || w.Phase == SimPhase.Arena) && !ended;
         BuildOpen = !ended && !draft && prep;
 
         string phaseStr;

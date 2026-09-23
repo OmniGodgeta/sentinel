@@ -24,7 +24,7 @@ namespace Sentinel.Sim.Systems
         public bool IsIntermission => _isIntermission;
         public float IntermissionTimer => _intermissionTimer;
 
-        private const float INTERMISSION_DURATION = 15.0f;
+        private const float INTERMISSION_DURATION = 3.0f;
 
         private WaveArchetype GetArchetype(int wave)
         {
