@@ -1,0 +1,16 @@
+{
+  "id": "m13",
+  "name": "Crystal Expanse",
+  "intro": "A field of frozen stardust. The reflections are beautiful, but deadly.",
+  "seed": 20260913,
+  "survival": true,
+  "duration": 650,
+  "level": 13,
+  "difficulty": 1.8,
+  "roster": {
+    "skiff": 0.6,
+    "hauler": 0.2
+  },
+  "backdrop": "crystal_expanse",
+  "music": "crystalline_synth"
+}

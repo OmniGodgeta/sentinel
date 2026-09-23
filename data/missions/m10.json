@@ -1,0 +1,16 @@
+{
+  "id": "m10",
+  "name": "Nebula Mists",
+  "intro": "Visibility is low in the gas clouds. Watch for enemies emerging from the haze.",
+  "seed": 20260910,
+  "survival": true,
+  "duration": 500,
+  "level": 10,
+  "difficulty": 0.9,
+  "roster": {
+    "skiff": 0.4,
+    "hauler": 0.4
+  },
+  "backdrop": "nebula_mists",
+  "music": "atmospheric_nebula"
+}

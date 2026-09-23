@@ -1,0 +1,16 @@
+{
+  "id": "m09",
+  "name": "Helios Forge",
+  "intro": "The star's fury is high. Shield your core from the solar flares. Intense heat detected.",
+  "seed": 20260909,
+  "survival": true,
+  "duration": 450,
+  "level": 9,
+  "difficulty": 0.7,
+  "roster": {
+    "skiff": 0.2,
+    "hauler": 0.5
+  },
+  "backdrop": "helios_forge",
+  "music": "solar_flares_theme"
+}

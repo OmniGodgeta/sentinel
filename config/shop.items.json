@@ -1,0 +1,50 @@
+{
+    "$schema": "https://json.schemastore.org/items-v1.json",
+    "Items": [
+        {
+            "id": "gold_ring",
+            "displayName": "Gold Ring",
+            "description": "Permanent +5% Gold per kill",
+            "basePrice": 5000,
+            "appliedLevel": 2,
+            "maxLevel": 7,
+            "currencyCost": "player"
+        },
+        {
+            "id": "turret_dmg_upg",
+            "displayName": "Damage Amplifier+",
+            "description": "Increases all turrets +5 DPS",
+            "basePrice": 2000,
+            "appliedLevel": 1,
+            "maxLevel": 3,
+            "currencyCost": "player"
+        },
+        {
+            "id": "shield_cap_up",
+            "displayName": "Shield Cap+",
+            "description": "+50 max shield for the Commander",    
+            "basePrice": 8000,
+            "appliedLevel": 1,
+            "maxLevel": 3,
+            "currencyCost": "player"
+        },
+        {
+            "id": "move_speed_upg",
+            "displayName": "Movement Booster",
+            "description": "+5% move speed for all units",
+            "basePrice": 1500,
+            "appliedLevel": 1, 
+            "maxLevel": 5,
+            "currencyCost": "player"
+        },
+        {
+            "id": "turret_hp_pool",
+            "displayName": "Turret HP Pool+",
+            "description": "+20 HP per turret",
+            "basePrice": 3000,
+            "appliedLevel": 1,
+            "maxLevel": 4,
+            "currencyCost": "player"
+        }
+    ]
+}

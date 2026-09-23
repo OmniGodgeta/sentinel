@@ -1,0 +1,16 @@
+{
+  "id": "m14",
+  "name": "Pulsar Core",
+  "intro": "The rhythmic pulse is deafinitely affecting our sensors. Stay focused.",
+  "seed": 20260914,
+  "survival": true,
+  "duration": 700,
+  "level": 14,
+  "difficulty": 2.2,
+  "roster": {
+    "skiff": 0.4,
+    "hauler": 0.5
+  },
+  "backdrop": "pulsar_core",
+  "music": "pulsar_rhythm"
+}

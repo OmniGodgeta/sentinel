@@ -1,0 +1,16 @@
+{
+  "id": "m15",
+  "name": "The Event Horizon",
+  "intro": "The end of everything. Survive the final breach at the center of the void.",
+  "seed": 20260915,
+  "survival": true,
+  "duration": 900,
+  "level": 15,
+  "difficulty": 3.0,
+  "roster": {
+    "skiff": 0.5,
+    "hauler": 0.5
+  },
+  "backdrop": "event_horizon",
+  "music": "final_breach_orchestra"
+}

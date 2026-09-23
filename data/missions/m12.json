@@ -1,0 +1,16 @@
+{
+  "id": "m12",
+  "name": "Void Edge",
+  "intro": "The gravity of the singularity is pulling at your hull. Hold the line.",
+  "seed": 20260912,
+  "survival": true,
+  "duration": 600,
+  "level": 12,
+  "difficulty": 1.5,
+  "roster": {
+    "skiff": 0.3,
+    "hauler": 0.6
+  },
+  "backdrop": "void_edge",
+  "music": "deep_void_echo"
+}

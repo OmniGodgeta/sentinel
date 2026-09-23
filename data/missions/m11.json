@@ -1,0 +1,16 @@
+{
+  "id": "m11",
+  "name": "Nova Residue",
+  "intro": "High-energy particles everywhere. This graveyard of stars is volatile.",
+  "seed": 20260911,
+  "survival": true,
+  "duration": 550,
+  "level": 11,
+  "difficulty": 1.2,
+  "roster": {
+    "skiff": 0.5,
+    "hauler": 0.3
+  },
+  "backdrop": "nova_residue",
+  "music": "glitch_remnant"
+}

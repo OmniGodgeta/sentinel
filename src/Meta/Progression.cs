@@ -26,7 +26,7 @@ public sealed class Progression
     public static int CommanderLevel(double xp)
     {
         int n = 1;
-        while (CmdrXpForLevel(n + 1) <= xp && n < 999) n++;
+        while (CmdrXpForLevel(n + 1) <= xp && n < 200) n++;
         return n;
     }
     public static double CmdrXpForLevel(int n) => n <= 1 ? 0 : 120.0 * Mathf.Pow(n - 1, 1.75f);
