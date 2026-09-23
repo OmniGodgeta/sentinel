@@ -371,6 +371,12 @@ public sealed partial class GameRoot : Node2D
                     sfx?.Play("wave_clear", -8f, 0f);
                     _hud.FlashBanner(ev.Kind);
                     break;
+                case SimEventKind.ArenaWaveStart:
+                    // Arena starts, UI should prepare.
+                    break;
+                case SimEventKind.ArenaIntermission:
+                    RefreshArenaOverlay();
+                    break;
             }
         }
         _world.Events.Clear();
