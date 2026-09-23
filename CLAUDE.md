@@ -17,6 +17,22 @@ The working dir / repo is `sentinel` and the C# assembly + namespace stay
 - The game is **survival**, not waves: every mission is a timed hold with a
   continuous escalating spawn director. See `src/Sim/Systems/SurvivalDirector.cs`.
 
+## Before writing new UI/game code
+
+Check whether the thing you're about to build already exists — `src/UI/` and
+`src/Game/` have accumulated some near-duplicate attempts (e.g. a shop or
+screen rewritten from scratch in a different namespace instead of extending
+the working one) from agents that didn't search first. Grep for the class name
+before creating it.
+
+When a Godot API call doesn't compile, don't assume the codebase or engine is
+wrong — grep this repo for an existing correct usage of the same API first
+(e.g. `grep -rn StretchMode src/`) before guessing a replacement name. This
+project has hit real, repeated cases of invented Godot members (a fictional
+`Texture.StretchFlags`, `RectangleShape2D.ToControl`, an `AbilityDef` type
+that was never real) and Godot-3-vs-4 API renames. `dotnet build Sentinel.csproj`
+is fast — run it before considering any C# change done, never eyeball it.
+
 ## Non-negotiables
 
 1. **The sim is deterministic and speed-independent.** Fixed 60 Hz ticks; 1×–4×
