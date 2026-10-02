@@ -5,11 +5,32 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **2026-09-22, Galaxy Arena finished below. Version is still
-`0.36.0` (no release cut since — see note at the end of that section).**
+Last updated: **2026-10-02 — v0.37.1** (menu/Upgrades UI fixes, Arena turret
+purchases verified; see the first section below).
 Update this file when you finish or start anything.
 
 ---
+
+## Recently completed — PDTD menu chrome, Upgrades layout fix, Arena shop verified (v0.37.1)
+
+- **Menu**: PDTD-style top bar (portrait badge + rank plate, name, XP bar to
+  the next Commander level, currency pill) and one continuous bottom nav
+  (`src/UI/PdtdNav.cs`). Fixed the stats line sitting under the XP bar.
+- **Upgrades → module strip**: cells lacked `ExpandFill`, so the GridContainer
+  gave each its min width and names wrapped one letter per line. Fixed, plus
+  24px side gutters.
+- **`scenes/UiShots.tscn`** (dev-only): screenshots Menu/Shop/Upgrades into the
+  Godot user dir. It pins `ContentScaleAspect=Keep`, because Hyprland tiles the
+  window landscape and `aspect=expand` would otherwise lay screens out like a
+  tablet — **never judge layout from a landscape shot**.
+- **Galaxy Arena turret purchases verified**: `ArenaTester.tscn` now builds a
+  turret and calls the shop's `TryUpgradeArenaTurret` each intermission —
+  Lv1→2→3 bought, gold deducted, Lv3 cap respected. Exits 0 when the planet
+  survives the 5-minute run (Arena is endless; the old exit 1 was always a
+  "timeout").
+- Still worth a human eye: how Arena *feels* in a live run (pace, gold piling
+  up once turrets max out at Lv3 — 7.5k unspent by wave 9 with one turret).
+
 
 ## Recently completed — Galaxy Arena: a real wave loop, intermission turret shop (unreleased)
 
