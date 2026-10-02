@@ -5,11 +5,25 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **2026-10-02 — v0.37.1** (menu/Upgrades UI fixes, Arena turret
-purchases verified; see the first section below).
+Last updated: **2026-10-02 — v0.37.2** (Codex art + readable cards; open-items
+audit below. v0.37.1: menu/Upgrades UI fixes, Arena turret purchases verified).
 Update this file when you finish or start anything.
 
 ---
+
+## Open-items audit (2026-10-02) — the "Still open" lists further down are STALE
+
+Checked against the code: the mini-boss, in-run item drops, PDTD 6-slot
+modules with tiers, and the Waterdrop + Force Field card art (real images in
+`assets/game/cards/`) are **all built** (v0.30.0 and later). The Research/Codex
+"bland cards" item was fixed in v0.37.2: each Codex entry gets the subject's
+own sprite (a round Earth for The Seed Vault is rendered from `earth_day.png`),
+and `ArtCard` has a near-opaque base so the menu planet no longer shows through.
+**Genuinely still open:**
+- Per-weapon PDTD audio through Master.bank's FMOD event graph (fidelity).
+- Per-orbital-slot chip assignment (a scope expansion, only if wanted).
+- PDTD's exact upgrade-card animation/sounds for the draft cards.
+- The operator's own on-device feel-check of balance and Arena pacing.
 
 ## Recently completed — PDTD menu chrome, Upgrades layout fix, Arena shop verified (v0.37.1)
 

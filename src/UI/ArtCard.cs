@@ -20,7 +20,9 @@ public sealed partial class ArtCard : PanelContainer
         var card = new ArtCard();
         card.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(accent, dim ? 0.04f : 0.09f),
+            // Near-opaque dark base tinted by the accent: at 9% alpha the menu
+            // planet showed straight through and the text over it was hard to read.
+            BgColor = new Color(0.035f, 0.05f, 0.085f, 0.93f).Lerp(new Color(accent, 0.93f), dim ? 0.05f : 0.11f),
             BorderColor = new Color(accent, dim ? 0.25f : 0.55f),
             BorderWidthLeft = 4, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10,

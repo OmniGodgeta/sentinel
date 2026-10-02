@@ -80,7 +80,26 @@ public sealed partial class CodexScreen : CanvasLayer
             var tx = new Label { Text = e.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = new Color(1, 1, 1, 0.75f) };
             tx.AddThemeFontSizeOverride("font_size", 22);
             col.AddChild(tx);
-            list.AddChild(ArtCard.Wrap(col, CategoryAccent(e.Category), CategoryEmblem(e.Category)));
+            col.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            Control body = col;
+            var portrait = Portrait(e.Id);
+            if (portrait != null)
+            {
+                var row = new HBoxContainer();
+                row.AddThemeConstantOverride("separation", 14);
+                row.AddChild(new TextureRect
+                {
+                    Texture = portrait,
+                    CustomMinimumSize = new Vector2(96, 96),
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                    SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                });
+                row.AddChild(col);
+                body = row;
+            }
+            list.AddChild(ArtCard.Wrap(body, CategoryAccent(e.Category), CategoryEmblem(e.Category)));
         }
         FlushHidden();
 
@@ -98,6 +117,28 @@ public sealed partial class CodexScreen : CanvasLayer
         "turret" => new Color(0.98f, 0.78f, 0.40f),
         "ability" => new Color(0.72f, 0.60f, 0.98f),
         _ => new Color(0.60f, 0.68f, 0.80f),
+    };
+
+    /// <summary>The subject's own art beside its entry: the enemy's sprite, or the
+    /// Sentinel / a world for the lore entries. Null (text-only) for anything
+    /// without art, e.g. a future entry.</summary>
+    private static Texture2D? Portrait(string id) => id switch
+    {
+        "frame_sentinel" => Render.Art.Ship,
+        "frame_world" => Render.Art.Tex("res://assets/game/codex_earth.png"), // earth_day.png projected onto a sphere
+        "frame_harvest" => Render.Art.Enemy("carrier"),
+        "en_skiff" => Render.Art.Enemy("skiff"),
+        "en_hauler" => Render.Art.Enemy("hauler"),
+        "en_interceptor" => Render.Art.Enemy("interceptor"),
+        "en_aegis" => Render.Art.Enemy("aegis_cruiser"),
+        "en_bombard" => Render.Art.Enemy("bombard"),
+        "en_carrier" => Render.Art.Enemy("carrier"),
+        "en_phase" => Render.Art.Enemy("phase_runner"),
+        "en_leech" => Render.Art.Enemy("leech"),
+        "en_warden" => Render.Art.Enemy("warden"),
+        "en_siege" => Render.Art.Enemy("siege_crawler"),
+        "en_boss_gate" => Render.Art.Enemy("boss_threshing_gate"),
+        _ => null,
     };
 
     private static string CategoryEmblem(string cat) => cat switch

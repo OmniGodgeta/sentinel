@@ -3,7 +3,7 @@ using Godot;
 namespace Sentinel.Game;
 
 /// <summary>
-/// Dev-only: boots the real AppRoot and drives it straight to Menu/Shop/Upgrades by
+/// Dev-only: boots the real AppRoot and drives it straight to Menu/Shop/Upgrades/Research/Codex by
 /// calling the same methods the UI buttons call — no synthetic input, no clicking.
 /// Screenshots are written via the viewport texture (same trick as ShotRunner), so this
 /// never needs to know where the window sits on screen or steal the real mouse.
@@ -47,6 +47,12 @@ public sealed partial class UiShotRunner : Node
                 if (_t > 1.2) { AppRoot.Instance.ShowUpgrades(); Advance("upgrades_chip"); }
                 break;
             case 3:
+                if (_t > 1.2) { AppRoot.Instance.ShowResearch(); Advance("research"); }
+                break;
+            case 4:
+                if (_t > 1.2) { AppRoot.Instance.ShowCodex(); Advance("codex"); }
+                break;
+            case 5:
                 if (_t > 2.0) { GD.Print("=== UiShotRunner timeout, quitting"); GetTree().Quit(); }
                 break;
         }
