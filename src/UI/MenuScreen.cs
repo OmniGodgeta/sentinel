@@ -22,37 +22,70 @@ public sealed partial class MenuScreen : CanvasLayer
         App.RefreshProgression();
         var p = App.Prog;
 
-        // ---------- top identity + currency bar ----------
-        var topBar = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 12, OffsetBottom = 160, OffsetLeft = 14, OffsetRight = -14 };
+        // ---------- top identity bar, PDTD's layout: portrait + underlapping rank
+        // plate, name + XP bar, currency pills (no "+" — there's nothing to buy them
+        // with, on purpose) ----------
+        var topBar = new Control { AnchorLeft = 0f, AnchorRight = 1f, OffsetTop = 12, OffsetBottom = 172, OffsetLeft = 14, OffsetRight = -14 };
         topBar.Theme = UiTheme.Instance;
         AddChild(topBar);
 
-        // rank badge
-        var badge = new PanelContainer { CustomMinimumSize = new Vector2(140, 140) };
+        // portrait badge
+        var badge = new PanelContainer { CustomMinimumSize = new Vector2(112, 112), Position = new Vector2(0, 4) };
         badge.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(0.06f, 0.10f, 0.18f, 0.9f),
+            BgColor = new Color(0.08f, 0.12f, 0.22f, 0.95f),
             BorderColor = UiTheme.Accent, BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
-            CornerRadiusTopLeft = 12, CornerRadiusTopRight = 12, CornerRadiusBottomLeft = 12, CornerRadiusBottomRight = 12,
+            CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10,
         });
-        badge.Position = new Vector2(0, 6);
-        var bl = new Label { Text = $"{p.Commander}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var bl = new Label
+        {
+            Text = $"{p.Commander}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 0f, AnchorBottom = 1f, OffsetBottom = -20,
+        };
         bl.AddThemeFontOverride("font", UiTheme.Display);
-        bl.AddThemeFontSizeOverride("font_size", 62);
+        bl.AddThemeFontSizeOverride("font_size", 46);
         bl.AddThemeColorOverride("font_color", UiTheme.Accent);
         badge.AddChild(bl);
         topBar.AddChild(badge);
 
-        var name = new Label { Text = "COMMANDER", Position = new Vector2(152, 10) };
+        // rank plate — underlaps the portrait's bottom edge, PDTD-style
+        var rankPlate = new PanelContainer
+        {
+            CustomMinimumSize = new Vector2(112, 30), Position = new Vector2(0, 4 + 112 - 24),
+        };
+        rankPlate.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.02f, 0.03f, 0.06f, 0.96f),
+            BorderColor = new Color(UiTheme.Accent, 0.7f), BorderWidthTop = 1,
+            CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
+        });
+        var rankLbl = new Label { Text = "COMMANDER", HorizontalAlignment = HorizontalAlignment.Center };
+        rankLbl.AddThemeFontSizeOverride("font_size", 12);
+        rankPlate.AddChild(rankLbl);
+        topBar.AddChild(rankPlate);
+
+        var name = new Label { Text = "SENTINEL PILOT", Position = new Vector2(126, 6) };
         name.AddThemeFontOverride("font", UiTheme.Display);
-        name.AddThemeFontSizeOverride("font_size", 32);
+        name.AddThemeFontSizeOverride("font_size", 26);
         topBar.AddChild(name);
-        var sub = new Label { Text = $"Hero {p.Hero}/20    ·    RD {F(s.ResearchData)}    ·    Cores {s.SentinelCores}", Position = new Vector2(152, 42), Modulate = new Color(1, 1, 1, 0.66f) };
-        sub.AddThemeFontSizeOverride("font_size", 21);
+
+        // XP bar toward the next Commander level — PDTD always shows this under the name
+        double xpFloor = Meta.Progression.CmdrXpForLevel(p.Commander);
+        double xpCeil = Meta.Progression.CmdrXpForLevel(p.Commander + 1);
+        var xpBar = new ProgressBar
+        {
+            Position = new Vector2(126, 40), Size = new Vector2(220, 14),
+            ShowPercentage = false, MaxValue = 1.0,
+            Value = xpCeil > xpFloor ? Mathf.Clamp((s.Xp - xpFloor) / (xpCeil - xpFloor), 0, 1) : 0,
+        };
+        topBar.AddChild(xpBar);
+
+        var sub = new Label { Text = $"Hero {p.Hero}/20    ·    RD {F(s.ResearchData)}    ·    Cores {s.SentinelCores}", Position = new Vector2(126, 74), Modulate = new Color(1, 1, 1, 0.66f) };
+        sub.AddThemeFontSizeOverride("font_size", 17);
         topBar.AddChild(sub);
 
         // tap the rank badge / name to open the Commander profile
-        var profileTap = new Button { Flat = true, Position = Vector2.Zero, Size = new Vector2(476, 148) };
+        var profileTap = new Button { Flat = true, Position = Vector2.Zero, Size = new Vector2(400, 116) };
         profileTap.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
         profileTap.AddThemeStyleboxOverride("hover", new StyleBoxEmpty());
         profileTap.AddThemeStyleboxOverride("pressed", new StyleBoxEmpty());
@@ -60,25 +93,19 @@ public sealed partial class MenuScreen : CanvasLayer
         profileTap.Pressed += () => { Click(); App.ShowProfile(); };
         topBar.AddChild(profileTap);
 
-        // top-right icon row (gear / currency chip / codex) — right-aligned, widths and
-        // gaps both doubled alongside the buttons' own CustomMinimumSize so they stay
-        // non-overlapping instead of drifting into each other.
-        var gear = new GlowButton { Text = "⚙", FontSize = 32, Alt = true, CustomMinimumSize = new Vector2(100, 100) };
-        gear.AnchorLeft = 1f; gear.AnchorRight = 1f; gear.OffsetLeft = -100; gear.OffsetRight = 0; gear.OffsetTop = 4;
-        gear.Pressed += () => { Click(); App.ShowSettings(); };
-        topBar.AddChild(gear);
+        // top-right: currency pill (icon + number, no "+" — nothing to spend real
+        // money on) then gear/codex as small plain icon buttons beside it.
+        var pillRow = new HBoxContainer
+        {
+            AnchorLeft = 1f, AnchorRight = 1f, OffsetLeft = -360, OffsetRight = 0, OffsetTop = 4,
+            Alignment = BoxContainer.AlignmentMode.End,
+        };
+        pillRow.AddThemeConstantOverride("separation", 8);
+        topBar.AddChild(pillRow);
 
-        // currency chip — tap to see every balance
-        var comm = new GlowButton { Text = $"✦ {App.Shop.Balance}", FontSize = 20, Alt = true, CustomMinimumSize = new Vector2(176, 100) };
-        comm.AnchorLeft = 1f; comm.AnchorRight = 1f; comm.OffsetLeft = -296; comm.OffsetRight = -120; comm.OffsetTop = 4;
-        comm.Pressed += () => { Click(); ShowWallet(); };
-        topBar.AddChild(comm);
-
-        // codex — beside the credits chip
-        var codex = new GlowButton { Text = "☰ CODEX", FontSize = 15, Alt = true, CustomMinimumSize = new Vector2(136, 100) };
-        codex.AnchorLeft = 1f; codex.AnchorRight = 1f; codex.OffsetLeft = -452; codex.OffsetRight = -316; codex.OffsetTop = 4;
-        codex.Pressed += () => { Click(); App.ShowCodex(); };
-        topBar.AddChild(codex);
+        pillRow.AddChild(CurrencyPill("✦", $"{App.Shop.Balance}", UiTheme.Accent2, ShowWallet));
+        pillRow.AddChild(IconButton("☰", () => { Click(); App.ShowCodex(); }));
+        pillRow.AddChild(IconButton("⚙", () => { Click(); App.ShowSettings(); }));
 
         var (mfile, mid2, mname, cleared) = NextMission();
 
@@ -95,47 +122,85 @@ public sealed partial class MenuScreen : CanvasLayer
         stageLbl.AddThemeColorOverride("font_outline_color", new Color(0.01f, 0.03f, 0.06f, 0.9f));
         AddChild(stageLbl);
 
-        // ---------- PDTD-style bottom bar: Shop · Upgrades · BATTLE · Star Map · Events ----------
-        var bar = new HBoxContainer
-        {
-            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
-            OffsetLeft = 14, OffsetRight = -14, OffsetTop = -158, OffsetBottom = -30,
-            Alignment = BoxContainer.AlignmentMode.Center,
-        };
-        bar.AddThemeConstantOverride("separation", 8);
-        bar.Theme = UiTheme.Instance;
-        AddChild(bar);
-
-        bar.AddChild(NavBtn("✦\nSHOP", App.ShowShop, false));
-        bar.AddChild(NavBtn("⬡\nUPGRADES", App.ShowUpgrades, false));
-
+        // ---------- BATTLE — a raised CTA sitting just above the nav bar ----------
         var battle = new GlowButton
         {
-            Text = cleared ? "STAR MAP" : "BATTLE", FontSize = 32, Primary = true,
-            CustomMinimumSize = new Vector2(266, 174),
+            Text = cleared ? "STAR MAP" : "BATTLE", FontSize = 30, Primary = true,
+            CustomMinimumSize = new Vector2(0, 92),
+            AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
+            OffsetLeft = 60, OffsetRight = -60, OffsetTop = -226, OffsetBottom = -134,
         };
-        battle.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        battle.SizeFlagsStretchRatio = 1.5f;
         battle.SetFont(UiTheme.Display);
         battle.Pressed += () => { Confirm(); if (cleared) App.ShowLevels(); else App.StartMission(mfile, mid2); };
-        bar.AddChild(battle);
+        AddChild(battle);
 
-        bar.AddChild(NavBtn("◈\nSTAR MAP", App.ShowLevels, true));
+        // ---------- PDTD-style bottom nav: one continuous bar, active tab gets the
+        // slanted highlight, instead of five separate glowing boxes ----------
+        var navBar = PdtdNav.Build(new (string, string, System.Action)[]
+        {
+            ("✦", "SHOP", () => { Click(); App.ShowShop(); }),
+            ("⬡", "UPGRADES", () => { Click(); App.ShowUpgrades(); }),
+            ("◈", "STAR MAP", () => { Click(); App.ShowLevels(); }),
+            ("★", "EVENTS", () => { Click(); App.ShowEvents(); }),
+        }, activeIndex: -1);
+        navBar.Theme = UiTheme.Instance;
+        navBar.SetAnchorsPreset(Control.LayoutPreset.BottomWide);
+        navBar.OffsetTop = -116;
+        AddChild(navBar);
 
-        var wk = Sentinel.Meta.WeeklyChallenge.Current();
-        bar.AddChild(NavBtn("★\nEVENTS", App.ShowEvents, true));
-
-        // ---------- app version, bottom-centre ----------
+        // ---------- app version, sits just above the nav bar ----------
         var ver = new Label
         {
             Text = $"BEYOND  v{ProjectSettings.GetSetting("application/config/version", "0.0.0")}",
             AnchorLeft = 0f, AnchorRight = 1f, AnchorTop = 1f, AnchorBottom = 1f,
-            OffsetTop = -34, OffsetBottom = -8,
+            OffsetTop = -134, OffsetBottom = -116,
             HorizontalAlignment = HorizontalAlignment.Center,
             Modulate = new Color(1, 1, 1, 0.4f),
         };
-        ver.AddThemeFontSizeOverride("font_size", 21);
+        ver.AddThemeFontSizeOverride("font_size", 15);
         AddChild(ver);
+    }
+
+    /// <summary>PDTD-style currency pill: a round icon chip, the number, no "+" —
+    /// there's nothing to spend real money to top it up with, on purpose.</summary>
+    private static Control CurrencyPill(string glyph, string value, Color accent, System.Action onPress)
+    {
+        var b = new Button { CustomMinimumSize = new Vector2(96, 52), Flat = true };
+        b.AddThemeStyleboxOverride("normal", new StyleBoxFlat
+        {
+            BgColor = new Color(0.04f, 0.05f, 0.09f, 0.92f),
+            BorderColor = new Color(accent, 0.6f), BorderWidthLeft = 1, BorderWidthRight = 1, BorderWidthTop = 1, BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26,
+        });
+        b.AddThemeStyleboxOverride("hover", new StyleBoxFlat
+        {
+            BgColor = new Color(0.07f, 0.08f, 0.13f, 0.95f),
+            BorderColor = accent, BorderWidthLeft = 1, BorderWidthRight = 1, BorderWidthTop = 1, BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26,
+        });
+        var lbl = new Label { Text = $"{glyph} {value}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        lbl.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        lbl.AddThemeFontSizeOverride("font_size", 19);
+        lbl.AddThemeColorOverride("font_color", accent);
+        lbl.MouseFilter = Control.MouseFilterEnum.Ignore;
+        b.AddChild(lbl);
+        b.Pressed += onPress;
+        return b;
+    }
+
+    /// <summary>A small plain circular icon button — settings/codex, not currencies.</summary>
+    private static Control IconButton(string glyph, System.Action onPress)
+    {
+        var b = new Button { CustomMinimumSize = new Vector2(52, 52), Flat = true, Text = glyph };
+        b.AddThemeFontSizeOverride("font_size", 20);
+        b.AddThemeStyleboxOverride("normal", new StyleBoxFlat
+        {
+            BgColor = new Color(0.04f, 0.05f, 0.09f, 0.92f),
+            BorderColor = new Color(1, 1, 1, 0.18f), BorderWidthLeft = 1, BorderWidthRight = 1, BorderWidthTop = 1, BorderWidthBottom = 1,
+            CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26,
+        });
+        b.Pressed += onPress;
+        return b;
     }
 
     /// <summary>Popup that lists every currency balance.</summary>
@@ -176,14 +241,6 @@ public sealed partial class MenuScreen : CanvasLayer
             idx++;
         }
         return ("", "", "", true);
-    }
-
-    private GlowButton NavBtn(string label, System.Action onPress, bool alt)
-    {
-        var b = new GlowButton { Text = label, FontSize = 18, Alt = alt, CustomMinimumSize = new Vector2(0, 154) };
-        b.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        b.Pressed += () => { Click(); onPress(); };
-        return b;
     }
 
     private static void Click() => Sentinel.Audio.AudioManager.Instance?.Click();

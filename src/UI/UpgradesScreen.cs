@@ -61,7 +61,7 @@ public sealed partial class UpgradesScreen : CanvasLayer
         var root = new VBoxContainer
         {
             AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0f, AnchorBottom = 1f,
-            OffsetLeft = -540, OffsetRight = 540, OffsetTop = 26, OffsetBottom = -10,
+            OffsetLeft = -516, OffsetRight = 516, OffsetTop = 26, OffsetBottom = -10, // 24px side gutters on the 1080 canvas
         };
         root.AddThemeConstantOverride("separation", 8);
         root.Theme = UiTheme.Instance;
@@ -220,7 +220,10 @@ public sealed partial class UpgradesScreen : CanvasLayer
             int tier = Sentinel.Meta.Progression.ModuleTier(lvl);
             var accent = TierColor(tier);
 
-            var cell = new PanelContainer { CustomMinimumSize = new Vector2(0, 92) };
+            // ExpandFill: a GridContainer column only shares out width to cells that ask
+            // for it — without this each cell collapses to its min width and the autowrap
+            // name label wraps one letter per line.
+            var cell = new PanelContainer { CustomMinimumSize = new Vector2(0, 92), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             cell.AddThemeStyleboxOverride("panel", new StyleBoxFlat
             {
                 BgColor = new Color(accent, lvl > 0 ? 0.13f : 0.05f),
