@@ -5,11 +5,24 @@ pick up from here alone. Pair with [`../CLAUDE.md`](../CLAUDE.md) (ground rules)
 and [`design-spec.md`](design-spec.md) (the vision) / [`deviations.md`](deviations.md)
 (where the build deliberately differs).
 
-Last updated: **2026-10-02 — v0.37.2** (Codex art + readable cards; open-items
-audit below. v0.37.1: menu/Upgrades UI fixes, Arena turret purchases verified).
+Last updated: **2026-10-03 — v0.38.0** (Galaxy Arena planet repair, the gold
+sink. v0.37.2: Codex art + readable cards; open-items audit below).
 Update this file when you finish or start anything.
 
 ---
+
+## Recently completed — Galaxy Arena planet repair (v0.38.0)
+
+- Arena gold piled up with nothing to buy once turrets hit Lv 3 (7.5k unspent
+  by wave 9). The intermission shop now sells **Repair planet**: +25% of max
+  integrity, 1200G, each repair x1.5 the last. Greyed out at full integrity or
+  when you can't afford it. Values in `data/balance.json` (`arena_repair_*`).
+- The Arena's gold-per-bounty multiplier (a hard-coded `* 5f` in `SimWorld`)
+  moved to `balance.json` (`arena_gold_per_bounty`), per the balance-in-JSON rule.
+- Verified: `ArenaTester.tscn` buys repairs once the turret is maxed and fails
+  if one doesn't restore integrity or charges the wrong gold (3 bought by wave
+  9: 1200/1800/2700G). `SimTest.tscn` all OK. Not yet seen in a live run on a
+  phone: how the price curve feels.
 
 ## Open-items audit (2026-10-02) — the "Still open" lists further down are STALE
 

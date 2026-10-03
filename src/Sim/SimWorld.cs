@@ -505,6 +505,24 @@ public sealed partial class SimWorld
         return true;
     }
 
+    /// <summary>Planet repairs bought this Arena run; each one costs more.</summary>
+    public int ArenaRepairsBought { get; private set; }
+
+    public int ArenaRepairCost =>
+        Mathf.RoundToInt(B.ArenaRepairBaseCost * Mathf.Pow(B.ArenaRepairCostGrowth, ArenaRepairsBought));
+
+    /// <summary>Galaxy Arena gold sink: restore a share of planet integrity.</summary>
+    public bool TryArenaRepair(out int cost)
+    {
+        cost = ArenaRepairCost;
+        if (Phase != SimPhase.Arena || PlanetIntegrity >= PlanetIntegrityMax || ArenaGold < cost)
+            return false;
+        ArenaGold -= cost;
+        ArenaRepairsBought++;
+        PlanetIntegrity = Mathf.Min(PlanetIntegrityMax, PlanetIntegrity + PlanetIntegrityMax * B.ArenaRepairFrac);
+        return true;
+    }
+
     private void TryForkTurret(int slot, int forkIndex)
     {
         if (!CanEdit || !InSlot(slot) || !Turrets[slot].Built) return;
@@ -796,7 +814,7 @@ public sealed partial class SimWorld
         {
             Stats.EnemiesKilled++;
             Credits += Mathf.RoundToInt(e.Bounty * Mathf.Max(0.2f, Mods.CreditsGainMult));
-            ArenaGold += Mathf.RoundToInt(e.Bounty * 5f);
+            ArenaGold += Mathf.RoundToInt(e.Bounty * B.ArenaGoldPerBounty);
             if (Mission.Survival) GainRunXp(e.Bounty * B.XpKillMult);
 
             // Salvage Beacon: kills inside the field pay bonus RD + XP

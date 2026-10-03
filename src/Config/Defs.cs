@@ -45,6 +45,13 @@ public sealed record BalanceDef
     public float TurretUpgradeCostMult { get; init; } = 0.8f;   // cost of next level = base cost * this * level
     public float TurretUpgradeStatMult { get; init; } = 1.6f;   // dmg/rate scale per level
 
+    // Galaxy Arena economy: gold per point of enemy bounty, and the planet
+    // repair sold between waves (the gold sink once turrets are maxed)
+    public float ArenaGoldPerBounty { get; init; } = 5f;
+    public float ArenaRepairFrac { get; init; } = 0.25f;       // share of max integrity restored
+    public int ArenaRepairBaseCost { get; init; } = 1200;
+    public float ArenaRepairCostGrowth { get; init; } = 1.5f;  // each repair costs this much more
+
     // planet's built-in missile battery — the always-on primary defence (PDTD style)
     public float BatteryDamage { get; init; } = 26f;
     public float BatteryInterval { get; init; } = 1.4f;

@@ -26,6 +26,23 @@ public partial class ArenaShopManager : Node
         foreach (var child in _container.GetChildren())
             child.QueueFree();
 
+        // Planet repair: the gold sink once turrets are maxed (balance.json arena_repair_*).
+        int pct = Mathf.RoundToInt(100f * _world.PlanetIntegrity / Mathf.Max(1f, _world.PlanetIntegrityMax));
+        int repairCost = _world.ArenaRepairCost;
+        bool damaged = _world.PlanetIntegrity < _world.PlanetIntegrityMax;
+        var repair = new Button
+        {
+            Text = damaged
+                ? $"Repair planet  ({pct}% → +{Mathf.RoundToInt(_world.B.ArenaRepairFrac * 100f)}%)  ·  {repairCost}G"
+                : "Planet at full integrity",
+            Disabled = !damaged || _world.ArenaGold < repairCost,
+            CustomMinimumSize = new Vector2(0, 72),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        repair.AddThemeFontSizeOverride("font_size", 20);
+        repair.Pressed += OnRepairPressed;
+        _container.AddChild(repair);
+
         bool any = false;
         for (int i = 0; i < _world.Turrets.Length; i++)
         {
@@ -52,11 +69,20 @@ public partial class ArenaShopManager : Node
         {
             _container.AddChild(new Label
             {
-                Text = "No turrets ready to upgrade — build or level one up during the next wave.",
+                Text = "No turrets to upgrade: build one during the next wave, or they're all at Lv 3.",
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Modulate = new Color(1, 1, 1, 0.55f),
             });
         }
+    }
+
+    private void OnRepairPressed()
+    {
+        if (_world.TryArenaRepair(out _))
+            Sentinel.Audio.AudioManager.Instance?.Confirm();
+        else
+            Sentinel.Audio.AudioManager.Instance?.Click();
+        RefreshShop();
     }
 
     private void OnUpgradePressed(int slot)
